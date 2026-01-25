@@ -137,7 +137,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             <AlertCircle className="text-red-500" size={32} /> Code Apps Script Requis
           </h3>
           <p className="text-slate-400 font-medium mb-8 text-sm leading-relaxed">
-            Collez ce code dans votre éditeur Google Apps Script (Extensions > Apps Script) :
+            Collez ce code dans votre éditeur Google Apps Script (Extensions &gt; Apps Script) :
           </p>
           <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-[11px] text-blue-300 overflow-x-auto mb-8">
             <pre>{`function doPost(e) {
