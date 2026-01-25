@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
-import { Trophy, TrendingDown, Target, Building2, Truck, Globe, ChevronDown, ChevronUp, MapPin, CheckCircle2, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
+import { Trophy, TrendingDown, Target, Building2, Truck, Globe, ChevronDown, ChevronUp, MapPin, CheckCircle2, AlertTriangle, XCircle, ArrowRight, User, Mail, Phone, ExternalLink } from 'lucide-react';
 import { SITES_DATA } from '../constants';
 
 interface PerformanceViewProps {
@@ -34,7 +34,7 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ data }) => {
       displayName: r.name.replace('PRES ', '').replace('DIRECTION ', 'DIR. '),
       achievement: regionMonthlyObj > 0 ? Math.round((totalMois / regionMonthlyObj) * 100) : 0,
       realized: totalMois,
-      annualRealized: totalMois, // En Janvier, réalisé annuel = réalisé mensuel
+      annualRealized: totalMois,
       annualObjective: regionAnnualObj,
       annualPercentage: regionAnnualObj > 0 ? (totalMois / regionAnnualObj) * 100 : 0,
       sites: r.sites
@@ -142,10 +142,13 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ data }) => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 relative z-10">
               {selectedRegion.sites.map((site, sIdx) => {
                 const achievement = site.objMensuel > 0 ? (site.totalMois / site.objMensuel) * 100 : 0;
                 const gap = site.objMensuel - site.totalMois;
+                
+                // Recherche des infos de contact dans SITES_DATA
+                const siteContact = SITES_DATA.find(sd => sd.name === site.name);
                 
                 const getStatus = (p: number) => {
                   if (p >= 95) return { label: 'Elite', color: 'text-green-400', bg: 'bg-green-400/10', icon: <CheckCircle2 size={12} /> };
@@ -155,38 +158,84 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ data }) => {
                 const status = getStatus(achievement);
 
                 return (
-                  <div key={sIdx} className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/[0.08] transition-all group">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h5 className="font-black text-sm text-white uppercase tracking-tight group-hover:text-indigo-400 transition-colors">{site.name}</h5>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${status.bg} ${status.color}`}>
-                            {status.icon} {status.label}
+                  <div key={sIdx} className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/[0.08] transition-all group flex flex-col md:flex-row gap-6">
+                    {/* Colonne Stats */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h5 className="font-black text-sm text-white uppercase tracking-tight group-hover:text-indigo-400 transition-colors">{site.name}</h5>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${status.bg} ${status.color}`}>
+                              {status.icon} {status.label}
+                            </div>
+                            <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Code: {siteContact?.code || '---'}</span>
                           </div>
-                          <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Code: {SITES_DATA.find(sd => sd.name === site.name)?.code || '---'}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-black text-white">{achievement.toFixed(1)}%</p>
+                          <p className="text-[9px] font-bold text-white/30 uppercase">Atteinte</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xl font-black text-white">{achievement.toFixed(1)}%</p>
-                        <p className="text-[9px] font-bold text-white/30 uppercase">Atteinte Mensuelle</p>
+
+                      <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4 mb-4">
+                        <div>
+                          <p className="text-[8px] font-black text-white/40 uppercase mb-1">Cumul</p>
+                          <p className="text-sm font-black text-white">{site.totalMois.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black text-white/40 uppercase mb-1">Cible</p>
+                          <p className="text-sm font-black text-white/60">{site.objMensuel.toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-black text-white/40 uppercase mb-1">Reste</p>
+                          <p className={`text-sm font-black ${gap <= 0 ? 'text-green-400' : 'text-red-400/80'}`}>
+                            {gap <= 0 ? 'OK' : gap.toLocaleString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
-                      <div>
-                        <p className="text-[8px] font-black text-white/40 uppercase mb-1">Cumul</p>
-                        <p className="text-sm font-black text-white">{site.totalMois.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] font-black text-white/40 uppercase mb-1">Cible</p>
-                        <p className="text-sm font-black text-white/60">{site.objMensuel.toLocaleString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] font-black text-white/40 uppercase mb-1">Reste</p>
-                        <p className={`text-sm font-black ${gap <= 0 ? 'text-green-400' : 'text-red-400/80'}`}>
-                          {gap <= 0 ? 'OK' : gap.toLocaleString()}
-                        </p>
-                      </div>
+                    {/* Colonne Contact (Carte Responsable) */}
+                    <div className="w-full md:w-64 bg-white/[0.03] rounded-2xl p-4 border border-white/5 flex flex-col justify-between">
+                       <div>
+                         <div className="flex items-center gap-2 mb-3">
+                           <User size={14} className="text-indigo-400" />
+                           <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Responsable</span>
+                         </div>
+                         <p className="text-xs font-bold text-white mb-4 leading-tight">{siteContact?.manager || "Non renseigné"}</p>
+                         
+                         <div className="space-y-2">
+                           {siteContact?.phone && (
+                             <a href={`tel:${siteContact.phone.replace(/\s/g, '')}`} className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white transition-colors">
+                               <Phone size={12} className="text-green-500/50" />
+                               {siteContact.phone}
+                             </a>
+                           )}
+                           {siteContact?.email && (
+                             <a href={`mailto:${siteContact.email}`} className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white transition-colors truncate">
+                               <Mail size={12} className="text-blue-500/50" />
+                               <span className="truncate">{siteContact.email}</span>
+                             </a>
+                           )}
+                         </div>
+                       </div>
+                       
+                       <div className="flex gap-2 mt-4">
+                          <a 
+                            href={`tel:${siteContact?.phone?.replace(/\s/g, '')}`} 
+                            className="flex-1 bg-green-600/20 hover:bg-green-600 text-green-500 hover:text-white h-8 rounded-lg flex items-center justify-center transition-all"
+                            title="Appeler"
+                          >
+                            <Phone size={14} />
+                          </a>
+                          <a 
+                            href={`mailto:${siteContact?.email}`} 
+                            className="flex-1 bg-blue-600/20 hover:bg-blue-600 text-blue-500 hover:text-white h-8 rounded-lg flex items-center justify-center transition-all"
+                            title="Email"
+                          >
+                            <Mail size={14} />
+                          </a>
+                       </div>
                     </div>
                   </div>
                 );
