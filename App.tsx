@@ -5,11 +5,12 @@ import { INITIAL_DATA } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
 import { PerformanceView } from './components/PerformanceView';
 import { SynthesisView } from './components/SynthesisView';
+import { WeeklyView } from './components/WeeklyView';
 import { DailyView } from './components/DailyView';
 import { DataEntryForm } from './components/DataEntryForm';
 import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, Wifi, BarChart3, ClipboardList, Calendar, PlusCircle, Server, AlertTriangle } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, Wifi, BarChart3, ClipboardList, Calendar, PlusCircle, Server, AlertTriangle, Layers } from 'lucide-react';
 
 const DEFAULT_LINK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 
@@ -82,6 +83,9 @@ const App: React.FC = () => {
           <nav className="hidden md:flex items-center bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200">
             <button onClick={() => setActiveTab('daily')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === 'daily' ? 'bg-white text-red-600 shadow-lg' : 'text-slate-500'}`}>
               <Calendar size={14} /> Prélèvements
+            </button>
+            <button onClick={() => setActiveTab('weekly')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === 'weekly' ? 'bg-white text-red-600 shadow-lg' : 'text-slate-500'}`}>
+              <Layers size={14} /> Hebdo
             </button>
             <button onClick={() => setActiveTab('entry')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === 'entry' ? 'bg-white text-red-600 shadow-lg' : 'text-slate-500'}`}>
               <PlusCircle size={14} /> Saisie
@@ -170,6 +174,7 @@ const App: React.FC = () => {
           <div>
             {activeTab === 'dashboard' && <VisualDashboard data={data} />}
             {activeTab === 'daily' && <DailyView data={data} />}
+            {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'synthesis' && <SynthesisView data={data} />}
             {activeTab === 'performance' && <PerformanceView data={data} />}
             {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} />}
