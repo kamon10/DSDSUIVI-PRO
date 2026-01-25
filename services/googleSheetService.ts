@@ -84,6 +84,22 @@ const parseCsv = (text: string) => {
   });
 };
 
+export const fetchDirectoryData = async (sheetInput: string) => {
+  const { id, gid, isPub } = extractSheetParams(sheetInput);
+  const url = isPub 
+    ? `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv&gid=${gid}`
+    : `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;
+
+  try {
+    const response = await fetch(`${url}&_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const csvText = await response.text();
+    return parseCsv(csvText);
+  } catch (err) {
+    return null;
+  }
+};
+
 export const fetchSheetData = async (sheetInput: string): Promise<Partial<DashboardData>> => {
   const { id, gid, isPub } = extractSheetParams(sheetInput);
   const url = isPub 
