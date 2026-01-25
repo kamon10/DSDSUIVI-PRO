@@ -7,24 +7,20 @@ import { SynthesisView } from './components/SynthesisView';
 import { WeeklyView } from './components/WeeklyView';
 import { DailyView } from './components/DailyView';
 import { DataEntryForm } from './components/DataEntryForm';
-import { fetchSheetData, fetchDirectoryData } from './services/googleSheetService';
+import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, Wifi, BarChart3, ClipboardList, Calendar, PlusCircle, Server, AlertTriangle, Layers, Database } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, Wifi, BarChart3, ClipboardList, Calendar, PlusCircle, Layers, Database, AlertTriangle } from 'lucide-react';
 
-const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
-const DEFAULT_LINK_2 = ""; // Lien optionnel pour l'annuaire
+const DEFAULT_LINK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 
 const App: React.FC = () => {
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('daily');
   
-  // États pour les 2 sources de données
-  const [sheetInput1, setSheetInput1] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [sheetInput2, setSheetInput2] = useState(localStorage.getItem('gsheet_input_2') || "");
-  
+  const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input') || DEFAULT_LINK);
   const [scriptUrl, setScriptUrl] = useState(localStorage.getItem('gsheet_script_url') || "");
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('gsheet_input_1'));
+  const [showSettings, setShowSettings] = useState(!localStorage.getItem('gsheet_input'));
   const [error, setError] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<string | null>(localStorage.getItem('last_sync'));
 
@@ -36,18 +32,12 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Chargement en parallèle des deux sources
-      const [activityData, directoryData] = await Promise.all([
-        fetchSheetData(sheetInput1.trim()),
-        sheetInput2.trim() !== "" ? fetchDirectoryData(sheetInput2.trim()) : Promise.resolve(null)
-      ]);
+      const activityData = await fetchSheetData(sheetInput.trim());
       
       if (!activityData.dailyHistory || activityData.dailyHistory.length === 0) {
-        throw new Error("Source 1 : Aucune donnée d'activité trouvée.");
+        throw new Error("Aucune donnée d'activité trouvée.");
       }
 
-      // Ici on pourrait fusionner directoryData dans activityData si besoin
-      // Pour l'instant on met à jour l'état principal
       setData(activityData as DashboardData);
       
       const now = new Date().toLocaleTimeString('fr-FR');
@@ -65,8 +55,7 @@ const App: React.FC = () => {
   };
 
   const saveSettings = () => {
-    localStorage.setItem('gsheet_input_1', sheetInput1.trim());
-    localStorage.setItem('gsheet_input_2', sheetInput2.trim());
+    localStorage.setItem('gsheet_input', sheetInput.trim());
     localStorage.setItem('gsheet_script_url', scriptUrl.trim());
     if (lastSync) localStorage.setItem('last_sync', lastSync);
   };
@@ -121,11 +110,8 @@ const App: React.FC = () => {
                 <p className="text-[9px] font-bold opacity-60 mt-1 uppercase">{lastSync || 'Non synchro'}</p>
               </div>
             </button>
-            <button onClick={() => setShowSettings(true)} className={`p-4 rounded-2xl transition-all border ${scriptUrl === "" || sheetInput2 === "" ? 'border-amber-400 bg-amber-50 text-amber-600 animate-pulse' : 'border-slate-200 hover:bg-slate-50 text-slate-400'} relative`}>
+            <button onClick={() => setShowSettings(true)} className={`p-4 rounded-2xl transition-all border ${scriptUrl === "" ? 'border-amber-400 bg-amber-50 text-amber-600 animate-pulse' : 'border-slate-200 hover:bg-slate-50 text-slate-400'} relative`}>
               <Settings size={22} />
-              {(scriptUrl === "" || sheetInput2 === "") && (
-                <span className="absolute top-2 right-2 w-3 h-3 bg-amber-500 rounded-full border-2 border-white"></span>
-              )}
             </button>
           </div>
         </div>
@@ -133,14 +119,14 @@ const App: React.FC = () => {
 
       {showSettings && (
         <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full shadow-3xl animate-in zoom-in duration-300 border border-slate-100 overflow-y-auto max-h-[90vh]">
+          <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full shadow-3xl animate-in zoom-in duration-300 border border-slate-100">
             <div className="flex items-center gap-5 mb-8">
               <div className="w-16 h-16 bg-red-50 text-red-600 rounded-[1.5rem] flex items-center justify-center shadow-inner">
                 <Database size={32} />
               </div>
               <div>
-                <h3 className="font-black text-3xl uppercase tracking-tighter">Sources de Données</h3>
-                <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-1">Liez jusqu'à 2 fichiers Google Sheets</p>
+                <h3 className="font-black text-3xl uppercase tracking-tighter">Configuration</h3>
+                <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-1">Lien vers vos données Google Sheets</p>
               </div>
             </div>
 
@@ -152,13 +138,8 @@ const App: React.FC = () => {
 
             <div className="space-y-6 mb-8">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-2 block tracking-widest">Fichier 1 : Activité (CSV)</label>
-                <input type="text" value={sheetInput1} onChange={(e) => setSheetInput1(e.target.value)} placeholder="URL CSV du fichier de prélèvements" className="w-full bg-slate-50 border-2 border-slate-100 rounded-[1.25rem] px-6 py-4 text-sm focus:border-red-500 outline-none transition-all font-semibold" />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-2 block tracking-widest">Fichier 2 : Annuaire / Config (Optionnel)</label>
-                <input type="text" value={sheetInput2} onChange={(e) => setSheetInput2(e.target.value)} placeholder="URL CSV du fichier des responsables" className="w-full bg-slate-50 border-2 border-slate-100 rounded-[1.25rem] px-6 py-4 text-sm focus:border-blue-500 outline-none transition-all font-semibold" />
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2 mb-2 block tracking-widest">URL CSV du fichier (Lecture)</label>
+                <input type="text" value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} placeholder="URL CSV du fichier de prélèvements" className="w-full bg-slate-50 border-2 border-slate-100 rounded-[1.25rem] px-6 py-4 text-sm focus:border-red-500 outline-none transition-all font-semibold" />
               </div>
 
               <div>
@@ -170,7 +151,7 @@ const App: React.FC = () => {
             <div className="flex gap-4">
               <button onClick={handleCloseSettings} className="flex-1 px-6 py-5 rounded-[1.5rem] font-black text-xs uppercase text-slate-400 hover:bg-slate-100 transition-all border border-slate-100">Annuler</button>
               <button onClick={handleSync} disabled={loading} className="flex-[2] bg-red-600 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-red-700 shadow-2xl transition-all flex items-center justify-center gap-4">
-                {loading ? <RefreshCw size={22} className="animate-spin" /> : <Wifi size={22} />} Valider les sources
+                {loading ? <RefreshCw size={22} className="animate-spin" /> : <Wifi size={22} />} Valider la source
               </button>
             </div>
           </div>
@@ -181,7 +162,7 @@ const App: React.FC = () => {
         {loading && !data.dailyHistory.length ? (
           <div className="flex flex-col items-center justify-center py-48 gap-10">
              <div className="w-32 h-32 bg-white rounded-[3rem] shadow-3xl flex items-center justify-center text-red-600"><Activity size={64} className="animate-pulse" /></div>
-             <p className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Analyse des flux multi-sources...</p>
+             <p className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Synchronisation des données...</p>
           </div>
         ) : (
           <div>
