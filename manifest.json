@@ -1,0 +1,18 @@
+
+{
+  "short_name": "DSDSUIVI",
+  "name": "DSDSUIVI PRO - CNTS CI",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/822/822143.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ef4444",
+  "background_color": "#ffffff",
+  "orientation": "portrait"
+}
