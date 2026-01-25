@@ -4,11 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ef4444">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/822/822143.png">
     <title>DSDSUIVI PRO - Tableau de Bord</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,9 +13,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: contain;
         }
-        /* Masquer la scrollbar pour une apparence plus "App" */
         ::-webkit-scrollbar {
             display: none;
         }
@@ -39,15 +33,5 @@
 </head>
 <body>
     <div id="root"></div>
-    <script>
-      // Enregistrement simple du Service Worker pour la PWA
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {
-            console.log('SW registration skipped for local dev');
-          });
-        });
-      }
-    </script>
 </body>
 </html>
