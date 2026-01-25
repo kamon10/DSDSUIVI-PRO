@@ -84,6 +84,28 @@ const parseCsv = (text: string) => {
   });
 };
 
+// Nouvelle fonction pour charger l'annuaire
+export const fetchDirectoryData = async (sheetInput: string) => {
+  const { id, gid, isPub } = extractSheetParams(sheetInput);
+  const url = isPub 
+    ? `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv&gid=${gid}`
+    : `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;
+
+  try {
+    const response = await fetch(`${url}&_t=${Date.now()}`);
+    if (!response.ok) throw new Error("Source 2 : Erreur d'accès.");
+    const csvText = await response.text();
+    const rows = parseCsv(csvText);
+    if (rows.length < 2) return null;
+    
+    // On retourne simplement les lignes pour un traitement ultérieur
+    return rows;
+  } catch (err) {
+    console.error("fetchDirectoryData error:", err);
+    return null;
+  }
+};
+
 export const fetchSheetData = async (sheetInput: string): Promise<Partial<DashboardData>> => {
   const { id, gid, isPub } = extractSheetParams(sheetInput);
   const url = isPub 
