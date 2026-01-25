@@ -53,4 +53,4 @@ export interface DashboardData {
   dailyHistory: DailyHistoryRecord[];
 }
 
-export type AppTab = 'dashboard' | 'daily' | 'synthesis' | 'performance' | 'entry';
+export type AppTab = 'dashboard' | 'daily' | 'weekly' | 'synthesis' | 'performance' | 'entry';
