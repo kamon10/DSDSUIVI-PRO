@@ -214,10 +214,10 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
            </div>
            <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-blue-500 rounded-sm"></div> Fixe
+                 <div className="w-3 h-3 bg-blue-500 rounded-sm"></div> COLLECTE SITE FIXE
               </div>
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-violet-500 rounded-sm"></div> Mobile
+                 <div className="w-3 h-3 bg-violet-500 rounded-sm"></div> COLLECTE MOBILE
               </div>
            </div>
         </div>
@@ -227,8 +227,8 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
             <thead>
               <tr className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
                 <th className="px-10 py-6 text-left">Date de collecte</th>
-                <th className="px-6 py-6 text-center">Structure Fixe</th>
-                <th className="px-6 py-6 text-center">Unité Mobile</th>
+                <th className="px-6 py-6 text-center">COLLECTE SITE FIXE</th>
+                <th className="px-6 py-6 text-center">COLLECTE MOBILE</th>
                 <th className="px-6 py-6 text-center">Total Réalisé</th>
                 <th className="px-10 py-6 text-right">Performance / Jour</th>
               </tr>
