@@ -1,6 +1,6 @@
 
 import { DashboardData, SiteRecord, DailyHistorySite, DailyHistoryRecord } from "../types";
-import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR } from "../constants";
+import { getSiteName, getSiteRegion, getSiteObjectives, getSiteByInput, SITES_DATA, WORKING_DAYS_YEAR } from "../constants";
 
 export const saveRecordToSheet = async (scriptUrl: string, record: any) => {
   if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
@@ -142,6 +142,7 @@ export const fetchSheetData = async (sheetInput: string): Promise<Partial<Dashbo
       const dateVal = row[idx.date] ? row[idx.date].trim() : "01/01/2026";
       const rawSiteName = row[idx.libelle] ? row[idx.libelle].toUpperCase().trim() : "SITE INCONNU";
       
+      const siteRef = getSiteByInput(rawSiteName);
       const siteName = getSiteName(rawSiteName);
       const regionName = getSiteRegion(rawSiteName);
       const siteObjs = getSiteObjectives(rawSiteName);
@@ -162,7 +163,17 @@ export const fetchSheetData = async (sheetInput: string): Promise<Partial<Dashbo
       h.stats.mobile += valMobile;
       
       if (!h.sites.has(siteName)) {
-        h.sites.set(siteName, { name: siteName, region: regionName, fixe: 0, mobile: 0, total: 0, objective: siteObjs.daily });
+        h.sites.set(siteName, { 
+          name: siteName, 
+          region: regionName, 
+          fixe: 0, 
+          mobile: 0, 
+          total: 0, 
+          objective: siteObjs.daily,
+          manager: siteRef?.manager,
+          email: siteRef?.email,
+          phone: siteRef?.phone
+        });
       }
       const hs = h.sites.get(siteName);
       hs.fixe += valFixed; hs.mobile += valMobile; hs.total += valTotal;
@@ -170,7 +181,10 @@ export const fetchSheetData = async (sheetInput: string): Promise<Partial<Dashbo
       if (!siteAggregator.has(siteName)) {
         siteAggregator.set(siteName, {
           name: siteName, region: regionName, fixe: 0, mobile: 0, totalJour: 0, totalMois: 0, 
-          objDate: siteObjs.daily, objMensuel: siteObjs.monthly
+          objDate: siteObjs.daily, objMensuel: siteObjs.monthly,
+          manager: siteRef?.manager,
+          email: siteRef?.email,
+          phone: siteRef?.phone
         });
       }
       const gs = siteAggregator.get(siteName)!;
@@ -198,7 +212,6 @@ export const fetchSheetData = async (sheetInput: string): Promise<Partial<Dashbo
 
     const nationalObjAnnual = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
     const nationalObjMonthly = Math.round(nationalObjAnnual / 12);
-    // Objectif journalier national basé sur les jours ouvrés
     const nationalObjDaily = Math.round(nationalObjAnnual / WORKING_DAYS_YEAR);
 
     const regionsMap = new Map<string, any[]>();
