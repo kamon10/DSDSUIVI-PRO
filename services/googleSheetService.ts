@@ -5,23 +5,14 @@ import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA } from "../co
 export const saveRecordToSheet = async (scriptUrl: string, record: any) => {
   if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
   const cleanUrl = scriptUrl.trim();
-  return postToScript(cleanUrl, { type: 'RECORD', data: record });
-};
-
-export const sendEmailReport = async (scriptUrl: string, reportData: any) => {
-  if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
-  const cleanUrl = scriptUrl.trim();
-  return postToScript(cleanUrl, { type: 'EMAIL', data: reportData });
-};
-
-const postToScript = async (url: string, payload: any) => {
+  
   try {
-    await fetch(url, {
+    await fetch(cleanUrl, {
       method: 'POST',
       mode: 'no-cors', 
       cache: 'no-cache',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(record)
     });
     return true;
   } catch (error: any) {
