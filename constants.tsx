@@ -1,6 +1,9 @@
 
 import { DashboardData } from './types';
 
+// Pour 2026 : 365 jours - 52 dimanches = 313 jours de collecte
+export const WORKING_DAYS_YEAR = 313;
+
 export const SITES_DATA = [
   // PRES ABIDJAN
   { code: "1000", name: "CRTS TREICHVILLE", region: "PRES ABIDJAN", annualObjective: 35000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99" },
@@ -78,10 +81,11 @@ export const getSiteRegion = (input: string): string => {
 
 export const getSiteObjectives = (input: string) => {
   const site = getSiteByInput(input);
-  if (!site) return { annual: 1000, monthly: 83, daily: 3 };
+  if (!site) return { annual: 1000, monthly: 83, daily: 4 };
   const annual = site.annualObjective;
   const monthly = Math.round(annual / 12);
-  const daily = Math.round(annual / 365);
+  // Calcul basé sur les jours ouvrés (sans dimanches)
+  const daily = Math.round(annual / WORKING_DAYS_YEAR);
   return { annual, monthly, daily };
 };
 
@@ -89,7 +93,7 @@ export const INITIAL_DATA: DashboardData = {
   date: "22/01/2026",
   month: "janvier",
   year: 2026,
-  daily: { realized: 0, objective: 989, percentage: 0, fixed: 0, mobile: 0 },
+  daily: { realized: 0, objective: 1137, percentage: 0, fixed: 0, mobile: 0 },
   monthly: { realized: 0, objective: 29667, percentage: 0, fixed: 0, mobile: 0 },
   annual: { realized: 0, objective: 356000, percentage: 0, fixed: 0, mobile: 0 },
   dailyHistory: [],
