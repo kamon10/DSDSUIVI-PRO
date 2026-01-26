@@ -2,10 +2,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
-import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Brain, ArrowUpRight, ArrowDownRight, Activity, Sparkles, ChevronRight } from 'lucide-react';
+import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Brain, ArrowUpRight, Activity, Sparkles, ChevronRight } from 'lucide-react';
 import { getGeminiInsights } from '../services/geminiService';
+import { COLORS } from '../constants';
 
-const COLORS_MIX = ['#6366f1', '#f97316'];
+const COLORS_MIX = [COLORS.fixed, COLORS.mobile];
 
 export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => {
   const [insights, setInsights] = useState<string>("Génération de la stratégie IA...");
@@ -30,9 +31,9 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-24">
       
-      {/* HEADER: MISSION CONTROL */}
+      {/* HEADER: MISSION CONTROL (RED/ORANGE GRADIENT) */}
       <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-indigo-600 rounded-[4rem] blur opacity-15 group-hover:opacity-25 transition duration-1000 group-hover:duration-200"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-500 rounded-[4rem] blur opacity-15 group-hover:opacity-25 transition duration-1000 group-hover:duration-200"></div>
         <div className="relative bg-slate-900 rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl overflow-hidden border border-white/5">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/20 blur-[150px] rounded-full -mr-80 -mt-80 pointer-events-none animate-pulse"></div>
           
@@ -46,7 +47,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                   <div className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-red-400">
+                   <div className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-orange-400">
                      Live Data
                    </div>
                    <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
@@ -78,7 +79,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
       {/* IA STRATEGY & ANALYTICS MIX */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         
-        {/* Gemini AI Box */}
+        {/* Gemini AI Box (GREEN ACCENTS) */}
         <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-12 shadow-2xl border border-slate-100 flex flex-col relative overflow-hidden ai-glow">
           <div className="absolute -top-12 -right-12 text-slate-50 opacity-10 pointer-events-none">
             <Brain size={250} />
@@ -86,35 +87,35 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
           
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-6">
-              <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.5rem] flex items-center justify-center shadow-inner">
+              <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.5rem] flex items-center justify-center shadow-inner">
                 <Sparkles size={28} />
               </div>
               <div>
                 <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Directives Stratégiques IA</h3>
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1">Analyse multi-dimensionnelle par Gemini-3-Flash</p>
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">Analyse multi-dimensionnelle par Gemini-3-Flash</p>
               </div>
             </div>
           </div>
           
-          <div className="flex-1 bg-gradient-to-br from-indigo-50/50 to-white rounded-[2.5rem] p-10 border border-indigo-100/50 relative">
+          <div className="flex-1 bg-gradient-to-br from-emerald-50/50 to-white rounded-[2.5rem] p-10 border border-emerald-100/50 relative">
             {loadingInsights ? (
               <div className="flex flex-col items-center justify-center h-48 gap-6">
-                <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">Consultation du moteur d'IA...</p>
               </div>
             ) : (
               <div className="relative">
-                <span className="absolute -top-4 -left-2 text-6xl text-indigo-200 font-serif">“</span>
+                <span className="absolute -top-4 -left-2 text-6xl text-emerald-200 font-serif">“</span>
                 <p className="text-slate-700 font-semibold leading-relaxed italic text-xl px-6">
                   {insights}
                 </p>
-                <span className="absolute -bottom-10 -right-2 text-6xl text-indigo-200 font-serif">”</span>
+                <span className="absolute -bottom-10 -right-2 text-6xl text-emerald-200 font-serif">”</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Mix Visualizer */}
+        {/* Mix Visualizer (GREEN/ORANGE) */}
         <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl border border-slate-100 flex flex-col justify-between group">
           <div className="flex items-center gap-5 mb-8">
              <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-[1.5rem] flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
@@ -154,14 +155,14 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
           <div className="space-y-4 mt-8">
              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS.fixed }}></div>
                   <span className="text-xs font-black text-slate-600 uppercase">Structure Fixe</span>
                 </div>
                 <span className="font-black text-slate-900">{data.monthly.fixed.toLocaleString()}</span>
              </div>
              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS.mobile }}></div>
                   <span className="text-xs font-black text-slate-600 uppercase">Unité Mobile</span>
                 </div>
                 <span className="font-black text-slate-900">{data.monthly.mobile.toLocaleString()}</span>
@@ -170,17 +171,17 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
         </div>
       </div>
 
-      {/* KPI GRID: HIGH IMPACT CARDS */}
+      {/* KPI GRID (GREEN, ORANGE, RED) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
         
-        {/* KPI Journalier */}
+        {/* KPI Journalier (GREEN) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
-            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-all">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-all">
               <Calendar size={32} />
             </div>
-            <div className="px-4 py-2 bg-green-100 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+            <div className="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">
               Objectif Atteint
             </div>
           </div>
@@ -190,14 +191,14 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
              <span className="text-sm font-black text-slate-300 uppercase">/ {data.daily.objective}</span>
           </div>
           <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden relative z-10">
-             <div className="h-full bg-blue-600 rounded-full shadow-lg transition-all duration-1000" style={{ width: `${Math.min(data.daily.percentage, 100)}%` }}></div>
+             <div className="h-full bg-emerald-600 rounded-full shadow-lg transition-all duration-1000" style={{ width: `${Math.min(data.daily.percentage, 100)}%` }}></div>
           </div>
-          <div className="mt-6 flex items-center gap-2 text-green-500 font-bold text-xs">
+          <div className="mt-6 flex items-center gap-2 text-emerald-500 font-bold text-xs">
             <ArrowUpRight size={16} /> +{data.daily.percentage.toFixed(0)}% de performance
           </div>
         </div>
 
-        {/* KPI Mensuel */}
+        {/* KPI Mensuel (ORANGE) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
@@ -216,12 +217,12 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
           <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden relative z-10">
              <div className="h-full bg-orange-500 rounded-full shadow-lg transition-all duration-1000" style={{ width: `${Math.min(data.monthly.percentage, 100)}%` }}></div>
           </div>
-          <div className="mt-6 flex items-center gap-2 text-slate-400 font-bold text-xs">
+          <div className="mt-6 flex items-center gap-2 text-orange-400 font-bold text-xs">
             <Activity size={16} /> Écart : {Math.max(0, data.monthly.objective - data.monthly.realized).toLocaleString()} poches
           </div>
         </div>
 
-        {/* KPI Annuel */}
+        {/* KPI Annuel (RED) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
@@ -244,9 +245,9 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
         </div>
       </div>
 
-      {/* REGIONAL MATRIX: DATA STORYTELLING */}
+      {/* REGIONAL MATRIX */}
       <div className="bg-white rounded-[4rem] p-12 lg:p-16 shadow-2xl border border-slate-100 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-600 via-indigo-600 to-orange-500"></div>
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-500 via-orange-500 to-red-600"></div>
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10 mb-16">
            <div className="flex items-center gap-8">
               <div className="w-20 h-20 bg-slate-900 text-white rounded-[2rem] flex items-center justify-center shadow-2xl float-animation">
@@ -255,11 +256,6 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
               <div>
                 <h3 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Matrice de Performance Régionale</h3>
                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic">Répartition des flux par Pôle Régional de Santé (PRES)</p>
-              </div>
-           </div>
-           <div className="flex gap-4">
-              <div className="px-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div> Réalisé Mensuel
               </div>
            </div>
         </div>
@@ -290,20 +286,10 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
                  cursor={{fill: '#f8fafc'}} 
                  contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', padding: '1.5rem' }}
                />
-               <Bar dataKey="realized" fill="#ef4444" radius={[8, 8, 0, 0]} name="Réalisé" />
+               <Bar dataKey="realized" fill={COLORS.total} radius={[8, 8, 0, 0]} name="Réalisé" />
                <Bar dataKey="objective" fill="#f1f5f9" radius={[8, 8, 0, 0]} name="Objectif Mensuel" />
              </BarChart>
            </ResponsiveContainer>
-        </div>
-        
-        <div className="mt-12 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-           <div className="flex items-center gap-4 text-slate-500">
-             <Activity size={20} />
-             <p className="text-xs font-bold uppercase tracking-widest">Analyse de variance effectuée sur {data.regions.length} régions</p>
-           </div>
-           <button className="flex items-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl shadow-slate-200">
-             Export complet PDF <ChevronRight size={18} />
-           </button>
         </div>
       </div>
     </div>
