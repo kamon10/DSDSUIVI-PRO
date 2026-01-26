@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
-import { Building2, Truck, Activity, Calendar, ChevronDown, Target, Zap, ArrowRight, Layers, MapPin } from 'lucide-react';
+import { Building2, Truck, Activity, Calendar, ChevronDown, Target, Zap, ArrowRight, Layers, MapPin, User, Mail, Phone } from 'lucide-react';
 import { COLORS } from '../constants';
 
 interface DailyViewProps {
@@ -175,7 +175,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
              </div>
              <div>
                <h3 className="font-black text-xl lg:text-2xl text-slate-900 uppercase tracking-tighter">DÉTAIL PRÉLÈVEMENTS PAR STRUCTURES</h3>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détails opérationnels et objectifs journaliers</p>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détails opérationnels et responsables</p>
              </div>
           </div>
           <div className="hidden lg:flex gap-3">
@@ -190,6 +190,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
             <thead>
               <tr className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] border-b border-slate-50">
                 <th className="px-12 py-6">Centre / Région</th>
+                <th className="px-8 py-6">Responsable</th>
                 <th className="px-8 py-6 text-center">Objectif Jour</th>
                 <th className="px-8 py-6 text-center">Prélèvements (F+M)</th>
                 <th className="px-12 py-6 text-right">Taux d'Atteinte</th>
@@ -211,6 +212,27 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
                           </div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-8 py-8">
+                      {site.manager ? (
+                        <div className="flex flex-col gap-1">
+                          <p className="text-[11px] font-black text-slate-700 uppercase">{site.manager}</p>
+                          <div className="flex items-center gap-3">
+                            {site.email && (
+                              <a href={`mailto:${site.email}`} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <Mail size={12} />
+                              </a>
+                            )}
+                            {site.phone && (
+                              <a href={`tel:${site.phone}`} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                                <Phone size={12} />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-300 font-bold uppercase">Non assigné</span>
+                      )}
                     </td>
                     <td className="px-8 py-8 text-center">
                        <span className="text-lg font-black text-slate-400 tracking-tighter">{site.objective || 0}</span>
@@ -256,6 +278,29 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
                   </div>
                 </div>
                 
+                {site.manager && (
+                  <div className="bg-slate-50 rounded-2xl p-3 flex items-center justify-between border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 shadow-sm">
+                        <User size={14} />
+                      </div>
+                      <p className="text-[9px] font-black text-slate-600 uppercase truncate max-w-[120px]">{site.manager}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       {site.email && (
+                        <a href={`mailto:${site.email}`} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-red-500 shadow-sm">
+                          <Mail size={12} />
+                        </a>
+                      )}
+                      {site.phone && (
+                        <a href={`tel:${site.phone}`} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-emerald-500 shadow-sm">
+                          <Phone size={12} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className={`p-2 rounded-xl flex items-center justify-between ${site.fixe > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-30'}`}>
                     <Building2 size={14} />
