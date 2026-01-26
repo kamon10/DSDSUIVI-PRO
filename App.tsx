@@ -10,7 +10,7 @@ import { DataEntryForm } from './components/DataEntryForm';
 import { DetailedHistoryView } from './components/DetailedHistoryView';
 import { fetchSheetData, fetchDirectoryData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, ClipboardList, Calendar, PlusCircle, Layers, History } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, ClipboardList, Calendar, PlusCircle, Layers, History, Clock } from 'lucide-react';
 
 const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 
@@ -82,6 +82,7 @@ const App: React.FC = () => {
             {[
               { id: 'daily', icon: <Calendar size={14} />, label: 'Prélèvements' },
               { id: 'history', icon: <History size={14} />, label: 'Journal' },
+              { id: 'weekly', icon: <Clock size={14} />, label: 'Hebdo' },
               { id: 'entry', icon: <PlusCircle size={14} />, label: 'Saisie' },
               { id: 'dashboard', icon: <LayoutDashboard size={14} />, label: 'Stats' },
               { id: 'synthesis', icon: <ClipboardList size={14} />, label: 'Synthèse' },
@@ -115,6 +116,7 @@ const App: React.FC = () => {
          {[
            { id: 'daily', icon: <Calendar size={20} />, label: 'Jour' },
            { id: 'history', icon: <History size={20} />, label: 'Journal' },
+           { id: 'weekly', icon: <Clock size={20} />, label: 'Hebdo' },
            { id: 'entry', icon: <PlusCircle size={20} />, label: 'Saisie' },
            { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Stats' },
            { id: 'performance', icon: <BarChart3 size={20} />, label: 'Rang' }
