@@ -134,46 +134,36 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
         <div className="mb-10 p-10 bg-slate-900 rounded-[3rem] text-white shadow-3xl animate-in slide-in-from-top-4 duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
           <h3 className="font-black text-2xl uppercase tracking-tighter mb-6 flex items-center gap-4">
-            <AlertCircle className="text-red-500" size={32} /> Code Apps Script pour Envoi Email
+            <AlertCircle className="text-red-500" size={32} /> Code Apps Script Recommandé
           </h3>
           <p className="text-slate-400 font-medium mb-8 text-sm leading-relaxed">
-            Mettez à jour votre code Apps Script avec cette version qui gère à la fois l'enregistrement et l'envoi d'email :
+            Copiez ce code dans l'éditeur Apps Script lié à votre Google Sheet pour activer l'injection de données :
           </p>
           <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-[11px] text-blue-300 overflow-x-auto mb-8">
             <pre>{`function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var payload = JSON.parse(e.postData.contents);
-  var type = payload.type;
-  var d = payload.data;
-
-  if (type === 'RECORD') {
-    var sheet = ss.getSheetByName("DATABASE1") || ss.insertSheet("DATABASE1");
-    sheet.appendRow([
-      d.dateCollecte, d.codeSite, d.libelleSite, d.dateFinMois, 
-      d.activiteFixe, d.nombreFixe, d.activiteMobile, d.nombreMobile, d.totalPoches
-    ]);
-    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
-  }
-
-  if (type === 'EMAIL') {
-    var recipient = "votre-email@cntsci.ci"; // CHANGEZ CECI
-    var subject = d.title;
-    var body = "Rapport de Synthèse CNTS\\n" + 
-               "Période: " + d.date + "\\n" +
-               "Réalisé National: " + d.totals.realized + " / " + d.totals.objective + " (" + d.totals.percentage.toFixed(2) + "%)\\n\\n" +
-               "Détail Régional:\\n" +
-               d.regions.map(function(r) { 
-                 return "- " + r.name + ": " + r.realized + " (" + r.percentage.toFixed(1) + "%)";
-               }).join("\\n");
-    
-    MailApp.sendEmail(recipient, subject, body);
-    return ContentService.createTextOutput("Email Sent").setMimeType(ContentService.MimeType.TEXT);
-  }
+  var sheet = ss.getSheetByName("DATABASE1") || ss.insertSheet("DATABASE1");
+  var d = JSON.parse(e.postData.contents);
+  
+  sheet.appendRow([
+    d.dateCollecte, 
+    d.codeSite, 
+    d.libelleSite, 
+    d.dateFinMois, 
+    d.activiteFixe, 
+    d.nombreFixe, 
+    d.activiteMobile, 
+    d.nombreMobile, 
+    d.totalPoches
+  ]);
+  
+  return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
 }`}</pre>
           </div>
           <ul className="space-y-3 text-xs font-bold uppercase tracking-tight text-slate-400">
-             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Remplacez l'email dans le script par l'adresse de destination</li>
-             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Déployez une "Nouvelle version" de l'application web</li>
+             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Créez une feuille nommée DATABASE1</li>
+             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Déployez comme "Application Web"</li>
+             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Accès : "Tout le monde" (indispensable)</li>
           </ul>
         </div>
       )}
@@ -286,7 +276,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
               disabled={!selectedSite || status === 'submitting'}
               className="w-full lg:w-auto min-w-[400px] bg-red-600 text-white px-16 py-8 rounded-[2.5rem] font-black text-base uppercase tracking-[0.3em] hover:bg-red-700 shadow-4xl shadow-red-200 transition-all flex items-center justify-center gap-6 disabled:opacity-30 disabled:grayscale transform hover:-translate-y-1 active:scale-95"
             >
-              {/* Fix: Changed RefreshCw to RefreshCcw to match the imported icon */}
               {status === 'submitting' ? <RefreshCcw className="animate-spin" size={32} /> : <Save size={32} />}
               {status === 'submitting' ? "Synchronisation..." : "Injecter les données"}
             </button>
