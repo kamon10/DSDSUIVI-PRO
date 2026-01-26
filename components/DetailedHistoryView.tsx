@@ -214,10 +214,10 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
            </div>
            <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> Fixe
+                 <div className="w-3 h-3 bg-blue-500 rounded-sm"></div> Fixe
               </div>
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-orange-500 rounded-sm"></div> Mobile
+                 <div className="w-3 h-3 bg-violet-500 rounded-sm"></div> Mobile
               </div>
            </div>
         </div>
@@ -242,10 +242,10 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
                       <span className="text-sm font-black text-slate-800 uppercase tracking-tighter">{row.date}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <span className="text-sm font-bold text-emerald-600">{row.fixe}</span>
+                      <span className="text-sm font-bold text-blue-600">{row.fixe}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <span className="text-sm font-bold text-orange-600">{row.mobile}</span>
+                      <span className="text-sm font-bold text-violet-600">{row.mobile}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
                       <span className="text-lg font-black text-slate-900">{row.total}</span>
