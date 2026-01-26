@@ -1,4 +1,3 @@
-
 import { DashboardData, SiteRecord, DailyHistorySite, DailyHistoryRecord } from "../types";
 import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA } from "../constants";
 
