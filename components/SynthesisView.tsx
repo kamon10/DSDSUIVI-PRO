@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
-import { getSiteObjectives, SITES_DATA } from '../constants';
+import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR } from '../constants';
 import { CheckCircle2, AlertTriangle, XCircle, TrendingUp, MapPin, Target, ChevronRight, Calendar, Filter, Clock } from 'lucide-react';
 
 interface SynthesisViewProps {
@@ -12,6 +12,17 @@ const MONTHS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
+
+// Helper pour compter les jours ouvrés (hors dimanche) entre deux dates
+const countWorkingDays = (start: Date, end: Date): number => {
+  let count = 0;
+  let cur = new Date(start);
+  while (cur <= end) {
+    if (cur.getDay() !== 0) count++; // 0 = Dimanche
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+};
 
 export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
   const availableYears = useMemo(() => {
@@ -62,6 +73,15 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
   const synthesisData = useMemo(() => {
     const grouped = new Map<string, any>();
     
+    // Calcul du prorata temporel basé sur les jours ouvrés du mois sélectionné
+    const dayOfMonth = selectedDay ? parseInt(selectedDay.split('/')[0]) : 1;
+    const startDate = new Date(parseInt(selectedYear), selectedMonth, 1);
+    const endDateOfMonth = new Date(parseInt(selectedYear), selectedMonth + 1, 0);
+    const selectedDateObj = new Date(parseInt(selectedYear), selectedMonth, dayOfMonth);
+    
+    const workingDaysPassed = countWorkingDays(startDate, selectedDateObj);
+    const totalWorkingDaysInMonth = countWorkingDays(startDate, endDateOfMonth);
+
     SITES_DATA.forEach(siteBase => {
       const regName = siteBase.region || "DIRECTION NATIONALE";
       if (!grouped.has(regName)) {
@@ -84,14 +104,17 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
           return acc + (site?.total || 0);
         }, 0);
 
-      const dayOfMonth = selectedDay ? parseInt(selectedDay.split('/')[0]) : new Date().getDate();
-      const objProrata = Math.round((siteObjs.monthly / 30) * dayOfMonth);
+      // Prorata intelligent : Objectif Mensuel * (Jours ouvrés passés / Jours ouvrés totaux du mois)
+      const objProrata = totalWorkingDaysInMonth > 0 
+        ? Math.round((siteObjs.monthly / totalWorkingDaysInMonth) * workingDaysPassed)
+        : 0;
 
       const siteStats = {
         name: siteBase.name,
         total: daySiteData?.total || 0,
         totalMois: monthlySum,
         objMensuel: siteObjs.monthly,
+        objProrata: objProrata,
         achievement: siteObjs.monthly > 0 ? (monthlySum / siteObjs.monthly) * 100 : 0
       };
 
