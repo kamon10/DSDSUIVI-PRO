@@ -1,6 +1,6 @@
 
 import { DashboardData, SiteRecord, DailyHistorySite, DailyHistoryRecord } from "../types";
-import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA } from "../constants";
+import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR } from "../constants";
 
 export const saveRecordToSheet = async (scriptUrl: string, record: any) => {
   if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
@@ -198,7 +198,8 @@ export const fetchSheetData = async (sheetInput: string): Promise<Partial<Dashbo
 
     const nationalObjAnnual = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
     const nationalObjMonthly = Math.round(nationalObjAnnual / 12);
-    const nationalObjDaily = Math.round(nationalObjAnnual / 365);
+    // Objectif journalier national basé sur les jours ouvrés
+    const nationalObjDaily = Math.round(nationalObjAnnual / WORKING_DAYS_YEAR);
 
     const regionsMap = new Map<string, any[]>();
     siteAggregator.forEach((site) => {
