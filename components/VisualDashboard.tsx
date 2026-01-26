@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
-import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Brain, ArrowUpRight, Activity, Sparkles, ChevronRight } from 'lucide-react';
+import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Brain, ArrowUpRight, Activity, Sparkles, ChevronRight, BarChart3, MapPin } from 'lucide-react';
 import { getGeminiInsights } from '../services/geminiService';
 import { COLORS } from '../constants';
 
@@ -26,36 +26,28 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
     fetchInsights();
   }, [data]);
 
-  const performanceScore = Math.round((data.monthly.percentage + data.annual.percentage) / 2);
-
-  const RADIAN = Math.PI / 180;
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, index, name }: any) => {
-    const radius = outerRadius + 25;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    
-    const quotaWeight = name === 'Fixe' ? 0.6 : 0.4;
-    const specificObjective = data.monthly.objective * quotaWeight;
-    const achievementRate = (value / (specificObjective || 1)) * 100;
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill={COLORS_MIX[index % COLORS_MIX.length]} 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        className="text-[10px] font-black uppercase tracking-tight"
-      >
-        {`${name}: ${achievementRate.toFixed(1)}%`}
-      </text>
-    );
-  };
-
   const mixData = useMemo(() => [
     { name: 'Fixe', value: data.monthly.fixed },
     { name: 'Mobile', value: data.monthly.mobile }
   ], [data.monthly.fixed, data.monthly.mobile]);
+
+  // Liste de tous les sites pour le ticker
+  const allSites = useMemo(() => {
+    return data.regions.flatMap(reg => reg.sites);
+  }, [data.regions]);
+
+  const SiteTickerItems = () => (
+    <div className="flex items-center gap-10 px-8">
+      {allSites.map((site, i) => (
+        <div key={i} className="flex items-center gap-3 whitespace-nowrap">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+          <span className="text-[11px] font-black uppercase text-white/80">{site.name} :</span>
+          <span className="text-[11px] font-black text-white">{site.totalMois.toLocaleString()}</span>
+          <span className="text-[8px] font-bold text-white/40">POC.</span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-24">
@@ -63,44 +55,62 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
       {/* HEADER: MISSION CONTROL */}
       <div className="relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-500 rounded-[4rem] blur opacity-15 group-hover:opacity-25 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-slate-900 rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl overflow-hidden border border-white/5">
+        <div className="relative bg-slate-900 rounded-[3.5rem] p-10 lg:p-14 pb-12 lg:pb-14 text-white shadow-3xl overflow-hidden border border-white/5">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-600/20 blur-[150px] rounded-full -mr-80 -mt-80 pointer-events-none animate-pulse"></div>
           
-          <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-12">
+          <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-12 mb-10">
             <div className="flex items-center gap-10">
-              <div className="relative">
+              <div className="relative shrink-0">
                 <div className="absolute inset-0 bg-red-500 blur-2xl opacity-40 animate-pulse"></div>
-                <div className="w-28 h-28 bg-gradient-to-br from-red-500 to-red-700 rounded-[2.5rem] flex items-center justify-center shadow-2xl relative z-10">
-                  <Zap size={52} className="text-white fill-white/20" />
+                <div className="w-24 h-24 bg-gradient-to-br from-red-500 to-red-700 rounded-[2rem] flex items-center justify-center shadow-2xl relative z-10">
+                  <Zap size={44} className="text-white fill-white/20" />
                 </div>
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-3">
                    <div className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-orange-400">
-                     Live Data
+                     Cockpit National
                    </div>
                    <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
                 </div>
-                <h1 className="text-5xl font-black uppercase tracking-tighter leading-none mb-3">Performance Nationale</h1>
-                <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[11px]">Système Intégré de Suivi CNTS • Côte d'Ivoire</p>
+                <h1 className="text-4xl font-black uppercase tracking-tighter leading-none mb-3">Performance Globale</h1>
+                <p className="text-white/40 font-bold uppercase tracking-[0.4em] text-[10px]">Centre National de Transfusion Sanguine</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 bg-white/5 backdrop-blur-xl p-10 rounded-[3rem] border border-white/10 min-w-[320px]">
+            {/* RÉSUMÉ STATIQUE (Stays fixed for high visibility) */}
+            <div className="grid grid-cols-3 gap-8 bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 min-w-[380px]">
               <div className="text-center">
-                <p className="text-[10px] font-black text-white/30 uppercase mb-3 tracking-widest">Score Global</p>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-6xl font-black text-white">{performanceScore}</span>
-                  <span className="text-xl font-black text-white/30">%</span>
-                </div>
+                <p className="text-[9px] font-black text-white/30 uppercase mb-2 tracking-widest">Aujourd'hui</p>
+                <p className="text-2xl font-black text-white leading-none">{data.daily.realized.toLocaleString()}</p>
+                <p className="text-[9px] font-bold text-emerald-400 mt-2">{data.daily.percentage.toFixed(0)}% Cible</p>
               </div>
-              <div className="flex flex-col justify-center">
-                <div className={`h-2 rounded-full overflow-hidden bg-white/10`}>
-                  <div className="h-full bg-red-500" style={{ width: `${performanceScore}%` }}></div>
-                </div>
-                <p className="text-[9px] font-black text-white/40 uppercase mt-4 tracking-tighter text-center italic">Cycle Mensuel en cours</p>
+              
+              <div className="text-center border-x border-white/10 px-4">
+                <p className="text-[9px] font-black text-white/30 uppercase mb-2 tracking-widest">Mois en Cours</p>
+                <p className="text-2xl font-black text-white leading-none">{data.monthly.realized.toLocaleString()}</p>
+                <p className="text-[9px] font-bold text-orange-400 mt-2">{data.monthly.percentage.toFixed(0)}% Cible</p>
+              </div>
+
+              <div className="text-center">
+                <p className="text-[9px] font-black text-white/30 uppercase mb-2 tracking-widest">Année 2026</p>
+                <p className="text-2xl font-black text-white leading-none">{data.annual.realized.toLocaleString()}</p>
+                <p className="text-[9px] font-bold text-red-500 mt-2">{data.annual.percentage.toFixed(1)}% Cible</p>
               </div>
             </div>
+          </div>
+
+          {/* SITE TICKER (Now scrolls site info specifically) */}
+          <div className="relative w-full h-14 bg-black/30 backdrop-blur-md rounded-2xl border border-white/5 overflow-hidden group/ticker">
+            <div className="absolute inset-y-0 left-0 w-20 flex items-center justify-center bg-slate-900 z-30 border-r border-white/5">
+              <MapPin size={16} className="text-red-500" />
+            </div>
+            <div className="animate-ticker-infinite flex items-center h-full ml-20">
+              <SiteTickerItems />
+              <SiteTickerItems />
+            </div>
+            <div className="absolute inset-y-0 left-20 w-12 bg-gradient-to-r from-slate-900 to-transparent z-20 pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-slate-900 to-transparent z-20 pointer-events-none"></div>
           </div>
         </div>
       </div>
@@ -108,7 +118,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
       {/* IA STRATEGY & ANALYTICS MIX */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         
-        {/* Gemini AI Box (REDUIT) */}
+        {/* Gemini AI Box */}
         <div className="lg:col-span-1 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col relative overflow-hidden ai-glow">
           <div className="absolute -top-12 -right-12 text-slate-50 opacity-10 pointer-events-none">
             <Brain size={180} />
@@ -143,7 +153,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
           </div>
         </div>
 
-        {/* Mix Visualizer (AGRANDI) */}
+        {/* Mix Visualizer */}
         <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-12 shadow-2xl border border-slate-100 flex flex-col group">
           <div className="flex items-center justify-between mb-10">
              <div className="flex items-center gap-6">
