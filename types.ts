@@ -15,6 +15,9 @@ export interface SiteRecord {
   totalMois: number;
   objDate: number;
   objMensuel: number;
+  manager?: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface RegionGroup {
@@ -30,6 +33,9 @@ export interface DailyHistorySite {
   mobile: number;
   total: number;
   objective: number;
+  manager?: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface DailyHistoryRecord {
@@ -53,4 +59,4 @@ export interface DashboardData {
   dailyHistory: DailyHistoryRecord[];
 }
 
-export type AppTab = 'dashboard' | 'daily' | 'weekly' | 'synthesis' | 'performance' | 'entry';
+export type AppTab = 'dashboard' | 'daily' | 'weekly' | 'synthesis' | 'performance' | 'entry' | 'history';
