@@ -66,8 +66,8 @@ export const DataCharts: React.FC<DataChartsProps> = ({ data }) => {
               <YAxis axisLine={false} tickLine={false} />
               <Tooltip cursor={{fill: '#f8fafc'}} />
               <Legend verticalAlign="bottom" height={36}/>
-              <Bar dataKey="fixe" fill={COLORS.fixed} radius={[4, 4, 0, 0]} name="Structure Fixe" />
-              <Bar dataKey="mobile" fill={COLORS.mobile} radius={[4, 4, 0, 0]} name="Unité Mobile" />
+              <Bar dataKey="fixe" fill={COLORS.fixed} radius={[4, 4, 0, 0]} name="COLLECTE SITE FIXE" />
+              <Bar dataKey="mobile" fill={COLORS.mobile} radius={[4, 4, 0, 0]} name="COLLECTE MOBILE" />
             </BarChart>
           </ResponsiveContainer>
         </div>
