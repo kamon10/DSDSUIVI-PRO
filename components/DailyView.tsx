@@ -47,7 +47,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
               <Zap size={24} className="text-white fill-white/20 lg:hidden" />
             </div>
             <div>
-              <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter leading-tight">Suivi des Flux</h2>
+              <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter leading-tight">SUIVI DES PRÉLÈVEMENTS</h2>
               <div className="flex items-center gap-3 mt-1 lg:mt-2">
                 <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
