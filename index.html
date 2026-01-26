@@ -26,6 +26,18 @@
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
         }
+        @keyframes tickerHorizontal {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-ticker-infinite {
+          display: flex;
+          width: max-content;
+          animation: tickerHorizontal 80s linear infinite;
+        }
+        .animate-ticker-infinite:hover {
+          animation-play-state: paused;
+        }
         .ai-glow {
           animation: glow 4s infinite ease-in-out;
         }
@@ -56,10 +68,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
 </body>
 </html>
