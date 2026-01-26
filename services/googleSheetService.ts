@@ -5,9 +5,7 @@ import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA } from "../co
 export const saveRecordToSheet = async (scriptUrl: string, record: any) => {
   if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
   const cleanUrl = scriptUrl.trim();
-  if (!cleanUrl.includes("/macros/s/") || !cleanUrl.includes("/exec")) {
-    throw new Error("L'URL semble incorrecte. Elle doit finir par '/exec'.");
-  }
+  
   try {
     await fetch(cleanUrl, {
       method: 'POST',
@@ -18,7 +16,7 @@ export const saveRecordToSheet = async (scriptUrl: string, record: any) => {
     });
     return true;
   } catch (error: any) {
-    console.error("Erreur d'envoi:", error);
+    console.error("Erreur de communication:", error);
     throw new Error("Erreur de connexion au script. Vérifiez l'URL.");
   }
 };
@@ -82,6 +80,22 @@ const parseCsv = (text: string) => {
     row.push(current.trim());
     return row;
   });
+};
+
+export const fetchDirectoryData = async (sheetInput: string) => {
+  const { id, gid, isPub } = extractSheetParams(sheetInput);
+  const url = isPub 
+    ? `https://docs.google.com/spreadsheets/d/e/${id}/pub?output=csv&gid=${gid}`
+    : `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;
+
+  try {
+    const response = await fetch(`${url}&_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const csvText = await response.text();
+    return parseCsv(csvText);
+  } catch (err) {
+    return null;
+  }
 };
 
 export const fetchSheetData = async (sheetInput: string): Promise<Partial<DashboardData>> => {
