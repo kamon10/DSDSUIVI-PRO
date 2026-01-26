@@ -2,8 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
 import { getSiteObjectives, SITES_DATA } from '../constants';
-import { CheckCircle2, AlertTriangle, XCircle, TrendingUp, MapPin, Target, ChevronRight, Calendar, Filter, Clock, Mail, RefreshCw, Send } from 'lucide-react';
-import { sendEmailReport } from '../services/googleSheetService';
+import { CheckCircle2, AlertTriangle, XCircle, TrendingUp, MapPin, Target, ChevronRight, Calendar, Filter, Clock } from 'lucide-react';
 
 interface SynthesisViewProps {
   data: DashboardData;
@@ -15,9 +14,6 @@ const MONTHS_FR = [
 ];
 
 export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState("");
-
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
@@ -118,41 +114,6 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
     }, { jour: 0, mois: 0, objMens: 0 });
   }, [synthesisData]);
 
-  const handleSendEmail = async () => {
-    const scriptUrl = localStorage.getItem('gsheet_script_url');
-    if (!scriptUrl) {
-      alert("URL Apps Script non configurée dans les réglages.");
-      return;
-    }
-
-    setEmailStatus('sending');
-    try {
-      const report = {
-        title: `Rapport de Synthèse - ${MONTHS_FR[selectedMonth]} ${selectedYear}`,
-        date: selectedDay || "Mois complet",
-        totals: {
-          realized: grandTotals.mois,
-          objective: grandTotals.objMens,
-          percentage: (grandTotals.mois / grandTotals.objMens) * 100
-        },
-        regions: synthesisData.map(r => ({
-          name: r.name,
-          realized: r.totalMois,
-          objective: r.objMens,
-          percentage: (r.totalMois / r.objMens) * 100
-        }))
-      };
-
-      await sendEmailReport(scriptUrl, report);
-      setEmailStatus('success');
-      setTimeout(() => setEmailStatus('idle'), 3000);
-    } catch (err: any) {
-      setEmailStatus('error');
-      setErrorMessage(err.message);
-      setTimeout(() => setEmailStatus('idle'), 5000);
-    }
-  };
-
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
       
@@ -185,25 +146,6 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
             <p className="text-[9px] font-black text-white/40 uppercase mb-1 tracking-widest">Objectif Mensuel</p>
             <p className="text-3xl font-black text-white">{grandTotals.objMens.toLocaleString()}</p>
           </div>
-          
-          <button 
-            onClick={handleSendEmail}
-            disabled={emailStatus === 'sending'}
-            className={`flex items-center gap-3 px-8 py-5 rounded-[1.75rem] font-black text-xs uppercase tracking-widest transition-all shadow-xl hover:-translate-y-1 active:scale-95 ${
-              emailStatus === 'success' ? 'bg-green-500 text-white' : 
-              emailStatus === 'error' ? 'bg-red-500 text-white' : 
-              'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {emailStatus === 'sending' ? <RefreshCw className="animate-spin" size={20} /> : 
-             emailStatus === 'success' ? <CheckCircle2 size={20} /> : 
-             emailStatus === 'error' ? <AlertTriangle size={20} /> : 
-             <Mail size={20} />}
-            {emailStatus === 'sending' ? "Expédition..." : 
-             emailStatus === 'success' ? "Rapport Envoyé" : 
-             emailStatus === 'error' ? "Échec Envoi" : 
-             "Envoyer par Mail"}
-          </button>
         </div>
       </div>
 
