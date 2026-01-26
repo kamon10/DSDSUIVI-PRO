@@ -5,20 +5,27 @@ import { getSiteName, getSiteRegion, getSiteObjectives, SITES_DATA } from "../co
 export const saveRecordToSheet = async (scriptUrl: string, record: any) => {
   if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
   const cleanUrl = scriptUrl.trim();
-  if (!cleanUrl.includes("/macros/s/") || !cleanUrl.includes("/exec")) {
-    throw new Error("L'URL semble incorrecte. Elle doit finir par '/exec'.");
-  }
+  return postToScript(cleanUrl, { type: 'RECORD', data: record });
+};
+
+export const sendEmailReport = async (scriptUrl: string, reportData: any) => {
+  if (!scriptUrl) throw new Error("URL Apps Script non configurée.");
+  const cleanUrl = scriptUrl.trim();
+  return postToScript(cleanUrl, { type: 'EMAIL', data: reportData });
+};
+
+const postToScript = async (url: string, payload: any) => {
   try {
-    await fetch(cleanUrl, {
+    await fetch(url, {
       method: 'POST',
       mode: 'no-cors', 
       cache: 'no-cache',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(record)
+      body: JSON.stringify(payload)
     });
     return true;
   } catch (error: any) {
-    console.error("Erreur d'envoi:", error);
+    console.error("Erreur de communication:", error);
     throw new Error("Erreur de connexion au script. Vérifiez l'URL.");
   }
 };
