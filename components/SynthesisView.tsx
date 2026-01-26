@@ -2,7 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
 import { getSiteObjectives, SITES_DATA } from '../constants';
-import { CheckCircle2, AlertTriangle, XCircle, TrendingUp, MapPin, Target, ChevronRight, Calendar, Filter, Clock } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, TrendingUp, MapPin, Target, ChevronRight, Calendar, Filter, Clock, Mail, RefreshCw, Send } from 'lucide-react';
+import { sendEmailReport } from '../services/googleSheetService';
 
 interface SynthesisViewProps {
   data: DashboardData;
@@ -14,7 +15,9 @@ const MONTHS_FR = [
 ];
 
 export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
-  // 1. Extraction des années et mois disponibles dans l'historique
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState("");
+
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
@@ -31,7 +34,7 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
     data.dailyHistory.forEach(h => {
       const parts = h.date.split('/');
       if (parts[2] === selectedYear) {
-        months.add(parseInt(parts[1]) - 1); // 0-indexed
+        months.add(parseInt(parts[1]) - 1);
       }
     });
     return Array.from(months).sort((a, b) => a - b);
@@ -50,14 +53,12 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
 
   const [selectedDay, setSelectedDay] = useState(availableDays[0] || "");
 
-  // Mettre à jour le jour sélectionné si le mois ou l'année change
   useMemo(() => {
     if (!availableDays.includes(selectedDay)) {
       setSelectedDay(availableDays[0] || "");
     }
   }, [availableDays]);
 
-  // 2. Calcul des données pour la période sélectionnée
   const currentDayRecord = useMemo(() => 
     data.dailyHistory.find(r => r.date === selectedDay)
   , [selectedDay, data.dailyHistory]);
@@ -65,7 +66,6 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
   const synthesisData = useMemo(() => {
     const grouped = new Map<string, any>();
     
-    // On utilise SITES_DATA comme base pour ne rater aucun site même sans prélèvement
     SITES_DATA.forEach(siteBase => {
       const regName = siteBase.region || "DIRECTION NATIONALE";
       if (!grouped.has(regName)) {
@@ -76,11 +76,8 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
       const g = grouped.get(regName);
       const siteObjs = getSiteObjectives(siteBase.name);
       
-      // Récupération de la donnée réelle du jour
       const daySiteData = currentDayRecord?.sites.find(s => s.name.toUpperCase() === siteBase.name.toUpperCase());
       
-      // Récupération du cumul mensuel réel
-      // Note: On agrège manuellement depuis dailyHistory pour la période sélectionnée
       const monthlySum = data.dailyHistory
         .filter(h => {
           const parts = h.date.split('/');
@@ -97,19 +94,16 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
       const siteStats = {
         name: siteBase.name,
         total: daySiteData?.total || 0,
-        fixe: daySiteData?.fixe || 0,
-        mobile: daySiteData?.mobile || 0,
         totalMois: monthlySum,
         objMensuel: siteObjs.monthly,
-        objProrata: objProrata,
-        gap: siteObjs.monthly - monthlySum
+        achievement: siteObjs.monthly > 0 ? (monthlySum / siteObjs.monthly) * 100 : 0
       };
 
       g.sites.push(siteStats);
       g.totalJour += siteStats.total;
       g.totalMois += siteStats.totalMois;
       g.objMens += siteStats.objMensuel;
-      g.objProrata += siteStats.objProrata;
+      g.objProrata += objProrata;
     });
 
     return Array.from(grouped.values()).filter(g => g.sites.length > 0);
@@ -123,6 +117,41 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
       return acc;
     }, { jour: 0, mois: 0, objMens: 0 });
   }, [synthesisData]);
+
+  const handleSendEmail = async () => {
+    const scriptUrl = localStorage.getItem('gsheet_script_url');
+    if (!scriptUrl) {
+      alert("URL Apps Script non configurée dans les réglages.");
+      return;
+    }
+
+    setEmailStatus('sending');
+    try {
+      const report = {
+        title: `Rapport de Synthèse - ${MONTHS_FR[selectedMonth]} ${selectedYear}`,
+        date: selectedDay || "Mois complet",
+        totals: {
+          realized: grandTotals.mois,
+          objective: grandTotals.objMens,
+          percentage: (grandTotals.mois / grandTotals.objMens) * 100
+        },
+        regions: synthesisData.map(r => ({
+          name: r.name,
+          realized: r.totalMois,
+          objective: r.objMens,
+          percentage: (r.totalMois / r.objMens) * 100
+        }))
+      };
+
+      await sendEmailReport(scriptUrl, report);
+      setEmailStatus('success');
+      setTimeout(() => setEmailStatus('idle'), 3000);
+    } catch (err: any) {
+      setEmailStatus('error');
+      setErrorMessage(err.message);
+      setTimeout(() => setEmailStatus('idle'), 5000);
+    }
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -147,7 +176,7 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4 relative z-10">
+        <div className="flex flex-wrap justify-center items-center gap-6 relative z-10">
           <div className="bg-slate-50 px-8 py-5 rounded-[1.75rem] border border-slate-100 text-center min-w-[160px]">
             <p className="text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">Réalisé {MONTHS_FR[selectedMonth]}</p>
             <p className="text-3xl font-black text-red-600">{grandTotals.mois.toLocaleString()}</p>
@@ -156,6 +185,25 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
             <p className="text-[9px] font-black text-white/40 uppercase mb-1 tracking-widest">Objectif Mensuel</p>
             <p className="text-3xl font-black text-white">{grandTotals.objMens.toLocaleString()}</p>
           </div>
+          
+          <button 
+            onClick={handleSendEmail}
+            disabled={emailStatus === 'sending'}
+            className={`flex items-center gap-3 px-8 py-5 rounded-[1.75rem] font-black text-xs uppercase tracking-widest transition-all shadow-xl hover:-translate-y-1 active:scale-95 ${
+              emailStatus === 'success' ? 'bg-green-500 text-white' : 
+              emailStatus === 'error' ? 'bg-red-500 text-white' : 
+              'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {emailStatus === 'sending' ? <RefreshCw className="animate-spin" size={20} /> : 
+             emailStatus === 'success' ? <CheckCircle2 size={20} /> : 
+             emailStatus === 'error' ? <AlertTriangle size={20} /> : 
+             <Mail size={20} />}
+            {emailStatus === 'sending' ? "Expédition..." : 
+             emailStatus === 'success' ? "Rapport Envoyé" : 
+             emailStatus === 'error' ? "Échec Envoi" : 
+             "Envoyer par Mail"}
+          </button>
         </div>
       </div>
 
@@ -166,7 +214,6 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filtres :</span>
         </div>
 
-        {/* Sélecteur Année */}
         <div className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
           <Calendar size={14} className="text-red-500" />
           <select 
@@ -178,7 +225,6 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
           </select>
         </div>
 
-        {/* Sélecteur Mois */}
         <div className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
           <Clock size={14} className="text-blue-500" />
           <select 
@@ -190,7 +236,6 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
           </select>
         </div>
 
-        {/* Sélecteur Jour */}
         <div className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-all">
           <Target size={14} className="text-red-400" />
           <select 
@@ -204,13 +249,12 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* SECTIONS RÉGIONALES (Idem précédent avec données filtrées) */}
+      {/* SECTIONS RÉGIONALES */}
       <div className="space-y-8">
         {synthesisData.map((region) => {
           const regionPerc = (region.totalMois / region.objMens) * 100;
           return (
             <div key={region.name} className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden group transition-all hover:shadow-xl hover:border-slate-200">
-              {/* Header Région */}
               <div className="bg-slate-50/50 px-10 py-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-red-600 transition-colors">
@@ -239,22 +283,19 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
                 </div>
               </div>
 
-              {/* Table des Sites */}
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 bg-slate-50/30">
                       <th className="px-10 py-5 text-left">Site de Prélèvement</th>
-                      <th className="px-6 py-5 text-center">Jour (F/M)</th>
                       <th className="px-6 py-5 text-center">Cumul Mois</th>
-                      <th className="px-6 py-5 text-center">Cible Prorata</th>
                       <th className="px-6 py-5 text-center">État / Taux</th>
                       <th className="px-10 py-5 text-right">Effort Restant</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {region.sites.map((site: any) => {
-                      const sitePerc = (site.totalMois / site.objMensuel) * 100;
+                      const sitePerc = site.achievement;
                       const getStatusIcon = (p: number) => {
                         if (p >= 95) return <CheckCircle2 size={14} className="text-green-500" />;
                         if (p >= 75) return <AlertTriangle size={14} className="text-amber-500" />;
@@ -265,6 +306,7 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
                         if (p >= 75) return 'bg-amber-100 text-amber-700 border-amber-200';
                         return 'bg-red-100 text-red-700 border-red-200';
                       };
+                      const gap = site.objMensuel - site.totalMois;
                       return (
                         <tr key={site.name} className="hover:bg-slate-50/80 transition-all group">
                           <td className="px-10 py-5">
@@ -274,21 +316,7 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
                             </div>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-black text-slate-800">{site.total}</span>
-                              <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">F:{site.fixe} | M:{site.mobile}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-5 text-center">
                             <span className="text-sm font-black text-slate-800">{site.totalMois.toLocaleString()}</span>
-                          </td>
-                          <td className="px-6 py-5 text-center">
-                            <div className="flex flex-col items-center">
-                              <span className={`text-xs font-black ${site.totalMois >= site.objProrata ? 'text-green-600' : 'text-amber-600'}`}>
-                                {site.objProrata.toLocaleString()}
-                              </span>
-                              <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Cible théorique</p>
-                            </div>
                           </td>
                           <td className="px-6 py-5">
                             <div className="flex flex-col items-center gap-1.5">
@@ -301,8 +329,8 @@ export const SynthesisView: React.FC<SynthesisViewProps> = ({ data }) => {
                           </td>
                           <td className="px-10 py-5 text-right">
                             <div className="flex items-center justify-end gap-3">
-                              <span className={`text-xs font-black px-4 py-2 rounded-2xl ${site.gap <= 0 ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-500'}`}>
-                                {site.gap <= 0 ? 'OBJECTIF ATTEINT' : `-${site.gap.toLocaleString()} poches`}
+                              <span className={`text-xs font-black px-4 py-2 rounded-2xl ${gap <= 0 ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-500'}`}>
+                                {gap <= 0 ? 'OBJECTIF ATTEINT' : `-${gap.toLocaleString()} poches`}
                               </span>
                             </div>
                           </td>
