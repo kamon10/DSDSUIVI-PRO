@@ -97,14 +97,9 @@ export const INITIAL_DATA: DashboardData = {
 };
 
 export const COLORS = {
-  dailyHeader: '#00b050',
-  monthlyHeader: '#ed7d31',
-  annualHeader: '#ff0000',
-  dailyReal: '#0070c0',
-  dailyObj: '#ff9900',
-  annualReal: '#00b0f0',
-  annualObj: '#bf8f00',
-  text: '#1e293b',
-  fixed: '#0070c0',
-  mobile: '#ed7d31'
+  fixed: '#10b981', // Green 500
+  mobile: '#f97316', // Orange 500
+  total: '#ef4444', // Red 500
+  bgLight: '#f8fafc',
+  text: '#1e293b'
 };
