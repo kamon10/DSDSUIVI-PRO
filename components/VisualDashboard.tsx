@@ -8,6 +8,26 @@ import { COLORS } from '../constants';
 
 const COLORS_MIX = [COLORS.fixed, COLORS.mobile];
 
+const RADIAN = Math.PI / 180;
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+  const radius = outerRadius + 25;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill={COLORS_MIX[index % COLORS_MIX.length]} 
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      className="text-[10px] font-black uppercase tracking-tight"
+    >
+      {`${name}: ${(percent * 100).toFixed(1)}%`}
+    </text>
+  );
+};
+
 export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => {
   const [insights, setInsights] = useState<string>("Génération de la stratégie IA...");
   const [loadingInsights, setLoadingInsights] = useState(true);
@@ -132,12 +152,14 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
                      { name: 'Fixe', value: data.monthly.fixed },
                      { name: 'Mobile', value: data.monthly.mobile }
                    ]}
-                   innerRadius={80}
-                   outerRadius={105}
+                   innerRadius={70}
+                   outerRadius={95}
                    paddingAngle={10}
                    dataKey="value"
                    startAngle={90}
                    endAngle={450}
+                   labelLine={true}
+                   label={renderCustomizedLabel}
                  >
                    {COLORS_MIX.map((color, index) => <Cell key={`cell-${index}`} fill={color} stroke="none" />)}
                  </Pie>
@@ -176,7 +198,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
         
         {/* KPI Journalier (GREEN) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
             <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-all">
               <Calendar size={32} />
@@ -200,7 +222,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
 
         {/* KPI Mensuel (ORANGE) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
             <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-orange-600 group-hover:text-white transition-all">
               <TrendingUp size={32} />
@@ -224,7 +246,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
 
         {/* KPI Annuel (RED) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
             <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-red-600 group-hover:text-white transition-all">
               <Award size={32} />
