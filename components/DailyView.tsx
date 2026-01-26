@@ -143,7 +143,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* 3. PERFORMANCE PULSE BAR (GREEN/ORANGE/RED) */}
+      {/* 3. PERFORMANCE PULSE BAR */}
       <div className="bg-white rounded-full p-2 border border-slate-200 shadow-inner flex items-center gap-4 overflow-hidden">
         <div className="bg-slate-900 px-6 py-2 rounded-full hidden md:block">
           <span className="text-[9px] font-black text-white uppercase tracking-widest whitespace-nowrap">Pulse Performance</span>
@@ -175,7 +175,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
              </div>
              <div>
                <h3 className="font-black text-xl lg:text-2xl text-slate-900 uppercase tracking-tighter">DÉTAIL PRÉLÈVEMENTS PAR STRUCTURES</h3>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détails opérationnels par centre</p>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détails opérationnels et objectifs journaliers</p>
              </div>
           </div>
           <div className="hidden lg:flex gap-3">
@@ -190,19 +190,19 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
             <thead>
               <tr className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] border-b border-slate-50">
                 <th className="px-12 py-6">Centre / Région</th>
-                <th className="px-8 py-6 text-center">Config.</th>
-                <th className="px-8 py-6 text-center">Prélèvements</th>
-                <th className="px-12 py-6 text-right">Contribution</th>
+                <th className="px-8 py-6 text-center">Objectif Jour</th>
+                <th className="px-8 py-6 text-center">Prélèvements (F+M)</th>
+                <th className="px-12 py-6 text-right">Taux d'Atteinte</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {currentRecord.sites.map((site, idx) => {
-                const percOfDaily = (site.total / (totals.total || 1)) * 100;
+                const percOfObj = site.objective > 0 ? (site.total / site.objective) * 100 : 0;
                 return (
                   <tr key={idx} className="group hover:bg-slate-50/80 transition-all">
                     <td className="px-12 py-8">
                       <div className="flex items-center gap-4">
-                        <div className="w-2 h-10 bg-slate-100 rounded-full group-hover:bg-red-500 transition-all duration-500"></div>
+                        <div className={`w-2 h-10 rounded-full transition-all duration-500 ${percOfObj >= 100 ? 'bg-emerald-500' : percOfObj >= 60 ? 'bg-orange-500' : 'bg-red-500'}`}></div>
                         <div>
                           <p className="font-black text-slate-800 text-lg uppercase tracking-tight">{site.name}</p>
                           <div className="flex items-center gap-2 mt-1">
@@ -212,24 +212,23 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-8">
-                      <div className="flex justify-center gap-2">
-                        {site.fixe > 0 && <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center" title="Fixe"><Building2 size={14} /></div>}
-                        {site.mobile > 0 && <div className="w-8 h-8 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center" title="Mobile"><Truck size={14} /></div>}
-                      </div>
+                    <td className="px-8 py-8 text-center">
+                       <span className="text-lg font-black text-slate-400 tracking-tighter">{site.objective || 0}</span>
                     </td>
                     <td className="px-8 py-8 text-center">
-                       <span className="text-2xl font-black text-slate-900 tracking-tighter">{site.total}</span>
-                       <div className="flex justify-center gap-3 mt-1">
-                         <span className="text-[10px] font-bold text-emerald-400">{site.fixe || 0}F</span>
-                         <span className="text-[10px] font-bold text-orange-400">{site.mobile || 0}M</span>
+                       <div className="inline-flex flex-col items-center">
+                         <span className="text-2xl font-black text-slate-900 tracking-tighter">{site.total}</span>
+                         <div className="flex justify-center gap-3 mt-1">
+                           <span className="text-[10px] font-bold text-emerald-400">{site.fixe || 0}F</span>
+                           <span className="text-[10px] font-bold text-orange-400">{site.mobile || 0}M</span>
+                         </div>
                        </div>
                     </td>
                     <td className="px-12 py-8 text-right">
                        <div className="flex flex-col items-end gap-1.5">
-                          <span className="text-sm font-black text-slate-800">{percOfDaily.toFixed(1)}%</span>
+                          <span className={`text-sm font-black ${percOfObj >= 100 ? 'text-emerald-600' : 'text-slate-800'}`}>{percOfObj.toFixed(1)}%</span>
                           <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                             <div className="h-full bg-slate-900" style={{ width: `${percOfDaily}%` }}></div>
+                             <div className={`h-full ${percOfObj >= 100 ? 'bg-emerald-500' : 'bg-slate-900'}`} style={{ width: `${Math.min(percOfObj, 100)}%` }}></div>
                           </div>
                        </div>
                     </td>
@@ -243,7 +242,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
         {/* Mobile Premium Cards */}
         <div className="lg:hidden p-4 space-y-4 bg-slate-50/50">
           {currentRecord.sites.map((site, idx) => {
-            const perc = (site.total / (totals.total || 1)) * 100;
+            const perc = site.objective > 0 ? (site.total / site.objective) * 100 : 0;
             return (
               <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4">
                 <div className="flex justify-between items-start">
@@ -251,27 +250,28 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
                     <h4 className="font-black text-sm text-slate-800 uppercase leading-tight">{site.name}</h4>
                     <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{site.region}</p>
                   </div>
-                  <div className="bg-slate-900 text-white px-3 py-1 rounded-lg font-black text-xs">
-                    {site.total}
+                  <div className="text-right">
+                    <p className="text-lg font-black text-slate-900 leading-none">{site.total} <span className="text-slate-300 text-[10px]">/ {site.objective}</span></p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase mt-1 tracking-widest">Réalisé / Obj</p>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className={`p-2 rounded-xl flex items-center justify-between ${site.fixe > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-30'}`}>
                     <Building2 size={14} />
-                    <span className="text-xs font-black">{site.fixe || 0}</span>
+                    <span className="text-xs font-black">{site.fixe || 0} F</span>
                   </div>
                   <div className={`p-2 rounded-xl flex items-center justify-between ${site.mobile > 0 ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-slate-50 text-slate-300 border border-slate-100 opacity-30'}`}>
                     <Truck size={14} />
-                    <span className="text-xs font-black">{site.mobile || 0}</span>
+                    <span className="text-xs font-black">{site.mobile || 0} M</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-slate-800" style={{ width: `${perc}%` }}></div>
+                    <div className={`h-full ${perc >= 100 ? 'bg-emerald-500' : 'bg-slate-800'}`} style={{ width: `${Math.min(perc, 100)}%` }}></div>
                   </div>
-                  <span className="text-[10px] font-black text-slate-400">{perc.toFixed(1)}%</span>
+                  <span className={`text-[10px] font-black ${perc >= 100 ? 'text-emerald-600' : 'text-slate-400'}`}>{perc.toFixed(1)}%</span>
                 </div>
               </div>
             );
