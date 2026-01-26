@@ -8,26 +8,6 @@ import { COLORS } from '../constants';
 
 const COLORS_MIX = [COLORS.fixed, COLORS.mobile];
 
-const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
-  const radius = outerRadius + 25;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text 
-      x={x} 
-      y={y} 
-      fill={COLORS_MIX[index % COLORS_MIX.length]} 
-      textAnchor={x > cx ? 'start' : 'end'} 
-      dominantBaseline="central"
-      className="text-[10px] font-black uppercase tracking-tight"
-    >
-      {`${name}: ${(percent * 100).toFixed(1)}%`}
-    </text>
-  );
-};
-
 export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => {
   const [insights, setInsights] = useState<string>("Génération de la stratégie IA...");
   const [loadingInsights, setLoadingInsights] = useState(true);
@@ -48,10 +28,15 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
 
   const performanceScore = Math.round((data.monthly.percentage + data.annual.percentage) / 2);
 
+  const mixData = useMemo(() => [
+    { name: 'Fixe', value: data.monthly.fixed },
+    { name: 'Mobile', value: data.monthly.mobile }
+  ], [data.monthly.fixed, data.monthly.mobile]);
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-24">
       
-      {/* HEADER: MISSION CONTROL (RED/ORANGE GRADIENT) */}
+      {/* HEADER: MISSION CONTROL */}
       <div className="relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-500 rounded-[4rem] blur opacity-15 group-hover:opacity-25 transition duration-1000 group-hover:duration-200"></div>
         <div className="relative bg-slate-900 rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl overflow-hidden border border-white/5">
@@ -99,113 +84,128 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
       {/* IA STRATEGY & ANALYTICS MIX */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         
-        {/* Gemini AI Box (GREEN ACCENTS) */}
-        <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-12 shadow-2xl border border-slate-100 flex flex-col relative overflow-hidden ai-glow">
+        {/* Gemini AI Box (REDUIT) */}
+        <div className="lg:col-span-1 bg-white rounded-[3.5rem] p-10 shadow-2xl border border-slate-100 flex flex-col relative overflow-hidden ai-glow">
           <div className="absolute -top-12 -right-12 text-slate-50 opacity-10 pointer-events-none">
-            <Brain size={250} />
+            <Brain size={180} />
           </div>
           
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-6">
-              <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.5rem] flex items-center justify-center shadow-inner">
-                <Sparkles size={28} />
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-[1.25rem] flex items-center justify-center shadow-inner">
+                <Sparkles size={24} />
               </div>
               <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Directives Stratégiques IA</h3>
-                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">Analyse multi-dimensionnelle par Gemini-3-Flash</p>
+                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">IA Insights</h3>
+                <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mt-0.5 leading-none">Gemini-3-Flash</p>
               </div>
             </div>
           </div>
           
-          <div className="flex-1 bg-gradient-to-br from-emerald-50/50 to-white rounded-[2.5rem] p-10 border border-emerald-100/50 relative">
+          <div className="flex-1 bg-gradient-to-br from-emerald-50/50 to-white rounded-[2rem] p-8 border border-emerald-100/50 relative overflow-y-auto max-h-[300px]">
             {loadingInsights ? (
-              <div className="flex flex-col items-center justify-center h-48 gap-6">
-                <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">Consultation du moteur d'IA...</p>
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Analyse...</p>
               </div>
             ) : (
               <div className="relative">
-                <span className="absolute -top-4 -left-2 text-6xl text-emerald-200 font-serif">“</span>
-                <p className="text-slate-700 font-semibold leading-relaxed italic text-xl px-6">
+                <span className="absolute -top-3 -left-1 text-4xl text-emerald-200 font-serif">“</span>
+                <p className="text-slate-700 font-bold leading-relaxed italic text-sm px-4">
                   {insights}
                 </p>
-                <span className="absolute -bottom-10 -right-2 text-6xl text-emerald-200 font-serif">”</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Mix Visualizer (GREEN/ORANGE) */}
-        <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl border border-slate-100 flex flex-col justify-between group">
-          <div className="flex items-center gap-5 mb-8">
-             <div className="w-14 h-14 bg-orange-50 text-orange-600 rounded-[1.5rem] flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
-               <Activity size={28} />
+        {/* Mix Visualizer (AGRANDI) */}
+        <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-12 shadow-2xl border border-slate-100 flex flex-col group">
+          <div className="flex items-center justify-between mb-10">
+             <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-[1.75rem] flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
+                  <Activity size={32} />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="text-3xl font-black uppercase tracking-tighter text-slate-800 leading-none">Mix d'Activité National</h3>
+                  <p className="text-xs font-black text-slate-300 uppercase mt-2 tracking-widest">Performance par Quotas (60/40)</p>
+                </div>
              </div>
-             <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Mix d'Activité</h3>
-          </div>
-
-          <div className="h-64 relative">
-             <ResponsiveContainer width="100%" height="100%">
-               <PieChart>
-                 <Pie
-                   data={[
-                     { name: 'Fixe', value: data.monthly.fixed },
-                     { name: 'Mobile', value: data.monthly.mobile }
-                   ]}
-                   innerRadius={70}
-                   outerRadius={95}
-                   paddingAngle={10}
-                   dataKey="value"
-                   startAngle={90}
-                   endAngle={450}
-                   labelLine={true}
-                   label={renderCustomizedLabel}
-                 >
-                   {COLORS_MIX.map((color, index) => <Cell key={`cell-${index}`} fill={color} stroke="none" />)}
-                 </Pie>
-                 <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }} />
-               </PieChart>
-             </ResponsiveContainer>
-             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <p className="text-[11px] font-black text-slate-300 uppercase tracking-widest">Ratio</p>
-                <p className="text-4xl font-black text-slate-800">
-                  {Math.round((data.monthly.mobile / (data.monthly.fixed || 1)) * 100)}%
-                </p>
+             <div className="hidden md:flex gap-4">
+                <div className="px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">Fixe (60%)</div>
+                <div className="px-5 py-2 bg-orange-50 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-orange-100">Mobile (40%)</div>
              </div>
           </div>
 
-          <div className="space-y-4 mt-8">
-             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS.fixed }}></div>
-                  <span className="text-xs font-black text-slate-600 uppercase">Structure Fixe</span>
-                </div>
-                <span className="font-black text-slate-900">{data.monthly.fixed.toLocaleString()}</span>
-             </div>
-             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS.mobile }}></div>
-                  <span className="text-xs font-black text-slate-600 uppercase">Unité Mobile</span>
-                </div>
-                <span className="font-black text-slate-900">{data.monthly.mobile.toLocaleString()}</span>
-             </div>
+          <div className="flex flex-col md:flex-row items-center justify-around gap-12 flex-1">
+            <div className="w-full md:w-1/2 h-80 relative">
+               <ResponsiveContainer width="100%" height="100%">
+                 <PieChart>
+                   <Pie
+                     data={mixData}
+                     innerRadius={85}
+                     outerRadius={115}
+                     paddingAngle={8}
+                     dataKey="value"
+                     startAngle={90}
+                     endAngle={450}
+                     label={false}
+                   >
+                     {mixData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS_MIX[index % COLORS_MIX.length]} stroke="none" />)}
+                   </Pie>
+                   <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }} />
+                 </PieChart>
+               </ResponsiveContainer>
+               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="text-xs font-black text-slate-300 uppercase tracking-[0.3em]">Atteinte</p>
+                  <p className="text-6xl font-black text-slate-800 tracking-tighter">
+                    {data.monthly.percentage.toFixed(0)}%
+                  </p>
+               </div>
+            </div>
+
+            <div className="w-full md:w-1/3 space-y-6">
+               <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 group/item hover:bg-emerald-50 transition-colors duration-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: COLORS.fixed }}></div>
+                      <span className="text-sm font-black text-slate-700 uppercase">Structure Fixe</span>
+                    </div>
+                    <span className="text-xl font-black text-slate-900">{data.monthly.fixed.toLocaleString()}</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500" style={{ width: `${Math.min((data.monthly.fixed / (data.monthly.objective * 0.6)) * 100, 100)}%` }}></div>
+                  </div>
+                  <p className="text-[9px] font-bold text-slate-400 mt-3 uppercase tracking-widest text-right">Quota Atteint: {((data.monthly.fixed / (data.monthly.objective * 0.6)) * 100).toFixed(1)}%</p>
+               </div>
+
+               <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 group/item hover:bg-orange-50 transition-colors duration-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: COLORS.mobile }}></div>
+                      <span className="text-sm font-black text-slate-700 uppercase">Unité Mobile</span>
+                    </div>
+                    <span className="text-xl font-black text-slate-900">{data.monthly.mobile.toLocaleString()}</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div className="h-full bg-orange-500" style={{ width: `${Math.min((data.monthly.mobile / (data.monthly.objective * 0.4)) * 100, 100)}%` }}></div>
+                  </div>
+                  <p className="text-[9px] font-bold text-slate-400 mt-3 uppercase tracking-widest text-right">Quota Atteint: {((data.monthly.mobile / (data.monthly.objective * 0.4)) * 100).toFixed(1)}%</p>
+               </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* KPI GRID (GREEN, ORANGE, RED) */}
+      {/* KPI GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-        
-        {/* KPI Journalier (GREEN) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
             <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-all">
               <Calendar size={32} />
             </div>
-            <div className="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-              Objectif Atteint
-            </div>
+            <div className="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">Objectif Atteint</div>
           </div>
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2 relative z-10">Collecte du Jour</p>
           <div className="flex items-baseline gap-3 mb-6 relative z-10">
@@ -220,16 +220,13 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
           </div>
         </div>
 
-        {/* KPI Mensuel (ORANGE) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
             <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-orange-600 group-hover:text-white transition-all">
               <TrendingUp size={32} />
             </div>
-            <div className="px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-              En progression
-            </div>
+            <div className="px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-[10px] font-black uppercase tracking-widest">En progression</div>
           </div>
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2 relative z-10">Total Mensuel</p>
           <div className="flex items-baseline gap-3 mb-6 relative z-10">
@@ -244,7 +241,6 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
           </div>
         </div>
 
-        {/* KPI Annuel (RED) */}
         <div className="bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-100 hover:-translate-y-3 transition-all duration-500 group relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
           <div className="flex justify-between items-start mb-8 relative z-10">
@@ -267,7 +263,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
         </div>
       </div>
 
-      {/* REGIONAL MATRIX */}
+      {/* MATRICE REGIONALE */}
       <div className="bg-white rounded-[4rem] p-12 lg:p-16 shadow-2xl border border-slate-100 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-500 via-orange-500 to-red-600"></div>
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10 mb-16">
@@ -276,8 +272,8 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
                 <Target size={40} />
               </div>
               <div>
-                <h3 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Matrice de Performance Régionale</h3>
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic">Répartition des flux par Pôle Régional de Santé (PRES)</p>
+                <h3 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Matrice Régionale</h3>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic">Analyse des flux par Pôle Régional de Santé</p>
               </div>
            </div>
         </div>
