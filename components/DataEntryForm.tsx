@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Building2, Truck, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, Code, ChevronDown, Hash, Settings } from 'lucide-react';
+import { Building2, Truck, Calendar, Save, CheckCircle2, AlertCircle, RefreshCcw, Send, Code, ChevronDown, Hash, Settings } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { SITES_DATA } from '../constants';
 
@@ -95,7 +95,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             La ligne a été ajoutée dans <span className="text-red-600 font-black">DATABASE1</span>.
           </p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-4 shadow-2xl">
-            <RefreshCw size={20} /> Nouvelle saisie
+            <RefreshCcw size={20} /> Nouvelle saisie
           </button>
         </div>
       </div>
@@ -126,7 +126,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Fichier : DSDSUIVI2026</h2>
          </div>
          <button onClick={() => setShowHelp(!showHelp)} className="flex items-center gap-3 text-[11px] font-black uppercase text-blue-600 bg-blue-50 px-6 py-3 rounded-full hover:bg-blue-100 transition-all shadow-sm">
-           <Code size={18} /> Code Apps Script Recommandé
+           <Code size={18} /> Code Apps Script
          </button>
       </div>
 
@@ -134,36 +134,30 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
         <div className="mb-10 p-10 bg-slate-900 rounded-[3rem] text-white shadow-3xl animate-in slide-in-from-top-4 duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
           <h3 className="font-black text-2xl uppercase tracking-tighter mb-6 flex items-center gap-4">
-            <AlertCircle className="text-red-500" size={32} /> Code Apps Script Recommandé
+            <AlertCircle className="text-red-500" size={32} /> Code Apps Script Requis
           </h3>
           <p className="text-slate-400 font-medium mb-8 text-sm leading-relaxed">
-            Copiez ce code dans l'éditeur Apps Script lié à votre Google Sheet pour activer l'injection de données :
+            Collez ce code dans votre éditeur Google Apps Script (Extensions > Apps Script) :
           </p>
           <div className="bg-black/50 p-6 rounded-2xl border border-white/10 font-mono text-[11px] text-blue-300 overflow-x-auto mb-8">
             <pre>{`function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("DATABASE1") || ss.insertSheet("DATABASE1");
-  var d = JSON.parse(e.postData.contents);
-  
-  sheet.appendRow([
-    d.dateCollecte, 
-    d.codeSite, 
-    d.libelleSite, 
-    d.dateFinMois, 
-    d.activiteFixe, 
-    d.nombreFixe, 
-    d.activiteMobile, 
-    d.nombreMobile, 
-    d.totalPoches
-  ]);
-  
-  return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  try {
+    var d = JSON.parse(e.postData.contents);
+    sheet.appendRow([
+      d.dateCollecte, d.codeSite, d.libelleSite, d.dateFinMois, 
+      d.activiteFixe, d.nombreFixe, d.activiteMobile, d.nombreMobile, d.totalPoches
+    ]);
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
 }`}</pre>
           </div>
           <ul className="space-y-3 text-xs font-bold uppercase tracking-tight text-slate-400">
-             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Créez une feuille nommée DATABASE1</li>
-             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Déployez comme "Application Web"</li>
-             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> Accès : "Tout le monde" (indispensable)</li>
+             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-red-500 rounded-full"></div> Déployer en tant qu'application Web (Accès : Tout le monde)</li>
+             <li className="flex items-center gap-3"><div className="w-2 h-2 bg-red-500 rounded-full"></div> Copier l'URL /exec dans les réglages (icône roue dentée)</li>
           </ul>
         </div>
       )}
@@ -276,7 +270,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
               disabled={!selectedSite || status === 'submitting'}
               className="w-full lg:w-auto min-w-[400px] bg-red-600 text-white px-16 py-8 rounded-[2.5rem] font-black text-base uppercase tracking-[0.3em] hover:bg-red-700 shadow-4xl shadow-red-200 transition-all flex items-center justify-center gap-6 disabled:opacity-30 disabled:grayscale transform hover:-translate-y-1 active:scale-95"
             >
-              {status === 'submitting' ? <RefreshCw className="animate-spin" size={32} /> : <Save size={32} />}
+              {status === 'submitting' ? <RefreshCcw className="animate-spin" size={32} /> : <Save size={32} />}
               {status === 'submitting' ? "Synchronisation..." : "Injecter les données"}
             </button>
           </div>
