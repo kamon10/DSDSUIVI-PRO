@@ -1,8 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
-// Fix: Removed non-existent exports 'defs', 'linearGradient', 'stop' from recharts
-import { PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid, defs, linearGradient, stop } from 'recharts';
 import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Brain, ArrowUpRight, ArrowDownRight, Activity, Sparkles, ChevronRight } from 'lucide-react';
 import { getGeminiInsights } from '../services/geminiService';
 
