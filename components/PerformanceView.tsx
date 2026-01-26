@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { DashboardData, SiteRecord } from '../types';
-import { Trophy, TrendingDown, Globe, MapPin, Mail, Phone, X, User, CheckCircle2, AlertTriangle, XCircle, BarChart, ExternalLink } from 'lucide-react';
+import { Trophy, TrendingDown, Globe, MapPin, Mail, Phone, X, User, CheckCircle2, AlertTriangle, XCircle, BarChart, ExternalLink, Building2, Truck } from 'lucide-react';
 import { SITES_DATA } from '../constants';
 
 interface PerformanceViewProps {
@@ -94,9 +94,21 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ data }) => {
                           <div className="flex items-start justify-between">
                             <div>
                               <h4 className="text-lg font-black text-slate-800 uppercase tracking-tight">{site.name}</h4>
-                              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase mt-2 ${getStatusColor(achievement)}`}>
-                                <StatusIcon size={12} />
-                                {achievement.toFixed(1)}% de l'objectif mensuel
+                              <div className="flex items-center gap-4 mt-2">
+                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase ${getStatusColor(achievement)}`}>
+                                  <StatusIcon size={12} />
+                                  {achievement.toFixed(1)}%
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-1.5 text-emerald-600">
+                                    <Building2 size={12} />
+                                    <span className="text-[10px] font-black uppercase">{site.fixe.toLocaleString()} F</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-orange-600">
+                                    <Truck size={12} />
+                                    <span className="text-[10px] font-black uppercase">{site.mobile.toLocaleString()} M</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                             <div className="text-right">
