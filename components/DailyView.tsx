@@ -175,10 +175,10 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
 
              return (
                <div key={i} className={`flex-1 h-full rounded-sm transition-all duration-700 ${barColor} relative`}>
-                 {/* Marqueur de cible (après le 10ème segment) - AGRANDI */}
+                 {/* Marqueur de cible (après le 10ème segment) - TRAIT NOIR, BULLE VERTE */}
                  {i === 9 && (
                    <div className="absolute -right-[2px] top-[-16px] bottom-[-16px] w-1 bg-slate-900 z-10 flex flex-col items-center shadow-lg">
-                     <div className="absolute -top-7 whitespace-nowrap text-[8px] font-black text-white bg-slate-900 px-2 py-0.5 border border-slate-900 rounded shadow-md ring-2 ring-white">
+                     <div className="absolute -top-7 whitespace-nowrap text-[8px] font-black text-white bg-emerald-600 px-2 py-0.5 border border-emerald-600 rounded shadow-md ring-2 ring-white">
                        OBJ: {data.daily.objective}
                      </div>
                    </div>
