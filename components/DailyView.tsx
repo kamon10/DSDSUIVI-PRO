@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
-import { Building2, Truck, Activity, Calendar, ChevronDown, Target, Zap, ArrowRight, Layers, MapPin, User, Mail, Phone } from 'lucide-react';
-import { COLORS } from '../constants';
+import { Building2, Truck, Activity, Calendar, ChevronDown, Target, Zap, ArrowRight, Layers, MapPin, User, Mail, Phone, ClipboardCheck } from 'lucide-react';
+import { COLORS, SITES_DATA } from '../constants';
 
 interface DailyViewProps {
   data: DashboardData;
@@ -30,6 +30,14 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
     return (totals.total / dailyGoal) * 100;
   }, [totals.total, data.daily.objective, currentRecord]);
 
+  const reportedSitesCount = useMemo(() => {
+    if (!currentRecord) return 0;
+    // On compte les sites présents dans l'historique pour ce jour
+    return currentRecord.sites.length;
+  }, [currentRecord]);
+
+  const totalSitesExpected = SITES_DATA.length;
+
   const performanceStatus = useMemo(() => {
     if (totals.total > data.daily.objective) return "Dépassé";
     if (totals.total === data.daily.objective) return "Atteint";
@@ -54,10 +62,16 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
             </div>
             <div>
               <h2 className="text-2xl lg:text-4xl font-black uppercase tracking-tighter leading-tight">SUIVI DES PRÉLÈVEMENTS</h2>
-              <div className="flex items-center gap-3 mt-1 lg:mt-2">
+              <div className="flex flex-wrap items-center gap-3 mt-1 lg:mt-2">
                 <div className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10">
                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                    <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Collecte en Direct</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-600/20 rounded-full border border-blue-500/30">
+                   <ClipboardCheck size={12} className="text-blue-400" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                    Saisie : {reportedSitesCount} / {totalSitesExpected} Sites
+                   </span>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">Record du {currentRecord.date}</span>
               </div>
@@ -208,7 +222,9 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
              </div>
              <div>
                <h3 className="font-black text-xl lg:text-2xl text-slate-900 uppercase tracking-tighter">DÉTAIL PRÉLÈVEMENTS PAR STRUCTURES</h3>
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détails opérationnels et responsables</p>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                {reportedSitesCount} structures sur {totalSitesExpected} ont renseigné leurs données
+               </p>
              </div>
           </div>
           <div className="hidden lg:flex gap-3">
