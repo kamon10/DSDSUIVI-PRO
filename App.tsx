@@ -7,9 +7,10 @@ import { SynthesisView } from './components/SynthesisView';
 import { WeeklyView } from './components/WeeklyView';
 import { DailyView } from './components/DailyView';
 import { DataEntryForm } from './components/DataEntryForm';
+import { DetailedHistoryView } from './components/DetailedHistoryView';
 import { fetchSheetData, fetchDirectoryData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, ClipboardList, Calendar, PlusCircle, Layers } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, ClipboardList, Calendar, PlusCircle, Layers, History } from 'lucide-react';
 
 const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 
@@ -80,7 +81,7 @@ const App: React.FC = () => {
           <nav className="hidden lg:flex items-center bg-slate-100 p-1 rounded-xl">
             {[
               { id: 'daily', icon: <Calendar size={14} />, label: 'Prélèvements' },
-              { id: 'weekly', icon: <Layers size={14} />, label: 'Hebdo' },
+              { id: 'history', icon: <History size={14} />, label: 'Journal' },
               { id: 'entry', icon: <PlusCircle size={14} />, label: 'Saisie' },
               { id: 'dashboard', icon: <LayoutDashboard size={14} />, label: 'Stats' },
               { id: 'synthesis', icon: <ClipboardList size={14} />, label: 'Synthèse' },
@@ -109,14 +110,14 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* MOBILE TAB BAR - Ergonomie "Bas d'écran" */}
+      {/* MOBILE TAB BAR */}
       <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-lg rounded-2xl shadow-2xl z-50 px-2 py-2 flex justify-between items-center border border-white/10">
          {[
            { id: 'daily', icon: <Calendar size={20} />, label: 'Jour' },
+           { id: 'history', icon: <History size={20} />, label: 'Journal' },
            { id: 'entry', icon: <PlusCircle size={20} />, label: 'Saisie' },
            { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Stats' },
-           { id: 'performance', icon: <BarChart3 size={20} />, label: 'Rang' },
-           { id: 'synthesis', icon: <ClipboardList size={20} />, label: 'Synth' }
+           { id: 'performance', icon: <BarChart3 size={20} />, label: 'Rang' }
          ].map((tab) => (
            <button 
              key={tab.id}
@@ -143,6 +144,7 @@ const App: React.FC = () => {
             {activeTab === 'synthesis' && <SynthesisView data={data} />}
             {activeTab === 'performance' && <PerformanceView data={data} />}
             {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} />}
+            {activeTab === 'history' && <DetailedHistoryView data={data} />}
           </div>
         )}
       </main>
