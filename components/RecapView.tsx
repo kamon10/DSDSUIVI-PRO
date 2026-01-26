@@ -260,8 +260,13 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
                     {sIdx === 0 && (
                       <td 
                         rowSpan={region.sites.length} 
-                        className="border border-slate-800 p-2 text-center align-middle font-black"
-                        style={{ backgroundColor: REGION_COLORS[region.name] || '#ffffff', transform: 'rotate(-180deg)', writingMode: 'vertical-rl' }}
+                        className="border border-slate-800 p-2 text-center align-middle font-black whitespace-normal break-words"
+                        style={{ 
+                          backgroundColor: REGION_COLORS[region.name] || '#ffffff', 
+                          transform: 'rotate(-180deg)', 
+                          writingMode: 'vertical-rl',
+                          maxWidth: '40px'
+                        }}
                       >
                         {region.name}
                       </td>
