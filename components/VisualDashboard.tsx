@@ -28,6 +28,30 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
 
   const performanceScore = Math.round((data.monthly.percentage + data.annual.percentage) / 2);
 
+  const RADIAN = Math.PI / 180;
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, index, name }: any) => {
+    const radius = outerRadius + 25;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    const quotaWeight = name === 'Fixe' ? 0.6 : 0.4;
+    const specificObjective = data.monthly.objective * quotaWeight;
+    const achievementRate = (value / (specificObjective || 1)) * 100;
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill={COLORS_MIX[index % COLORS_MIX.length]} 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        className="text-[10px] font-black uppercase tracking-tight"
+      >
+        {`${name}: ${achievementRate.toFixed(1)}%`}
+      </text>
+    );
+  };
+
   const mixData = useMemo(() => [
     { name: 'Fixe', value: data.monthly.fixed },
     { name: 'Mobile', value: data.monthly.mobile }
@@ -169,7 +193,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 rounded-full" style={{ backgroundColor: COLORS.fixed }}></div>
-                      <span className="text-sm font-black text-slate-700 uppercase">Structure Fixe</span>
+                      <span className="text-sm font-black text-slate-700 uppercase">COLLECTE SITE FIXE</span>
                     </div>
                     <span className="text-xl font-black text-slate-900">{data.monthly.fixed.toLocaleString()}</span>
                   </div>
@@ -183,7 +207,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData }> = ({ data }) => 
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 rounded-full" style={{ backgroundColor: COLORS.mobile }}></div>
-                      <span className="text-sm font-black text-slate-700 uppercase">Unité Mobile</span>
+                      <span className="text-sm font-black text-slate-700 uppercase">COLLECTE MOBILE</span>
                     </div>
                     <span className="text-xl font-black text-slate-900">{data.monthly.mobile.toLocaleString()}</span>
                   </div>
