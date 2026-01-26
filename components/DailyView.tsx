@@ -30,6 +30,12 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
     return (totals.total / dailyGoal) * 100;
   }, [totals.total, data.daily.objective, currentRecord]);
 
+  const performanceStatus = useMemo(() => {
+    if (totals.total > data.daily.objective) return "Dépassé";
+    if (totals.total === data.daily.objective) return "Atteint";
+    return "En dessous";
+  }, [totals.total, data.daily.objective]);
+
   if (!currentRecord) return null;
 
   return (
@@ -143,25 +149,52 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* 3. PERFORMANCE PULSE BAR */}
-      <div className="bg-white rounded-full p-2 border border-slate-200 shadow-inner flex items-center gap-4 overflow-hidden">
-        <div className="bg-slate-900 px-6 py-2 rounded-full hidden md:block">
+      {/* 3. PERFORMANCE PULSE BAR (WITH DYNAMIC TARGET & STATUS) */}
+      <div className="bg-white rounded-full p-2 border border-slate-200 shadow-inner flex items-center gap-4 overflow-visible">
+        <div className="bg-slate-900 px-6 py-2 rounded-full hidden md:block shrink-0">
           <span className="text-[9px] font-black text-white uppercase tracking-widest whitespace-nowrap">Pulse Performance</span>
         </div>
-        <div className="flex-1 flex gap-1 h-3 px-2">
-          {Array.from({ length: 10 }).map((_, i) => {
+        
+        {/* Container relatif pour la barre et le marqueur */}
+        <div className="flex-1 flex gap-1 h-3 px-2 relative items-center">
+          {Array.from({ length: 12 }).map((_, i) => {
              const step = (i + 1) * 10;
              let barColor = 'bg-slate-100';
+             
              if (step <= dailyPercentage) {
-               if (step <= 40) barColor = 'bg-red-500 shadow-sm';
-               else if (step <= 80) barColor = 'bg-orange-500 shadow-sm';
-               else barColor = 'bg-green-500 shadow-sm';
+               if (i < 10) {
+                 // Zone normale (0-100%)
+                 if (step <= 40) barColor = 'bg-red-500 shadow-sm';
+                 else if (step <= 80) barColor = 'bg-orange-500 shadow-sm';
+                 else barColor = 'bg-emerald-500 shadow-sm';
+               } else {
+                 // Zone de sur-performance (>100%)
+                 barColor = 'bg-indigo-600 shadow-[0_0_12px_rgba(79,70,229,0.5)]';
+               }
              }
-             return <div key={i} className={`flex-1 rounded-sm transition-all duration-700 ${barColor}`}></div>;
+
+             return (
+               <div key={i} className={`flex-1 h-full rounded-sm transition-all duration-700 ${barColor} relative`}>
+                 {/* Marqueur de cible (après le 10ème segment) */}
+                 {i === 9 && (
+                   <div className="absolute -right-[2px] top-[-10px] bottom-[-10px] w-[2px] bg-slate-900 z-10 flex flex-col items-center">
+                     <div className="absolute -top-5 whitespace-nowrap text-[7px] font-black text-slate-900 bg-white px-1.5 py-0.5 border border-slate-900 rounded-sm shadow-sm">
+                       OBJ: {data.daily.objective}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             );
           })}
         </div>
-        <div className="px-6 flex items-center gap-2">
-          <span className="text-[10px] font-black text-slate-400 uppercase">Cible: {data.daily.objective}</span>
+
+        <div className="px-6 flex items-center gap-2 shrink-0">
+          <span className={`text-[10px] font-black uppercase transition-colors duration-500 ${
+            totals.total > data.daily.objective ? 'text-indigo-600' : 
+            totals.total === data.daily.objective ? 'text-emerald-600' : 'text-slate-400'
+          }`}>
+            Cible: {performanceStatus} ({totals.total})
+          </span>
           <ArrowRight size={14} className="text-slate-300" />
         </div>
       </div>
