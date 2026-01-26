@@ -174,7 +174,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
                <Layers size={24} />
              </div>
              <div>
-               <h3 className="font-black text-xl lg:text-2xl text-slate-900 uppercase tracking-tighter">Matrice de Déploiement</h3>
+               <h3 className="font-black text-xl lg:text-2xl text-slate-900 uppercase tracking-tighter">DÉTAIL PRÉLÈVEMENTS PAR STRUCTURES</h3>
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Détails opérationnels par centre</p>
              </div>
           </div>
