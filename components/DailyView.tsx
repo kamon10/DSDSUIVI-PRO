@@ -93,7 +93,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
             <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
               <Building2 size={20} />
             </div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Structure Fixe</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">COLLECTE SITE FIXE</span>
           </div>
           <div className="flex items-baseline gap-2">
             <p className="text-5xl font-black text-slate-900 tracking-tighter">{totals.fixed}</p>
@@ -111,7 +111,7 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
             <div className="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center">
               <Truck size={20} />
             </div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unité Mobile</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">COLLECTE MOBILE</span>
           </div>
           <div className="flex items-baseline gap-2">
             <p className="text-5xl font-black text-slate-900 tracking-tighter">{totals.mobile}</p>
@@ -212,8 +212,8 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
              </div>
           </div>
           <div className="hidden lg:flex gap-3">
-             <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100">Fixe</div>
-             <div className="px-4 py-2 bg-orange-50 text-orange-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-100">Mobile</div>
+             <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100">COLLECTE SITE FIXE</div>
+             <div className="px-4 py-2 bg-orange-50 text-orange-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-100">COLLECTE MOBILE</div>
           </div>
         </div>
 
