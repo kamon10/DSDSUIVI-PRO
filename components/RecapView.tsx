@@ -1,8 +1,8 @@
 
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { DashboardData } from '../types';
-import { WORKING_DAYS_YEAR, SITES_DATA } from '../constants';
-import { ChevronDown, FileImage, FileText, Loader2, TableProperties, AlertCircle } from 'lucide-react';
+import { WORKING_DAYS_YEAR, SITES_DATA, COLORS } from '../constants';
+import { ChevronDown, FileImage, FileText, Loader2, TableProperties, AlertCircle, Printer, Download, Maximize } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -30,20 +30,6 @@ const isValidDate = (s: string) => {
   return parts.length === 3;
 };
 
-const totalWorkingDaysInMonth = (dateStr: string): number => {
-  if (!isValidDate(dateStr)) return 0;
-  const [d, m, y] = dateStr.split('/').map(Number);
-  const startOfMonth = new Date(y, m - 1, 1);
-  const endOfMonth = new Date(y, m, 0);
-  let count = 0;
-  let cur = new Date(startOfMonth);
-  while (cur <= endOfMonth) {
-    if (cur.getDay() !== 0) count++;
-    cur.setDate(cur.getDate() + 1);
-  }
-  return count;
-};
-
 export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   const [selectedDate, setSelectedDate] = useState(data.date);
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -55,15 +41,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     }
   }, [data.date]);
 
-  const totalDaysMonth = useMemo(() => totalWorkingDaysInMonth(selectedDate), [selectedDate]);
-
   const dailyRecord = useMemo(() => 
     data.dailyHistory.find(h => h.date === selectedDate)
   , [selectedDate, data.dailyHistory]);
 
   const formattedData = useMemo(() => {
     if (!isValidDate(selectedDate)) return [];
-
     const [selD, selM, selY] = selectedDate.split('/').map(Number);
 
     return data.regions.map(region => {
@@ -76,7 +59,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
         const mobileJour = siteDaily?.mobile || 0;
         const totalJour = siteDaily?.total || (fixeJour + mobileJour);
 
-        // Calcul précis du cumul mois jusqu'à la date sélectionnée
         const totalMoisALaDate = data.dailyHistory
           .filter(h => {
             const [hD, hM, hY] = h.date.split('/').map(Number);
@@ -116,168 +98,218 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
 
   const grandTotals = useMemo(() => {
     if (formattedData.length === 0) return null;
-    
     const fixed = formattedData.reduce((acc, r) => acc + r.fixePres, 0);
     const mobile = formattedData.reduce((acc, r) => acc + r.mobilePres, 0);
     const totalJour = fixed + mobile;
     const totalMois = formattedData.reduce((acc, r) => acc + r.totalMoisPres, 0);
     const objMens = formattedData.reduce((acc, r) => acc + r.objMensPres, 0);
     const achievementGlobal = objMens > 0 ? (totalMois / objMens) * 100 : 0;
-
     return { fixed, mobile, totalJour, totalMois, objMens, achievementGlobal };
   }, [formattedData]);
 
-  const handleExportImage = async () => {
+  const handleExport = async (type: 'image' | 'pdf') => {
     if (!recapRef.current) return;
-    setExporting('image');
-    try {
-      const canvas = await html2canvas(recapRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const link = document.createElement('a');
-      link.download = `DETAIL_PRELEVEMENTS_CNTS_${selectedDate.replace(/\//g, '-')}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch (err) { console.error(err); } finally { setExporting(null); }
-  };
+    setExporting(type);
+    
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-  const handleExportPDF = async () => {
-    if (!recapRef.current) return;
-    setExporting('pdf');
     try {
-      const canvas = await html2canvas(recapRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('landscape', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pageWidth / imgWidth, (pageHeight - 20) / imgHeight);
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      pdf.addImage(imgData, 'PNG', (pageWidth - finalWidth) / 2, 10, finalWidth, finalHeight);
-      pdf.save(`DETAIL_PRELEVEMENTS_CNTS_${selectedDate.replace(/\//g, '-')}.pdf`);
-    } catch (err) { console.error(err); } finally { setExporting(null); }
+      const element = recapRef.current;
+      const canvas = await html2canvas(element, { 
+        scale: 2.5,
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+      });
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      if (type === 'image') {
+        const link = document.createElement('a');
+        link.download = `RECAP_CNTS_${selectedDate.replace(/\//g, '-')}.png`;
+        link.href = imgData;
+        link.click();
+      } else {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth(); 
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        const ratio = pageWidth / (canvasWidth / 2.5);
+        const finalWidth = pageWidth;
+        const finalHeight = (canvasHeight / 2.5) * ratio;
+
+        let drawHeight = finalHeight;
+        let drawWidth = finalWidth;
+        let yPos = 0;
+
+        if (finalHeight > pageHeight) {
+          const scaleFactor = (pageHeight - 10) / finalHeight;
+          drawHeight = finalHeight * scaleFactor;
+          drawWidth = finalWidth * scaleFactor;
+          yPos = 5;
+        } else {
+          yPos = (pageHeight - finalHeight) / 2;
+        }
+
+        const xPos = (pageWidth - drawWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xPos, yPos, drawWidth, drawHeight, undefined, 'FAST');
+        pdf.save(`RECAP_CNTS_${selectedDate.replace(/\//g, '-')}.pdf`);
+      }
+    } catch (err) {
+      console.error("Export Error:", err);
+    } finally {
+      setExporting(null);
+    }
   };
 
   if (!grandTotals) return null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+    <div className="space-y-4 animate-in fade-in duration-500 pb-10">
+      {/* TOOLBAR */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200">
         <div className="flex items-center gap-4">
-           <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-              <TableProperties size={24} />
+           <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+              <TableProperties size={20} />
            </div>
            <div>
-              <h3 className="text-xl font-black uppercase tracking-tighter">Tableau Récapitulatif</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Consolidation à la date du prélèvement</p>
+              <h3 className="text-lg font-black uppercase tracking-tighter text-slate-900 leading-none">Récapitulatif National</h3>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Portrait A4 Professionnel</p>
            </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-blue-50 p-3 rounded-xl border border-blue-100 w-full md:w-auto">
-          <span className="font-black text-blue-800 text-[10px] uppercase tracking-widest">SÉLECTION :</span>
-          <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-blue-300 px-4 py-2 font-black text-blue-900 text-xs rounded-lg outline-none cursor-pointer">
+        <div className="flex items-center gap-3 bg-blue-50 p-2 rounded-xl border border-blue-100">
+          <span className="font-black text-blue-800 text-[8px] uppercase tracking-widest">Date :</span>
+          <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-blue-200 px-3 py-1 font-black text-blue-900 text-xs rounded-lg outline-none cursor-pointer">
             {data.dailyHistory.map(h => <option key={h.date} value={h.date}>{h.date}</option>)}
           </select>
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto">
-          <button onClick={handleExportImage} disabled={!!exporting} className="flex-1 px-6 py-4 bg-slate-100 text-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-all">
-            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={18} />} IMAGE
+        <div className="flex gap-2">
+          <button onClick={() => handleExport('image')} disabled={!!exporting} className="px-3 py-2 bg-slate-100 text-slate-800 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
+            {exporting === 'image' ? <Loader2 size={12} className="animate-spin" /> : <FileImage size={14} />} PNG
           </button>
-          <button onClick={handleExportPDF} disabled={!!exporting} className="flex-1 px-6 py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-100">
-            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={18} />} PDF
+          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="px-3 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-100">
+            {exporting === 'pdf' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={14} />} PDF PORTRAIT
           </button>
         </div>
       </div>
 
-      <div ref={recapRef} className="bg-white p-6 lg:p-12 border border-slate-200 shadow-2xl overflow-x-auto rounded-[2rem]">
-        <div className="flex justify-between items-end mb-8 border-b-4 border-slate-900 pb-8">
-          <div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter leading-none mb-2">DETAIL PRELEVEMENTS</h1>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Cockpit de Pilotage - CNTS Côte d'Ivoire</p>
+      {/* TABLE CONTAINER */}
+      <div className="overflow-x-auto rounded-[2.5rem] shadow-2xl bg-white border border-slate-100">
+        <div 
+          ref={recapRef} 
+          className="min-w-[850px] p-6 bg-white text-slate-900"
+          style={{ width: '100%', maxWidth: '900px', margin: '0 auto' }}
+        >
+          {/* HEADER */}
+          <div className="flex justify-between items-center mb-6 border-b-2 border-slate-900 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <Printer size={24} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tighter leading-none text-slate-900">DETAIL PRELEVEMENTS</h1>
+                <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Centre National de Transfusion Sanguine CI</p>
+              </div>
+            </div>
+            <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-center">
+              <p className="text-[7px] font-black uppercase tracking-[0.4em] mb-0.5 opacity-50">SITUATION AU</p>
+              <p className="text-xl font-black leading-none">{selectedDate}</p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">DATA DU</p>
-            <p className="text-2xl font-black text-slate-900">{selectedDate}</p>
-          </div>
-        </div>
 
-        <table className="w-full border-collapse border-2 border-slate-800 text-[11px] font-bold">
-          <thead>
-            <tr className="bg-slate-900 text-white">
-              <th className="border-2 border-slate-800 p-3 uppercase">PRES / Région</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Libellé Site</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Nombre Fixe</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Nombre Mobile</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Total Jour</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Cumul Mois</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Obj. Mensuel</th>
-              <th className="border-2 border-slate-800 p-3 uppercase">Atteinte (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {formattedData.map((region, rIdx) => {
-              const regionColor = REGION_COLORS[region.name] || '#ffffff';
-              return (
-                <React.Fragment key={rIdx}>
-                  {region.sites.map((site, sIdx) => (
-                    <tr key={`${rIdx}-${sIdx}`} style={{ backgroundColor: regionColor }} className="hover:brightness-95 transition-all">
-                      {sIdx === 0 && (
-                        <td rowSpan={region.sites.length + 1} className="border-2 border-slate-800 p-3 text-center align-middle font-black uppercase text-[12px]">
-                          {region.name}
+          <table className="w-full border-collapse border-2 border-slate-900 text-[10px] font-bold text-slate-950 leading-tight">
+            <thead>
+              <tr className="bg-slate-900 text-white">
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[200px]">PRES / Région</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-left text-[11px]">Libellé Site</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[50px]">Fixe</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[50px]">Mob.</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[60px] bg-white/10">Jour</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[70px]">Mois</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[70px]">Obj.</th>
+                <th className="border border-slate-800 p-2 uppercase tracking-widest text-center text-[10px] w-[60px]">Att.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {formattedData.map((region, rIdx) => {
+                const regionNameKey = region.name.trim().toUpperCase();
+                const colorKey = Object.keys(REGION_COLORS).find(k => regionNameKey.includes(k.toUpperCase())) || "";
+                const regionColor = REGION_COLORS[colorKey] || '#ffffff';
+                
+                return (
+                  <React.Fragment key={rIdx}>
+                    {region.sites.map((site, sIdx) => (
+                      <tr key={`${rIdx}-${sIdx}`} style={{ backgroundColor: regionColor }} className="hover:brightness-95 transition-all">
+                        {sIdx === 0 && (
+                          <td 
+                            rowSpan={region.sites.length + 1} 
+                            className="border border-slate-800 p-2 text-center align-top font-black uppercase text-[11px] text-slate-950 w-[200px]"
+                            style={{ backgroundColor: regionColor }}
+                          >
+                            <span className="inline-block pt-2">{region.name}</span>
+                          </td>
+                        )}
+                        <td className="border border-slate-800 p-1.5 uppercase text-slate-950 text-[10px] h-7 leading-none">{site.name}</td>
+                        <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{site.fixe.toLocaleString()}</td>
+                        <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{site.mobile.toLocaleString()}</td>
+                        <td className="border border-slate-800 p-1.5 text-center font-black bg-white/50 text-[12px] text-slate-950">{site.totalJour.toLocaleString()}</td>
+                        <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{site.totalMois.toLocaleString()}</td>
+                        <td className="border border-slate-800 p-1.5 text-center bg-black/5 text-[11px] text-slate-950">
+                          {site.objMensuel.toLocaleString()}
                         </td>
-                      )}
-                      <td className="border-2 border-slate-800 p-3 uppercase">{site.name}</td>
-                      <td className="border-2 border-slate-800 p-3 text-center">{site.fixe.toLocaleString()}</td>
-                      <td className="border-2 border-slate-800 p-3 text-center">{site.mobile.toLocaleString()}</td>
-                      <td className="border-2 border-slate-800 p-3 text-center font-black bg-white/30">{site.totalJour.toLocaleString()}</td>
-                      <td className="border-2 border-slate-800 p-3 text-center">{site.totalMois.toLocaleString()}</td>
-                      <td className="border-2 border-slate-800 p-3 text-center bg-black/5">
-                        {site.objMensuel.toLocaleString()}
-                      </td>
-                      <td className="border-2 border-slate-800 p-3 text-center font-black">
-                        {site.achievementGlobal.toFixed(1)}%
+                        <td className="border border-slate-800 p-1.5 text-center font-black text-[12px] text-slate-950">
+                          {site.achievementGlobal.toFixed(0)}%
+                        </td>
+                      </tr>
+                    ))}
+                    {/* SOUS-TOTAL REGION */}
+                    <tr style={{ backgroundColor: regionColor }} className="font-black brightness-90">
+                      <td className="border border-slate-800 p-1.5 uppercase text-right text-slate-950 text-[10px] h-7 pr-3 leading-none">TOTAL {region.name}</td>
+                      <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{region.fixePres.toLocaleString()}</td>
+                      <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{region.mobilePres.toLocaleString()}</td>
+                      <td className="border border-slate-800 p-1.5 text-center bg-white/60 text-[13px] text-slate-950">{region.totalJourPres.toLocaleString()}</td>
+                      <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{region.totalMoisPres.toLocaleString()}</td>
+                      <td className="border border-slate-800 p-1.5 text-center bg-black/5 text-[11px] text-slate-950">{region.objMensPres.toLocaleString()}</td>
+                      <td className="border border-slate-800 p-1.5 text-center text-blue-900 text-[12px] font-black">
+                        {region.objMensPres > 0 ? ((region.totalMoisPres / region.objMensPres) * 100).toFixed(0) : "0"}%
                       </td>
                     </tr>
-                  ))}
-                  {/* Sous-total Région */}
-                  <tr style={{ backgroundColor: regionColor }} className="font-black brightness-90">
-                    <td className="border-2 border-slate-800 p-3 uppercase text-right">TOTAL {region.name}</td>
-                    <td className="border-2 border-slate-800 p-3 text-center">{region.fixePres.toLocaleString()}</td>
-                    <td className="border-2 border-slate-800 p-3 text-center">{region.mobilePres.toLocaleString()}</td>
-                    <td className="border-2 border-slate-800 p-3 text-center bg-white/40">{region.totalJourPres.toLocaleString()}</td>
-                    <td className="border-2 border-slate-800 p-3 text-center">{region.totalMoisPres.toLocaleString()}</td>
-                    <td className="border-2 border-slate-800 p-3 text-center bg-black/5">{region.objMensPres.toLocaleString()}</td>
-                    <td className="border-2 border-slate-800 p-3 text-center text-blue-800">
-                      {region.objMensPres > 0 ? ((region.totalMoisPres / region.objMensPres) * 100).toFixed(1) : "0.0"}%
-                    </td>
-                  </tr>
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-          <tfoot className="bg-slate-900 text-white font-black text-[13px]">
-            <tr>
-              <td colSpan={2} className="border-2 border-slate-800 p-5 text-center uppercase tracking-widest">TOTAL NATIONAL CONSOLIDÉ</td>
-              <td className="border-2 border-slate-800 p-5 text-center">{grandTotals.fixed.toLocaleString()}</td>
-              <td className="border-2 border-slate-800 p-5 text-center">{grandTotals.mobile.toLocaleString()}</td>
-              <td className="border-2 border-slate-800 p-5 text-center text-red-400 bg-white/5">{grandTotals.totalJour.toLocaleString()}</td>
-              <td className="border-2 border-slate-800 p-5 text-center">{grandTotals.totalMois.toLocaleString()}</td>
-              <td className="border-2 border-slate-800 p-5 text-center bg-white/10">
-                {grandTotals.objMens.toLocaleString()}
-              </td>
-              <td className="border-2 border-slate-800 p-5 text-center text-emerald-400 text-[15px]">
-                {grandTotals.achievementGlobal.toFixed(2)}%
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-slate-900 text-white font-black">
+              <tr>
+                <td colSpan={2} className="border border-slate-800 p-3 text-center uppercase tracking-[0.1em] text-[12px]">TOTAL NATIONAL</td>
+                <td className="border border-slate-800 p-3 text-center text-[12px]">{grandTotals.fixed.toLocaleString()}</td>
+                <td className="border border-slate-800 p-3 text-center text-[12px]">{grandTotals.mobile.toLocaleString()}</td>
+                <td className="border border-slate-800 p-3 text-center text-red-400 bg-white/10 text-[18px]">{grandTotals.totalJour.toLocaleString()}</td>
+                <td className="border border-slate-800 p-3 text-center text-[12px]">{grandTotals.totalMois.toLocaleString()}</td>
+                <td className="border border-slate-800 p-3 text-center bg-white/10 text-[12px]">
+                  {grandTotals.objMens.toLocaleString()}
+                </td>
+                <td className="border border-slate-800 p-3 text-center text-emerald-400 text-[18px]">
+                  {grandTotals.achievementGlobal.toFixed(1)}%
+                </td>
+              </tr>
+            </tfoot>
+          </table>
 
-        <div className="mt-8 flex justify-between items-center opacity-40 italic">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em]">DSDSUIVI PRO - Direction du Système d'Information</p>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-slate-900 rounded-full"></div>
-            <p className="text-[9px] font-black uppercase tracking-widest">Document Certifié CNTS</p>
+          <div className="mt-4 flex justify-between items-center opacity-70 italic border-t-2 border-slate-100 pt-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-slate-900 rounded-full"></div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-900">Document Officiel CNTS - Direction du Système d'Information</p>
+            </div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-900">PORTRAIT A4 - {selectedDate}</p>
           </div>
         </div>
       </div>
