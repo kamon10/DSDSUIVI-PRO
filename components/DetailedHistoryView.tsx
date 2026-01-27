@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { SITES_DATA, WORKING_DAYS_YEAR } from '../constants';
 import { MapPin, User, Mail, Phone, Calendar, Search, Building2, Truck, Target, CheckCircle2, XCircle, AlertTriangle, History } from 'lucide-react';
@@ -57,6 +57,16 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
 
   const [selectedSiteCode, setSelectedSiteCode] = useState(sitesInRegion[0]?.code || "");
 
+  // Synchronisation : si la région change, on sélectionne le premier site de cette région
+  useEffect(() => {
+    if (sitesInRegion.length > 0) {
+      const currentSiteInNewRegion = sitesInRegion.find(s => s.code === selectedSiteCode);
+      if (!currentSiteInNewRegion) {
+        setSelectedSiteCode(sitesInRegion[0].code);
+      }
+    }
+  }, [selectedRegion, sitesInRegion]);
+
   const siteInfo = useMemo(() => {
     return SITES_DATA.find(s => s.code === selectedSiteCode);
   }, [selectedSiteCode]);
@@ -71,6 +81,7 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
         return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
       })
       .map(h => {
+        // Recherche robuste par nom officiel (les données sont déjà normalisées lors du fetch)
         const siteData = h.sites.find(s => s.name.toUpperCase() === siteInfo.name.toUpperCase());
         return {
           date: h.date,
