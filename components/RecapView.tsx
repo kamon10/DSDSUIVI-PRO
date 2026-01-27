@@ -1,8 +1,8 @@
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { WORKING_DAYS_YEAR, SITES_DATA } from '../constants';
-import { ChevronDown, Download, FileImage, FileText, Loader2 } from 'lucide-react';
+import { ChevronDown, FileImage, FileText, Loader2, TableProperties, AlertCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -11,34 +11,27 @@ interface RecapViewProps {
 }
 
 const REGION_COLORS: Record<string, string> = {
-  "PRES ABIDJAN": "#e2efda",
-  "PRES BELIER": "#ffc000",
-  "PRES GBEKE": "#d9e1f2",
-  "PRES PORO": "#00b0f0",
-  "PRES INDENIE DJUABLIN": "#acb9ca",
-  "PRES GONTOUGO": "#92d050",
-  "PRES HAUT SASSANDRA": "#ffff00",
-  "PRES SAN-PEDRO": "#00b050",
-  "PRES TONPKI": "#ed7d31",
-  "PRES KABADOUGOU": "#c00000"
+  "PRES ABIDJAN": "#e2efda", 
+  "PRES BELIER": "#fff2cc",  
+  "PRES GBEKE": "#d9e1f2",   
+  "PRES PORO": "#daeef3",    
+  "PRES INDENIE DJUABLIN": "#e7e6e6", 
+  "PRES GONTOUGO": "#ebf1de", 
+  "PRES HAUT SASSANDRA": "#ffffcc", 
+  "PRES SAN-PEDRO": "#d8e4bc", 
+  "PRES TONPKI": "#fbe5d6",    
+  "PRES KABADOUGOU": "#fee5e5", 
+  "AUTRES SITES": "#f2f2f2"    
 };
 
-const countWorkingDaysPassed = (dateStr: string): number => {
-  if (!dateStr) return 0;
-  const [d, m, y] = dateStr.split('/').map(Number);
-  const startOfMonth = new Date(y, m - 1, 1);
-  const currentDay = new Date(y, m - 1, d);
-  let count = 0;
-  let cur = new Date(startOfMonth);
-  while (cur <= currentDay) {
-    if (cur.getDay() !== 0) count++;
-    cur.setDate(cur.getDate() + 1);
-  }
-  return count;
+const isValidDate = (s: string) => {
+  if (!s || s === "---") return false;
+  const parts = s.split('/');
+  return parts.length === 3;
 };
 
 const totalWorkingDaysInMonth = (dateStr: string): number => {
-  if (!dateStr) return 0;
+  if (!isValidDate(dateStr)) return 0;
   const [d, m, y] = dateStr.split('/').map(Number);
   const startOfMonth = new Date(y, m - 1, 1);
   const endOfMonth = new Date(y, m, 0);
@@ -56,7 +49,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const recapRef = useRef<HTMLDivElement>(null);
 
-  const workingDaysPassed = useMemo(() => countWorkingDaysPassed(selectedDate), [selectedDate]);
+  useEffect(() => {
+    if (data.date && data.date !== "---") {
+      setSelectedDate(data.date);
+    }
+  }, [data.date]);
+
   const totalDaysMonth = useMemo(() => totalWorkingDaysInMonth(selectedDate), [selectedDate]);
 
   const dailyRecord = useMemo(() => 
@@ -64,28 +62,34 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   , [selectedDate, data.dailyHistory]);
 
   const formattedData = useMemo(() => {
+    if (!isValidDate(selectedDate)) return [];
+
+    const [selD, selM, selY] = selectedDate.split('/').map(Number);
+
     return data.regions.map(region => {
       const regionSites = region.sites.map(site => {
-        const siteBase = SITES_DATA.find(s => s.name.toUpperCase() === site.name.toUpperCase());
-        const siteDaily = dailyRecord?.sites.find(s => s.name.toUpperCase() === site.name.toUpperCase());
+        const siteDaily = dailyRecord?.sites.find(s => 
+          s.name.trim().toUpperCase() === site.name.trim().toUpperCase()
+        );
+        
         const fixeJour = siteDaily?.fixe || 0;
         const mobileJour = siteDaily?.mobile || 0;
-        const totalJour = fixeJour + mobileJour;
+        const totalJour = siteDaily?.total || (fixeJour + mobileJour);
 
-        const [selD, selM, selY] = selectedDate.split('/').map(Number);
+        // Calcul précis du cumul mois jusqu'à la date sélectionnée
         const totalMoisALaDate = data.dailyHistory
           .filter(h => {
             const [hD, hM, hY] = h.date.split('/').map(Number);
             return hY === selY && hM === selM && hD <= selD;
           })
           .reduce((acc, h) => {
-            const s = h.sites.find(siteH => siteH.name.toUpperCase() === site.name.toUpperCase());
+            const s = h.sites.find(siteH => 
+              siteH.name.trim().toUpperCase() === site.name.trim().toUpperCase()
+            );
             return acc + (s?.total || 0);
           }, 0);
 
-        const monthlyObj = siteBase ? Math.round(siteBase.annualObjective / 12) : site.objMensuel;
-        const objDate = Math.round((monthlyObj / totalDaysMonth) * workingDaysPassed);
-        const achievementDate = objDate > 0 ? (totalMoisALaDate / objDate) * 100 : 0;
+        const monthlyObj = site.objMensuel;
         const achievementGlobal = monthlyObj > 0 ? (totalMoisALaDate / monthlyObj) * 100 : 0;
 
         return {
@@ -94,42 +98,33 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
           mobile: mobileJour,
           totalJour,
           totalMois: totalMoisALaDate,
-          objDate,
-          objMensuel: monthlyObj,
-          achievementDate,
           achievementGlobal
         };
       });
 
-      const totalJourPres = regionSites.reduce((acc, s) => acc + s.totalJour, 0);
-      const totalMoisPres = regionSites.reduce((acc, s) => acc + s.totalMois, 0);
-      const objDatePres = regionSites.reduce((acc, s) => acc + s.objDate, 0);
-      const objMensPres = regionSites.reduce((acc, s) => acc + s.objMensuel, 0);
-      const achievementPres = objMensPres > 0 ? (totalMoisPres / objMensPres) * 100 : 0;
-
       return {
         ...region,
         sites: regionSites,
-        totalJourPres,
-        totalMoisPres,
-        objDatePres,
-        objMensPres,
-        achievementPres
+        totalJourPres: regionSites.reduce((acc, s) => acc + s.totalJour, 0),
+        totalMoisPres: regionSites.reduce((acc, s) => acc + s.totalMois, 0),
+        objMensPres: regionSites.reduce((acc, s) => acc + s.objMensuel, 0),
+        fixePres: regionSites.reduce((acc, s) => acc + s.fixe, 0),
+        mobilePres: regionSites.reduce((acc, s) => acc + s.mobile, 0)
       };
     });
-  }, [data.regions, dailyRecord, workingDaysPassed, totalDaysMonth, selectedDate, data.dailyHistory]);
+  }, [data.regions, dailyRecord, selectedDate, data.dailyHistory]);
 
   const grandTotals = useMemo(() => {
-    const fixed = formattedData.reduce((acc, r) => acc + r.sites.reduce((sacc, s) => sacc + s.fixe, 0), 0);
-    const mobile = formattedData.reduce((acc, r) => acc + r.sites.reduce((sacc, s) => sacc + s.mobile, 0), 0);
+    if (formattedData.length === 0) return null;
+    
+    const fixed = formattedData.reduce((acc, r) => acc + r.fixePres, 0);
+    const mobile = formattedData.reduce((acc, r) => acc + r.mobilePres, 0);
     const totalJour = fixed + mobile;
     const totalMois = formattedData.reduce((acc, r) => acc + r.totalMoisPres, 0);
-    const objDate = formattedData.reduce((acc, r) => acc + r.objDatePres, 0);
     const objMens = formattedData.reduce((acc, r) => acc + r.objMensPres, 0);
-    const achievementDate = objDate > 0 ? (totalMois / objDate) * 100 : 0;
     const achievementGlobal = objMens > 0 ? (totalMois / objMens) * 100 : 0;
 
-    return { fixed, mobile, totalJour, totalMois, objDate, objMens, achievementDate, achievementGlobal };
+    return { fixed, mobile, totalJour, totalMois, objMens, achievementGlobal };
   }, [formattedData]);
 
   const handleExportImage = async () => {
@@ -138,14 +133,10 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     try {
       const canvas = await html2canvas(recapRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const link = document.createElement('a');
-      link.download = `RECAP_CNTS_${selectedDate.replace(/\//g, '-')}.png`;
+      link.download = `DETAIL_PRELEVEMENTS_CNTS_${selectedDate.replace(/\//g, '-')}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-    } catch (err) {
-      console.error("Erreur export image:", err);
-    } finally {
-      setExporting(null);
-    }
+    } catch (err) { console.error(err); } finally { setExporting(null); }
   };
 
   const handleExportPDF = async () => {
@@ -159,198 +150,135 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+      const ratio = Math.min(pageWidth / imgWidth, (pageHeight - 20) / imgHeight);
       const finalWidth = imgWidth * ratio;
       const finalHeight = imgHeight * ratio;
       pdf.addImage(imgData, 'PNG', (pageWidth - finalWidth) / 2, 10, finalWidth, finalHeight);
-      pdf.save(`RECAP_CNTS_${selectedDate.replace(/\//g, '-')}.pdf`);
-    } catch (err) {
-      console.error("Erreur export PDF:", err);
-    } finally {
-      setExporting(null);
-    }
+      pdf.save(`DETAIL_PRELEVEMENTS_CNTS_${selectedDate.replace(/\//g, '-')}.pdf`);
+    } catch (err) { console.error(err); } finally { setExporting(null); }
   };
 
+  if (!grandTotals) return null;
+
   return (
-    <div className="space-y-6">
-      {/* TOOLBAR EXPORT */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 no-print">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+              <TableProperties size={24} />
+           </div>
+           <div>
+              <h3 className="text-xl font-black uppercase tracking-tighter">Tableau Récapitulatif</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Consolidation à la date du prélèvement</p>
+           </div>
+        </div>
+
         <div className="flex items-center gap-4 bg-blue-50 p-3 rounded-xl border border-blue-100 w-full md:w-auto">
-          <span className="font-black text-blue-800 text-xs uppercase tracking-tighter">PRELEVEMENTS DU :</span>
-          <div className="relative inline-block flex-1 md:flex-none">
-            <select 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-white border border-blue-300 pl-4 pr-10 py-1.5 font-black text-blue-900 text-xs rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 ring-blue-500 w-full"
-            >
-              {data.dailyHistory.map(h => (
-                <option key={h.date} value={h.date}>{h.date}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
-          </div>
+          <span className="font-black text-blue-800 text-[10px] uppercase tracking-widest">SÉLECTION :</span>
+          <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-blue-300 px-4 py-2 font-black text-blue-900 text-xs rounded-lg outline-none cursor-pointer">
+            {data.dailyHistory.map(h => <option key={h.date} value={h.date}>{h.date}</option>)}
+          </select>
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
-          <button 
-            onClick={handleExportImage}
-            disabled={!!exporting}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-50"
-          >
-            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
-            Image
+          <button onClick={handleExportImage} disabled={!!exporting} className="flex-1 px-6 py-4 bg-slate-100 text-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-all">
+            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={18} />} IMAGE
           </button>
-          <button 
-            onClick={handleExportPDF}
-            disabled={!!exporting}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50"
-          >
-            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
-            PDF
+          <button onClick={handleExportPDF} disabled={!!exporting} className="flex-1 px-6 py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-100">
+            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={18} />} PDF
           </button>
         </div>
       </div>
 
-      <div ref={recapRef} className="bg-white p-4 lg:p-10 shadow-sm border border-slate-200 overflow-x-auto min-h-screen">
-        {/* HEADER PROFESSIONNEL */}
-        <div className="flex justify-between items-start mb-8 border-b-2 border-slate-900 pb-6">
-          <div className="space-y-1">
-            <p className="font-bold text-sm">Centre National de Transfusion</p>
-            <p className="font-bold text-sm">Sanguine de Côte d'Ivoire -CNTSCI</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">T. PRELV ANNUEL</p>
-            <p className="text-4xl font-black text-red-600">{data.annual.realized.toLocaleString()}</p>
+      <div ref={recapRef} className="bg-white p-6 lg:p-12 border border-slate-200 shadow-2xl overflow-x-auto rounded-[2rem]">
+        <div className="flex justify-between items-end mb-8 border-b-4 border-slate-900 pb-8">
+          <div>
+            <h1 className="text-4xl font-black uppercase tracking-tighter leading-none mb-2">DETAIL PRELEVEMENTS</h1>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Cockpit de Pilotage - CNTS Côte d'Ivoire</p>
           </div>
           <div className="text-right">
-            <p className="font-bold text-sm">Dernière mise à jour : <span className="text-red-600">{data.date}</span></p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">DATA DU</p>
+            <p className="text-2xl font-black text-slate-900">{selectedDate}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-blue-50 p-3 border-x border-t border-blue-200 mb-0">
-          <span className="font-black text-blue-800 text-xs">PRELEVEMENTS DU :</span>
-          <span className="font-black text-blue-900 text-xs px-4 py-1 bg-white border border-blue-200 rounded">{selectedDate}</span>
-        </div>
-
-        {/* TABLEAU RÉCAPITULATIF */}
-        <table className="w-full border-collapse border border-slate-800 text-[10px] font-bold">
+        <table className="w-full border-collapse border-2 border-slate-800 text-[11px] font-bold">
           <thead>
-            <tr className="bg-slate-50 text-slate-800">
-              <th className="border border-slate-800 p-2 w-24">PRES</th>
-              <th className="border border-slate-800 p-2">LIBELLE</th>
-              <th className="border border-slate-800 p-2 w-16">FIXE</th>
-              <th className="border border-slate-800 p-2 w-16">MOBILE</th>
-              <th className="border border-slate-800 p-2 w-20">TOTAL JOUR</th>
-              <th className="border border-slate-800 p-2 w-20">TOTAL JOUR/PRES</th>
-              <th className="border border-slate-800 p-2 w-20">TOTAL MOIS</th>
-              <th className="border border-slate-800 p-2 w-20">TOTAL MOIS/PRES</th>
-              <th className="border border-slate-800 p-2 w-24 uppercase">OBJ DATE AU {selectedDate.split('/')[0]} {data.month}</th>
-              <th className="border border-slate-800 p-2 w-20 uppercase">% D'ATTEINTE AU {selectedDate.split('/')[0]} {data.month}</th>
-              <th className="border border-slate-800 p-2 w-24">OBJECTIF MENSUEL</th>
-              <th className="border border-slate-800 p-2 w-24">OBJECTIF MENS/PRES</th>
-              <th className="border border-slate-800 p-2 w-20">% D'ATTEINTE DE L'OBJECTIF</th>
-              <th className="border border-slate-800 p-2 w-24">OBJECTIF PRES</th>
+            <tr className="bg-slate-900 text-white">
+              <th className="border-2 border-slate-800 p-3 uppercase">PRES / Région</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Libellé Site</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Nombre Fixe</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Nombre Mobile</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Total Jour</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Cumul Mois</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Obj. Mensuel</th>
+              <th className="border-2 border-slate-800 p-3 uppercase">Atteinte (%)</th>
             </tr>
           </thead>
           <tbody>
-            {formattedData.map((region, rIdx) => (
-              <React.Fragment key={rIdx}>
-                {region.sites.map((site, sIdx) => (
-                  <tr key={`${rIdx}-${sIdx}`} className="hover:bg-slate-50 transition-colors">
-                    {sIdx === 0 && (
-                      <td 
-                        rowSpan={region.sites.length} 
-                        className="border border-slate-800 p-2 text-center align-middle font-black whitespace-normal break-words"
-                        style={{ 
-                          backgroundColor: REGION_COLORS[region.name] || '#ffffff', 
-                          transform: 'rotate(-180deg)', 
-                          writingMode: 'vertical-rl',
-                          maxWidth: '40px'
-                        }}
-                      >
-                        {region.name}
+            {formattedData.map((region, rIdx) => {
+              const regionColor = REGION_COLORS[region.name] || '#ffffff';
+              return (
+                <React.Fragment key={rIdx}>
+                  {region.sites.map((site, sIdx) => (
+                    <tr key={`${rIdx}-${sIdx}`} style={{ backgroundColor: regionColor }} className="hover:brightness-95 transition-all">
+                      {sIdx === 0 && (
+                        <td rowSpan={region.sites.length + 1} className="border-2 border-slate-800 p-3 text-center align-middle font-black uppercase text-[12px]">
+                          {region.name}
+                        </td>
+                      )}
+                      <td className="border-2 border-slate-800 p-3 uppercase">{site.name}</td>
+                      <td className="border-2 border-slate-800 p-3 text-center">{site.fixe.toLocaleString()}</td>
+                      <td className="border-2 border-slate-800 p-3 text-center">{site.mobile.toLocaleString()}</td>
+                      <td className="border-2 border-slate-800 p-3 text-center font-black bg-white/30">{site.totalJour.toLocaleString()}</td>
+                      <td className="border-2 border-slate-800 p-3 text-center">{site.totalMois.toLocaleString()}</td>
+                      <td className="border-2 border-slate-800 p-3 text-center bg-black/5">
+                        {site.objMensuel.toLocaleString()}
                       </td>
-                    )}
-                    <td className="border border-slate-800 p-2 uppercase" style={{ backgroundColor: sIdx % 2 === 0 ? '#f2f2f2' : '#ffffff' }}>
-                      {site.name}
+                      <td className="border-2 border-slate-800 p-3 text-center font-black">
+                        {site.achievementGlobal.toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Sous-total Région */}
+                  <tr style={{ backgroundColor: regionColor }} className="font-black brightness-90">
+                    <td className="border-2 border-slate-800 p-3 uppercase text-right">TOTAL {region.name}</td>
+                    <td className="border-2 border-slate-800 p-3 text-center">{region.fixePres.toLocaleString()}</td>
+                    <td className="border-2 border-slate-800 p-3 text-center">{region.mobilePres.toLocaleString()}</td>
+                    <td className="border-2 border-slate-800 p-3 text-center bg-white/40">{region.totalJourPres.toLocaleString()}</td>
+                    <td className="border-2 border-slate-800 p-3 text-center">{region.totalMoisPres.toLocaleString()}</td>
+                    <td className="border-2 border-slate-800 p-3 text-center bg-black/5">{region.objMensPres.toLocaleString()}</td>
+                    <td className="border-2 border-slate-800 p-3 text-center text-blue-800">
+                      {region.objMensPres > 0 ? ((region.totalMoisPres / region.objMensPres) * 100).toFixed(1) : "0.0"}%
                     </td>
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#e2efda' }}>{site.fixe > 0 ? site.fixe : '-'}</td>
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#e2efda' }}>{site.mobile > 0 ? site.mobile : '-'}</td>
-                    <td className="border border-slate-800 p-2 text-center font-black" style={{ backgroundColor: '#e2efda' }}>{site.totalJour > 0 ? site.totalJour : '-'}</td>
-                    
-                    {sIdx === 0 && (
-                      <td 
-                        rowSpan={region.sites.length} 
-                        className="border border-slate-800 p-2 text-center align-middle font-black"
-                        style={{ backgroundColor: REGION_COLORS[region.name] || '#ffffff' }}
-                      >
-                        {region.totalJourPres}
-                      </td>
-                    )}
-
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#c6e0b4' }}>{site.totalMois.toLocaleString()}</td>
-
-                    {sIdx === 0 && (
-                      <td 
-                        rowSpan={region.sites.length} 
-                        className="border border-slate-800 p-2 text-center align-middle font-black"
-                        style={{ backgroundColor: REGION_COLORS[region.name] || '#ffffff' }}
-                      >
-                        {region.totalMoisPres.toLocaleString()}
-                      </td>
-                    )}
-
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#fff2cc' }}>{site.objDate.toLocaleString()}</td>
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#fff2cc' }}>{site.achievementDate.toFixed(2)}%</td>
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#ffffff' }}>{site.objMensuel.toLocaleString()}</td>
-
-                    {sIdx === 0 && (
-                      <td 
-                        rowSpan={region.sites.length} 
-                        className="border border-slate-800 p-2 text-center align-middle font-black"
-                        style={{ backgroundColor: REGION_COLORS[region.name] || '#ffffff' }}
-                      >
-                        {region.objMensPres.toLocaleString()}
-                      </td>
-                    )}
-
-                    <td className="border border-slate-800 p-2 text-center" style={{ backgroundColor: '#e2efda' }}>{site.achievementGlobal.toFixed(2)}%</td>
-
-                    {sIdx === 0 && (
-                      <td 
-                        rowSpan={region.sites.length} 
-                        className="border border-slate-800 p-2 text-center align-middle font-black"
-                        style={{ backgroundColor: REGION_COLORS[region.name] || '#ffffff' }}
-                      >
-                        {region.achievementPres.toFixed(2)}%
-                      </td>
-                    )}
                   </tr>
-                ))}
-              </React.Fragment>
-            ))}
+                </React.Fragment>
+              );
+            })}
           </tbody>
-          <tfoot>
-            <tr className="bg-slate-200 text-slate-900 font-black">
-              <td colSpan={2} className="border border-slate-800 p-3 text-center uppercase text-base">TOTAL</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.fixed.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.mobile.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm" style={{ backgroundColor: '#ff0000', color: '#ffffff' }}>{grandTotals.totalJour.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm" style={{ backgroundColor: '#ff0000', color: '#ffffff' }}>{grandTotals.totalJour.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.totalMois.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.totalMois.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.objDate.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.achievementDate.toFixed(2)}%</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.objMens.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.objMens.toLocaleString()}</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.achievementGlobal.toFixed(2)}%</td>
-              <td className="border border-slate-800 p-3 text-center text-sm">{grandTotals.achievementGlobal.toFixed(2)}%</td>
+          <tfoot className="bg-slate-900 text-white font-black text-[13px]">
+            <tr>
+              <td colSpan={2} className="border-2 border-slate-800 p-5 text-center uppercase tracking-widest">TOTAL NATIONAL CONSOLIDÉ</td>
+              <td className="border-2 border-slate-800 p-5 text-center">{grandTotals.fixed.toLocaleString()}</td>
+              <td className="border-2 border-slate-800 p-5 text-center">{grandTotals.mobile.toLocaleString()}</td>
+              <td className="border-2 border-slate-800 p-5 text-center text-red-400 bg-white/5">{grandTotals.totalJour.toLocaleString()}</td>
+              <td className="border-2 border-slate-800 p-5 text-center">{grandTotals.totalMois.toLocaleString()}</td>
+              <td className="border-2 border-slate-800 p-5 text-center bg-white/10">
+                {grandTotals.objMens.toLocaleString()}
+              </td>
+              <td className="border-2 border-slate-800 p-5 text-center text-emerald-400 text-[15px]">
+                {grandTotals.achievementGlobal.toFixed(2)}%
+              </td>
             </tr>
           </tfoot>
         </table>
-        
-        <div className="mt-8 text-[10px] italic text-slate-400">
-          Note: Ce récapitulatif consolide l'ensemble des flux par Pôle Régional de Santé (PRES). Les objectifs sont proratisés selon les jours ouvrés passés à la date sélectionnée ({selectedDate}). Document généré via cockpit DSDSUIVI.
+
+        <div className="mt-8 flex justify-between items-center opacity-40 italic">
+          <p className="text-[9px] font-black uppercase tracking-[0.4em]">DSDSUIVI PRO - Direction du Système d'Information</p>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-slate-900 rounded-full"></div>
+            <p className="text-[9px] font-black uppercase tracking-widest">Document Certifié CNTS</p>
+          </div>
         </div>
       </div>
     </div>

@@ -1,12 +1,17 @@
 
 import React, { useState, useMemo } from 'react';
-import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, Code, ChevronDown, Hash, Settings } from 'lucide-react';
+import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { SITES_DATA } from '../constants';
 
 interface DataEntryFormProps {
   scriptUrl: string | null;
 }
+
+const MONTHS_FR = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+];
 
 export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
   const [formData, setFormData] = useState({
@@ -18,7 +23,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
   const [status, setStatus] = useState<'idle' | 'success' | 'submitting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
-  const [showHelp, setShowHelp] = useState(false);
 
   const selectedSite = useMemo(() => {
     if (formData.siteIndex === "") return null;
@@ -36,6 +40,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
     return `${day}/${month}/${year}`;
   };
 
+  const getMonthName = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return MONTHS_FR[d.getMonth()];
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSite) return;
@@ -50,16 +59,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
     setStatus('submitting');
     try {
       const [y, m, d] = formData.date.split('-');
+      
+      // Alignement strict sur les en-têtes demandés par l'utilisateur
       const payload = {
-        dateCollecte: `${d}/${m}/${y}`,      
-        codeSite: selectedSite.code,      
-        libelleSite: selectedSite.name,   
-        dateFinMois: calculateEndOfMonth(formData.date),         
-        activiteFixe: "FIXE",             
-        nombreFixe: Number(formData.fixe),
-        activiteMobile: "MOBILE",         
-        nombreMobile: Number(formData.mobile), 
-        totalPoches: total                
+        "Date Collecte": `${d}/${m}/${y}`,
+        "Code site": selectedSite.code,
+        "Libelle site": selectedSite.name,
+        "Date fin mois": calculateEndOfMonth(formData.date),
+        "Activité Fixe": "FIXE",
+        "NombreFixe": Number(formData.fixe),
+        "Activité Mobile": "MOBILE",
+        "NombreMobile": Number(formData.mobile),
+        "Total poches": total,
+        "Mois": getMonthName(formData.date)
       };
 
       await saveRecordToSheet(cleanUrl, payload);
@@ -86,7 +98,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
         <div className="bg-white rounded-3xl p-10 shadow-xl border border-green-100 flex flex-col items-center">
           <CheckCircle2 size={64} className="text-green-500 mb-6" />
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">Transmis !</h2>
-          <p className="text-slate-500 text-sm mb-8 font-bold">La donnée est synchronisée dans DATABASE1.</p>
+          <p className="text-slate-500 text-sm mb-8 font-bold">La donnée a été envoyée avec succès au fichier national.</p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
             <RefreshCw size={18} /> Nouvelle saisie
           </button>
@@ -97,11 +109,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      
       {!scriptUrl && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
            <Settings size={20} className="text-amber-600 animate-spin-slow" />
-           <p className="text-[10px] font-black text-amber-800 uppercase tracking-tight">Veuillez configurer l'URL Apps Script dans les réglages.</p>
+           <p className="text-[10px] font-black text-amber-800 uppercase tracking-tight">Configuration requise : URL Apps Script manquante.</p>
         </div>
       )}
 
@@ -112,12 +123,12 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
               <Send size={24} />
             </div>
             <div>
-              <h2 className="text-xl lg:text-3xl font-black uppercase tracking-tighter">Saisie Active</h2>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Injection Directe</p>
+              <h2 className="text-xl lg:text-3xl font-black uppercase tracking-tighter">Saisie Prélèvement</h2>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Injection directe dans le fichier source</p>
             </div>
           </div>
           <div className="bg-slate-900 px-8 py-3 lg:py-5 rounded-xl lg:rounded-3xl text-center w-full lg:w-auto">
-             <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">TOTAL SAISI</p>
+             <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Total Poches</p>
              <p className="text-3xl lg:text-5xl font-black text-white leading-none">{total}</p>
           </div>
         </div>
@@ -127,7 +138,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             <div className="space-y-6">
               <div className="relative">
                 <label className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
-                  <Building2 size={12} className="text-red-600" /> Site de Prélèvement
+                  <Building2 size={12} className="text-red-600" /> Structure de collecte
                 </label>
                 <div className="relative">
                   <select 
@@ -138,7 +149,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
                   >
                     <option value="">Sélectionnez le site...</option>
                     {SITES_DATA.map((s, idx) => (
-                      <option key={idx} value={idx}>{s.name}</option>
+                      <option key={idx} value={idx}>{s.name} ({s.code})</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
@@ -147,7 +158,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
               <div>
                 <label className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
-                  <Calendar size={12} className="text-red-600" /> Date
+                  <Calendar size={12} className="text-red-600" /> Date de collecte
                 </label>
                 <input 
                   type="date"
@@ -162,7 +173,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-8">
               <div>
                 <label className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase tracking-widest mb-2 ml-1">
-                  <Hash size={12} /> Fixe
+                  <Hash size={12} /> Prélèvements FIXE
                 </label>
                 <input 
                   type="number"
@@ -174,7 +185,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
               </div>
               <div>
                 <label className="flex items-center gap-2 text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2 ml-1">
-                  <Hash size={12} /> Mobile
+                  <Hash size={12} /> Prélèvements MOBILE
                 </label>
                 <input 
                   type="number"
@@ -200,7 +211,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             className="w-full bg-red-600 text-white py-5 lg:py-8 rounded-2xl lg:rounded-[2.5rem] font-black text-sm lg:text-base uppercase tracking-widest hover:bg-red-700 shadow-xl shadow-red-100 transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95"
           >
             {status === 'submitting' ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} />}
-            {status === 'submitting' ? "Synchronisation..." : "Injecter les données"}
+            {status === 'submitting' ? "Transmission en cours..." : "Valider et Injecter"}
           </button>
         </form>
       </div>
