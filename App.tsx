@@ -10,14 +10,17 @@ import { DataEntryForm } from './components/DataEntryForm';
 import { DetailedHistoryView } from './components/DetailedHistoryView';
 import { RecapView } from './components/RecapView';
 import { AIAnalystView } from './components/AIAnalystView';
+import { PulsePerformance } from './components/PulsePerformance';
+import { EvolutionView } from './components/EvolutionView';
+import { ComparisonView } from './components/ComparisonView';
 import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, ClipboardList, Calendar, PlusCircle, History, Clock, FileText, BrainCircuit, AlertCircle } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, ClipboardList, Calendar, PlusCircle, History, Clock, FileText, BrainCircuit, AlertCircle, HeartPulse, LineChart, ArrowLeftRight } from 'lucide-react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<AppTab>('daily');
+  const [activeTab, setActiveTab] = useState<AppTab>('pulse');
   
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
   const [scriptUrl, setScriptUrl] = useState(localStorage.getItem('gsheet_script_url') || "");
@@ -66,14 +69,16 @@ const App: React.FC = () => {
 
           <nav className="hidden lg:flex items-center bg-orange-50/50 p-1 rounded-xl gap-1 border border-orange-100">
             {[
+              { id: 'pulse', icon: <HeartPulse size={14} />, label: 'Pulse' },
               { id: 'daily', icon: <Calendar size={14} />, label: 'Jour' },
+              { id: 'evolution', icon: <LineChart size={14} />, label: 'Évol.' },
+              { id: 'comparison', icon: <ArrowLeftRight size={14} />, label: 'Compare' },
               { id: 'recap', icon: <FileText size={14} />, label: 'Récap' },
-              { id: 'history', icon: <History size={14} />, label: 'Journal' },
-              { id: 'weekly', icon: <Clock size={14} />, label: 'Hebdo' },
-              { id: 'entry', icon: <PlusCircle size={14} />, label: 'Saisie' },
               { id: 'dashboard', icon: <LayoutDashboard size={14} />, label: 'Stats' },
               { id: 'performance', icon: <BarChart3 size={14} />, label: 'Rang' },
-              { id: 'ai-analyst', icon: <BrainCircuit size={14} />, label: 'Analyste' }
+              { id: 'history', icon: <History size={14} />, label: 'Journal' },
+              { id: 'entry', icon: <PlusCircle size={14} />, label: 'Saisie' },
+              { id: 'ai-analyst', icon: <BrainCircuit size={14} />, label: 'IA' }
             ].map((tab) => (
               <button 
                 key={tab.id}
@@ -101,11 +106,13 @@ const App: React.FC = () => {
       {/* MOBILE NAV */}
       <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-lg rounded-2xl shadow-2xl z-50 px-2 py-2 flex justify-between items-center border border-white/10 overflow-x-auto">
          {[
+           { id: 'pulse', icon: <HeartPulse size={18} />, label: 'Pulse' },
            { id: 'daily', icon: <Calendar size={18} />, label: 'Jour' },
+           { id: 'comparison', icon: <ArrowLeftRight size={18} />, label: 'VS' },
+           { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.' },
            { id: 'recap', icon: <FileText size={18} />, label: 'Récap' },
-           { id: 'history', icon: <History size={18} />, label: 'Journal' },
-           { id: 'entry', icon: <PlusCircle size={18} />, label: 'Saisie' },
            { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: 'Stats' },
+           { id: 'entry', icon: <PlusCircle size={18} />, label: 'Saisie' },
            { id: 'ai-analyst', icon: <BrainCircuit size={18} />, label: 'IA' }
          ].map((tab) => (
            <button 
@@ -127,8 +134,11 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="animate-in fade-in duration-500">
+            {activeTab === 'pulse' && <PulsePerformance data={data} />}
             {activeTab === 'dashboard' && <VisualDashboard data={data} />}
             {activeTab === 'daily' && <DailyView data={data} />}
+            {activeTab === 'evolution' && <EvolutionView data={data} />}
+            {activeTab === 'comparison' && <ComparisonView data={data} />}
             {activeTab === 'recap' && <RecapView data={data} />}
             {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'performance' && <PerformanceView data={data} />}

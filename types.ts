@@ -9,6 +9,7 @@ export interface DonationStats {
 
 export interface SiteRecord {
   name: string;
+  region?: string;
   fixe: number;
   mobile: number;
   totalJour: number;
@@ -20,19 +21,19 @@ export interface SiteRecord {
   phone?: string;
 }
 
-export interface RegionGroup {
+export interface RegionData {
   name: string;
-  color: string;
   sites: SiteRecord[];
 }
 
 export interface DailyHistorySite {
   name: string;
-  region?: string;
   fixe: number;
   mobile: number;
   total: number;
+  /* Added metadata fields to support detailed daily views and historical analysis */
   objective: number;
+  region?: string;
   manager?: string;
   email?: string;
   phone?: string;
@@ -55,8 +56,9 @@ export interface DashboardData {
   daily: DonationStats;
   monthly: DonationStats;
   annual: DonationStats;
-  regions: RegionGroup[];
   dailyHistory: DailyHistoryRecord[];
+  regions: RegionData[];
 }
 
-export type AppTab = 'dashboard' | 'daily' | 'weekly' | 'synthesis' | 'performance' | 'entry' | 'history' | 'recap';
+/* Extended AppTab to include all navigation identifiers used in the application */
+export type AppTab = 'dashboard' | 'history' | 'recap' | 'entry' | 'ai-analyst' | 'daily' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison';
