@@ -59,43 +59,61 @@ export const SITES_DATA = [
   { code: "24000", name: "CRTS ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95" }
 ];
 
+// Fonction pour supprimer les accents et normaliser la casse
+const normalizeStr = (s: string) => 
+  s.normalize("NFD")
+   .replace(/[\u0300-\u036f]/g, "")
+   .toUpperCase()
+   .trim();
+
 export const getSiteByInput = (input: string) => {
   if (!input) return null;
-  const trimmed = input.trim().toUpperCase();
-  return SITES_DATA.find(s => 
-    s.code === trimmed || 
-    s.name.toUpperCase() === trimmed || 
-    trimmed.includes(s.name.toUpperCase())
-  );
+  const inputNorm = normalizeStr(input);
+  
+  // 1. Recherche par code (priorité maximale)
+  const byCode = SITES_DATA.find(s => s.code === inputNorm);
+  if (byCode) return byCode;
+  
+  // 2. Recherche par nom normalisé
+  const byName = SITES_DATA.find(s => normalizeStr(s.name) === inputNorm);
+  if (byName) return byName;
+  
+  // 3. Recherche par inclusion intelligente
+  const byInclusion = SITES_DATA.find(s => {
+    const sNameNorm = normalizeStr(s.name);
+    return inputNorm.includes(sNameNorm) || sNameNorm.includes(inputNorm);
+  });
+  if (byInclusion) return byInclusion;
+  
+  return null;
 };
 
 export const getSiteName = (input: string): string => {
   const site = getSiteByInput(input);
-  return site ? site.name : input.trim();
+  return site ? site.name : input.trim().toUpperCase();
 };
 
 export const getSiteRegion = (input: string): string => {
   const site = getSiteByInput(input);
-  return site ? site.region : "DIRECTION NATIONALE";
+  return site ? site.region : "AUTRES SITES";
 };
 
 export const getSiteObjectives = (input: string) => {
   const site = getSiteByInput(input);
-  if (!site) return { annual: 1000, monthly: 83, daily: 4 };
+  if (!site) return { annual: 1200, monthly: 100, daily: 4 };
   const annual = site.annualObjective;
   const monthly = Math.round(annual / 12);
-  // Calcul basé sur les jours ouvrés (sans dimanches)
   const daily = Math.round(annual / WORKING_DAYS_YEAR);
   return { annual, monthly, daily };
 };
 
 export const INITIAL_DATA: DashboardData = {
-  date: "22/01/2026",
-  month: "janvier",
+  date: "---",
+  month: "En cours",
   year: 2026,
-  daily: { realized: 0, objective: 1137, percentage: 0, fixed: 0, mobile: 0 },
-  monthly: { realized: 0, objective: 29667, percentage: 0, fixed: 0, mobile: 0 },
-  annual: { realized: 0, objective: 356000, percentage: 0, fixed: 0, mobile: 0 },
+  daily: { realized: 0, objective: 0, percentage: 0, fixed: 0, mobile: 0 },
+  monthly: { realized: 0, objective: 0, percentage: 0, fixed: 0, mobile: 0 },
+  annual: { realized: 0, objective: 0, percentage: 0, fixed: 0, mobile: 0 },
   dailyHistory: [],
   regions: []
 };
@@ -107,3 +125,5 @@ export const COLORS = {
   bgLight: '#f8fafc',
   text: '#1e293b'
 };
+
+export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
