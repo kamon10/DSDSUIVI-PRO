@@ -1,7 +1,6 @@
 
 import { DashboardData } from './types';
 
-// Pour 2026 : 365 jours - 52 dimanches = 313 jours de collecte
 export const WORKING_DAYS_YEAR = 313;
 
 export const SITES_DATA = [
@@ -59,7 +58,6 @@ export const SITES_DATA = [
   { code: "24000", name: "CRTS ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95" }
 ];
 
-// Fonction pour supprimer les accents et normaliser la casse
 const normalizeStr = (s: string) => 
   s.normalize("NFD")
    .replace(/[\u0300-\u036f]/g, "")
@@ -69,33 +67,15 @@ const normalizeStr = (s: string) =>
 export const getSiteByInput = (input: string) => {
   if (!input) return null;
   const inputNorm = normalizeStr(input);
-  
-  // 1. Recherche par code (priorité maximale)
   const byCode = SITES_DATA.find(s => s.code === inputNorm);
   if (byCode) return byCode;
-  
-  // 2. Recherche par nom normalisé
   const byName = SITES_DATA.find(s => normalizeStr(s.name) === inputNorm);
   if (byName) return byName;
-  
-  // 3. Recherche par inclusion intelligente
   const byInclusion = SITES_DATA.find(s => {
     const sNameNorm = normalizeStr(s.name);
     return inputNorm.includes(sNameNorm) || sNameNorm.includes(inputNorm);
   });
-  if (byInclusion) return byInclusion;
-  
-  return null;
-};
-
-export const getSiteName = (input: string): string => {
-  const site = getSiteByInput(input);
-  return site ? site.name : input.trim().toUpperCase();
-};
-
-export const getSiteRegion = (input: string): string => {
-  const site = getSiteByInput(input);
-  return site ? site.region : "AUTRES SITES";
+  return byInclusion || null;
 };
 
 export const getSiteObjectives = (input: string) => {
@@ -118,12 +98,20 @@ export const INITIAL_DATA: DashboardData = {
   regions: []
 };
 
+// NOUVELLE PALETTE PROFESSIONNELLE AVEC TONS CHAUDS
 export const COLORS = {
-  fixed: '#10b981', // Green 500
-  mobile: '#f97316', // Orange 500
-  total: '#ef4444', // Red 500
-  bgLight: '#f8fafc',
-  text: '#1e293b'
+  blue: '#2563eb',   // Bleu Royal (Données / Structure)
+  green: '#10b981',  // Vert Émeraude (Succès / Fixe)
+  orange: '#f59e0b', // Ambre/Orange (Énergie / Mobile)
+  red: '#ef4444',    // Rouge (Alertes / Annuel)
+  yellow: '#facc15', // Jaune (Intelligence / IA)
+  slate: '#1e293b',  // Ardoise (Texte / Dark mode elements)
+  warmBg: '#fffcf5', // Nouveau fond orangé
+  
+  // Alias pour compatibilité
+  fixed: '#10b981',
+  mobile: '#f59e0b',
+  total: '#ef4444'
 };
 
 export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
