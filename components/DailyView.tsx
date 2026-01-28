@@ -1,9 +1,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
-// Added missing Building2 and Truck icon imports
-import { Calendar, ChevronDown, Zap, Layers, Activity, TrendingUp, Filter, Building2, Truck } from 'lucide-react';
-import { COLORS } from '../constants';
+import { Calendar, ChevronDown, Zap, Layers, Activity, TrendingUp, Filter, Building2, Truck, AlertCircle, Clock, MessageSquare } from 'lucide-react';
+import { COLORS, SITES_DATA } from '../constants';
 
 interface DailyViewProps {
   data: DashboardData;
@@ -31,14 +30,35 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
     return currentRecord.sites.filter(site => site.total > 0);
   }, [currentRecord]);
 
+  const missingSites = useMemo(() => {
+    if (!currentRecord) return [];
+    const activeNames = new Set(activeSites.map(s => s.name.trim().toUpperCase()));
+    return SITES_DATA.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
+  }, [activeSites, currentRecord]);
+
   const totals = useMemo(() => {
     if (!currentRecord) return { fixed: 0, mobile: 0, total: 0 };
     return currentRecord.sites.reduce((acc, site) => ({
+      // Fixed: use 'site.fixe' instead of 'site.fixed' as per types.ts interface
       fixed: acc.fixed + (site.fixe || 0),
       mobile: acc.mobile + (site.mobile || 0),
       total: acc.total + (site.total || 0)
     }), { fixed: 0, mobile: 0, total: 0 });
   }, [currentRecord]);
+
+  const handleWhatsAppRelauch = (site: any) => {
+    if (!site.phone) return;
+    
+    // Nettoyage du numéro : enlever les espaces et ajouter l'indicatif pays
+    const cleanPhone = site.phone.replace(/\s/g, '');
+    const formattedPhone = cleanPhone.startsWith('225') ? cleanPhone : `225${cleanPhone}`;
+    
+    const message = encodeURIComponent(
+      `Données de prélèvement pour le site *${site.name}* pour la journée du *${selectedDate}*.\n\nMerci de bien vouloir communiquer vos chiffres de prélèvements dès que possible.\n\nCordialement,\nLa DSD CNTSCI.`
+    );
+    
+    window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+  };
 
   if (!currentRecord) return null;
 
@@ -58,8 +78,14 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 <div className="flex items-center gap-2 px-4 py-1.5 bg-white/10 rounded-full border border-white/10">
                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
-                   <span className="text-[10px] font-black uppercase tracking-widest">{activeSites.length} SITES EN ACTIVITÉ</span>
+                   <span className="text-[10px] font-black uppercase tracking-widest">{activeSites.length} SITES ACTIFS</span>
                 </div>
+                {missingSites.length > 0 && (
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-red-500/20 rounded-full border border-red-400/30">
+                     <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                     <span className="text-[10px] font-black uppercase tracking-widest">{missingSites.length} EN ATTENTE</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -106,6 +132,55 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
         </div>
       </div>
 
+      {/* SECTION SITES MANQUANTS AVEC RELANCE WHATSAPP */}
+      {missingSites.length > 0 && (
+        <div className="bg-white rounded-[3rem] shadow-xl border border-red-100 overflow-hidden">
+          <div className="px-10 py-6 bg-red-50 border-b border-red-100 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-red-500 shadow-sm">
+                <Clock size={20} />
+              </div>
+              <div>
+                <h3 className="font-black text-lg text-red-900 uppercase tracking-tight">Sites en attente de saisie ({missingSites.length})</h3>
+                <p className="text-[9px] font-bold text-red-400 uppercase tracking-widest">Aucune donnée reçue pour le {selectedDate}</p>
+              </div>
+            </div>
+            <div className="hidden md:block">
+               <span className="text-[8px] font-black text-red-300 uppercase tracking-[0.3em]">Action requise immédiate</span>
+            </div>
+          </div>
+          <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-red-50/20">
+            {missingSites.map((site, idx) => (
+              <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-red-50 shadow-sm group hover:border-emerald-200 transition-all">
+                <div className="flex items-center gap-4 overflow-hidden">
+                  <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center text-red-300 group-hover:bg-emerald-50 group-hover:text-emerald-400 transition-colors">
+                    <Building2 size={16} />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-[10px] font-black text-slate-700 uppercase leading-none truncate">{site.name}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{site.manager || site.region}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 shrink-0">
+                  {site.phone ? (
+                    <button 
+                      onClick={() => handleWhatsAppRelauch(site)}
+                      className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:scale-110 active:scale-95 transition-all shadow-lg shadow-emerald-100"
+                      title="Relancer par WhatsApp"
+                    >
+                      <MessageSquare size={16} />
+                    </button>
+                  ) : (
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse mr-2"></div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* TABLEAU LISTE */}
       <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
         <div className="px-10 py-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
@@ -130,7 +205,6 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{site.region || "DIRECTION NATIONALE"}</p>
                   </td>
                   <td className="px-6 py-6 text-center">
-                    {/* Fixed property name from fixed to fixe */}
                     <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black">{site.fixe}</span>
                   </td>
                   <td className="px-6 py-6 text-center">
