@@ -1,8 +1,7 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { Calendar, Layers, TrendingUp, Filter, ChevronRight, Building2, Truck, Target, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Calendar, Layers, TrendingUp, Filter, Target, CheckCircle2, AlertTriangle, XCircle, Clock, MapPin, Zap, Activity } from 'lucide-react';
 import { COLORS } from '../constants';
 
 interface WeeklyViewProps {
@@ -22,6 +21,7 @@ const getWeekNumber = (d: Date): number => {
 };
 
 export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
+  // 1. Extraire les années disponibles
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
@@ -31,8 +31,9 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     return Array.from(years).sort((a, b) => b.localeCompare(a));
   }, [data.dailyHistory]);
 
-  const [selectedYear, setSelectedYear] = useState(availableYears[0] || new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState("");
 
+  // 2. Extraire les mois disponibles pour l'année sélectionnée
   const availableMonths = useMemo(() => {
     const months = new Set<number>();
     data.dailyHistory.forEach(h => {
@@ -44,18 +45,37 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     return Array.from(months).sort((a, b) => a - b);
   }, [data.dailyHistory, selectedYear]);
 
-  const [selectedMonth, setSelectedMonth] = useState<number>(
-    availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()
-  );
+  const [selectedMonth, setSelectedMonth] = useState<number>(-1);
 
+  // Sync initiale et mise à jour quand les données changent
+  useEffect(() => {
+    if (availableYears.length > 0) {
+      if (!selectedYear || !availableYears.includes(selectedYear)) {
+        setSelectedYear(availableYears[0]);
+      }
+    }
+  }, [availableYears]);
+
+  useEffect(() => {
+    if (availableMonths.length > 0) {
+      if (selectedMonth === -1 || !availableMonths.includes(selectedMonth)) {
+        setSelectedMonth(availableMonths[availableMonths.length - 1]);
+      }
+    }
+  }, [availableMonths]);
+
+  // Calcul des statistiques hebdomadaires
   const weeklyStats = useMemo(() => {
+    if (!selectedYear || selectedMonth === -1) return [];
+
     const weeksMap = new Map<number, any>();
     
     data.dailyHistory.forEach(record => {
       const [d, m, y] = record.date.split('/');
       const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
       
-      if (dateObj.getFullYear().toString() === selectedYear && dateObj.getMonth() === selectedMonth) {
+      // Fix: Parse month string to number for arithmetic operation to avoid TypeScript error on line 77
+      if (y === selectedYear && (parseInt(m) - 1) === selectedMonth) {
         const weekNum = getWeekNumber(dateObj);
         
         if (!weeksMap.has(weekNum)) {
@@ -66,7 +86,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
             total: 0,
             days: 0,
             startDate: dateObj,
-            endDate: dateObj
+            endDate: dateObj,
+            regionalData: new Map<string, number>()
           });
         }
         
@@ -77,10 +98,16 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
         w.days += 1;
         if (dateObj < w.startDate) w.startDate = dateObj;
         if (dateObj > w.endDate) w.endDate = dateObj;
+
+        record.sites.forEach(site => {
+          const reg = site.region || "AUTRES";
+          const currentVal = w.regionalData.get(reg) || 0;
+          w.regionalData.set(reg, currentVal + site.total);
+        });
       }
     });
 
-    const weeklyObjective = Math.round(data.monthly.objective / 4.33);
+    const weeklyObjective = Math.round((data.monthly.objective || 1) / 4.33);
 
     return Array.from(weeksMap.values())
       .sort((a, b) => a.week - b.week)
@@ -88,7 +115,10 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
         ...w,
         objective: weeklyObjective,
         percentage: (w.total / weeklyObjective) * 100,
-        formattedRange: `Semaine ${w.week} (du ${w.startDate.getDate().toString().padStart(2, '0')}/${(w.startDate.getMonth()+1).toString().padStart(2, '0')} au ${w.endDate.getDate().toString().padStart(2, '0')}/${(w.endDate.getMonth()+1).toString().padStart(2, '0')})`
+        formattedRange: `Semaine ${w.week} (du ${w.startDate.getDate().toString().padStart(2, '0')}/${(w.startDate.getMonth()+1).toString().padStart(2, '0')} au ${w.endDate.getDate().toString().padStart(2, '0')}/${(w.endDate.getMonth()+1).toString().padStart(2, '0')})`,
+        sortedRegions: Array.from(w.regionalData.entries())
+          .map(([name, total]) => ({ name, total }))
+          .sort((a, b) => b.total - a.total)
       }));
   }, [data.dailyHistory, selectedYear, selectedMonth, data.monthly.objective]);
 
@@ -98,171 +128,231 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     selectedWeekNum ? weeklyStats.find(w => w.week === selectedWeekNum) : weeklyStats[weeklyStats.length - 1]
   , [selectedWeekNum, weeklyStats]);
 
-  return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      
-      {/* 1. HEADER FILTRES HEBDO */}
-      <div className="bg-slate-900 rounded-[2.5rem] p-6 lg:p-10 shadow-2xl text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 rounded-full blur-[80px]"></div>
-        
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner">
-               <Clock size={24} className="text-emerald-500" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter">Synthèse Hebdomadaire</h2>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Analyse des cycles de collecte par mois</p>
-            </div>
-          </div>
+  const intensityColor = useMemo(() => {
+    if (!activeWeekData) return COLORS.blue;
+    const p = activeWeekData.percentage;
+    if (p >= 100) return COLORS.green;
+    if (p >= 75) return COLORS.orange;
+    return COLORS.red;
+  }, [activeWeekData]);
 
-          <div className="flex flex-wrap justify-center lg:justify-end gap-3">
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Calendar size={14} className="text-slate-400" />
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer">
-                {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
-              </select>
+  if (!selectedYear || selectedMonth === -1) {
+    return <div className="p-20 text-center opacity-30 font-black uppercase tracking-widest">Initialisation...</div>;
+  }
+
+  return (
+    <div className="space-y-10 animate-in fade-in duration-700 pb-24">
+      
+      {/* 1. HEADER COCKPIT HEBDO */}
+      <div className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 via-blue-500 to-indigo-400 rounded-[3.5rem] blur opacity-20"></div>
+        <div className="relative bg-[#0f172a] rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl overflow-hidden border border-white/5">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/10 blur-[120px] rounded-full -mr-40 -mt-40 animate-pulse"></div>
+          
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
+            <div className="flex items-center gap-8">
+              <div className="w-16 h-16 lg:w-20 lg:h-20 bg-emerald-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl pulse-glow">
+                 <Layers size={36} />
+              </div>
+              <div>
+                <h2 className="text-4xl font-black uppercase tracking-tighter leading-none mb-3">Rythme Hebdomadaire</h2>
+                <p className="text-emerald-300/40 font-black uppercase tracking-[0.6em] text-[10px] flex items-center gap-3">
+                  <Activity size={14} className="text-emerald-500 animate-pulse" /> PERFORMANCE {MONTHS_FR[selectedMonth]?.toUpperCase()} {selectedYear}
+                </p>
+              </div>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Filter size={14} className="text-slate-400" />
-              <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer">
-                {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
-              </select>
+
+            <div className="flex flex-wrap justify-center lg:justify-end gap-3 bg-white/5 p-2 rounded-[2rem] border border-white/10 backdrop-blur-xl">
+              <div className="flex items-center gap-2 px-6 py-3 border-r border-white/10">
+                <Calendar size={14} className="text-emerald-400" />
+                <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer hover:text-emerald-400 transition-colors">
+                  {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 px-6 py-3">
+                <Filter size={14} className="text-blue-400" />
+                <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer hover:text-blue-400 transition-colors">
+                  {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
+                </select>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. FOCUS KPI SEMAINE ACTIVE */}
+      {/* 2. ANALYSE COMPARATIVE DES SEMAINES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Graphique d'évolution */}
-        <div className="lg:col-span-2 bg-white rounded-[3rem] p-8 shadow-xl border border-slate-100">
-           <div className="flex items-center justify-between mb-8">
+        <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col group">
+           <div className="flex items-center justify-between mb-10">
               <div className="flex items-center gap-4">
-                 <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                    <TrendingUp size={20} />
+                 <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <TrendingUp size={24} />
                  </div>
-                 <h3 className="text-lg font-black uppercase tracking-tight text-slate-800">Évolution du Mix Hebdo</h3>
+                 <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">Mix de Collecte par Semaine</h3>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <span className="text-[9px] font-black text-emerald-700 uppercase">Fixe</span>
+                </div>
+                <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <span className="text-[9px] font-black text-orange-700 uppercase">Mobile</span>
+                </div>
               </div>
            </div>
            
-           <div className="h-72">
+           <div className="flex-1 min-h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                {/* Use any type for data to avoid Recharts TS definition errors for activePayload */}
-                <BarChart data={weeklyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} onClick={(data: any) => {
+                <BarChart data={weeklyStats} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} onClick={(data: any) => {
                   if (data && data.activePayload) setSelectedWeekNum(data.activePayload[0].payload.week);
                 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="week" tick={{fontSize: 10, fontWeight: 900}} />
-                  <YAxis tick={{fontSize: 10, fontWeight: 900}} />
-                  <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="fixed" stackId="a" fill={COLORS.fixed} name="Fixe" />
-                  <Bar dataKey="mobile" stackId="a" fill={COLORS.mobile} radius={[4, 4, 0, 0]} name="Mobile" />
+                  <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} format={(v) => `S${v}`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} />
+                  <Tooltip 
+                    cursor={{fill: '#f8fafc'}} 
+                    contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1.5rem' }} 
+                  />
+                  <Bar dataKey="fixed" stackId="a" fill={COLORS.fixed} name="Fixe" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="mobile" stackId="a" fill={COLORS.mobile} radius={[8, 8, 0, 0]} name="Mobile" />
                 </BarChart>
               </ResponsiveContainer>
            </div>
+           <p className="text-center text-[9px] font-black text-slate-300 uppercase tracking-widest mt-6">Cliquez sur une barre pour isoler l'analyse d'une semaine</p>
         </div>
 
-        {/* Focus Details */}
-        <div className="bg-slate-50 rounded-[3rem] p-8 border border-slate-200 flex flex-col justify-between">
+        <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col justify-between relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-32 h-32 opacity-10 blur-2xl rounded-full -mr-16 -mt-16 transition-all duration-1000" style={{ backgroundColor: intensityColor }}></div>
+           
            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Détails Sélection</p>
-              <h3 className="text-xl font-black text-slate-800 uppercase leading-tight">{activeWeekData?.formattedRange || "Sélectionnez une semaine"}</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <Clock size={14} style={{ color: intensityColor }} /> Focus Période
+              </p>
+              <h3 className="text-2xl font-black text-slate-800 uppercase leading-none tracking-tighter mb-8">
+                {activeWeekData?.formattedRange.split('(')[0] || "Détails"}
+                <span className="block text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest italic">
+                  {activeWeekData?.formattedRange.match(/\(([^)]+)\)/)?.[1] || ""}
+                </span>
+              </h3>
+
+              <div className="grid grid-cols-2 gap-4 mb-10">
+                 <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-center group/kpi">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover/kpi:text-emerald-500 transition-colors">Réalisé</p>
+                    <p className="text-3xl font-black text-slate-900">{activeWeekData?.total.toLocaleString() || 0}</p>
+                 </div>
+                 <div className="bg-slate-900 p-6 rounded-[2rem] text-center shadow-xl group/kpi">
+                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1 group-hover/kpi:text-red-400 transition-colors">Atteinte</p>
+                    <p className="text-3xl font-black text-white" style={{ color: intensityColor }}>{(activeWeekData?.percentage || 0).toFixed(0)}%</p>
+                 </div>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                  <MapPin size={14} className="text-blue-500" /> Contribution Régionale
+                </p>
+                <div className="space-y-3 max-h-[160px] overflow-y-auto no-scrollbar pr-2">
+                   {activeWeekData?.sortedRegions.slice(0, 4).map((reg: any, i: number) => (
+                     <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all">
+                        <span className="text-[10px] font-black text-slate-700 uppercase truncate pr-4">{reg.name.replace('PRES ', '')}</span>
+                        <div className="flex items-center gap-3">
+                           <span className="text-[10px] font-black text-slate-900">{reg.total.toLocaleString()}</span>
+                           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: i === 0 ? COLORS.green : i === 1 ? COLORS.blue : '#cbd5e1' }}></div>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </div>
            </div>
 
-           <div className="space-y-4 my-8">
-              <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm border-l-4 border-emerald-500">
-                 <div className="flex items-center gap-3">
-                    <Building2 className="text-emerald-500" size={18} />
-                    <span className="text-[10px] font-black uppercase text-slate-400">Fixe</span>
-                 </div>
-                 <span className="text-lg font-black text-slate-800">{activeWeekData?.fixed.toLocaleString() || 0}</span>
+           <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Intensité</p>
+                <p className="text-lg font-black uppercase tracking-tighter" style={{ color: intensityColor }}>
+                  {activeWeekData?.percentage >= 100 ? 'Élite' : activeWeekData?.percentage >= 75 ? 'Standard' : 'Critique'}
+                </p>
               </div>
-              <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm border-l-4 border-orange-500">
-                 <div className="flex items-center gap-3">
-                    <Truck className="text-orange-500" size={18} />
-                    <span className="text-[10px] font-black uppercase text-slate-400">Mobile</span>
-                 </div>
-                 <span className="text-lg font-black text-slate-800">{activeWeekData?.mobile.toLocaleString() || 0}</span>
-              </div>
-           </div>
-
-           <div className="bg-slate-900 rounded-[2rem] p-6 text-white text-center shadow-xl">
-              <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Performance Hebdo</p>
-              <p className="text-4xl font-black text-emerald-400">{(activeWeekData?.percentage || 0).toFixed(1)}%</p>
-              <div className="w-full bg-white/10 h-1 rounded-full mt-4 overflow-hidden">
-                 <div className="h-full bg-emerald-500" style={{ width: `${Math.min(activeWeekData?.percentage || 0, 100)}%` }}></div>
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-sm">
+                 <Zap size={24} style={{ fill: activeWeekData?.percentage >= 100 ? intensityColor : 'none', color: intensityColor }} />
               </div>
            </div>
         </div>
       </div>
 
-      {/* 3. TABLEAU RÉCAPITULATIF DES SEMAINES DU MOIS */}
-      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-        <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-           <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400">
-                 <Layers size={20} />
+      {/* 3. TABLEAU RÉCAPITULATIF PROFESSIONNEL */}
+      <div className="bg-white rounded-[4rem] shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="px-12 py-10 border-b border-slate-50 bg-slate-50/50 flex flex-col lg:flex-row justify-between items-center gap-6">
+           <div className="flex items-center gap-6">
+              <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                 <Activity size={28} />
               </div>
-              <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">
-                Synthèse Mensuelle par Semaine : {MONTHS_FR[selectedMonth]} {selectedYear}
-              </h3>
+              <div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800 leading-none mb-1">Détails par Semaine</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tableau consolidé du mois sélectionné</p>
+              </div>
            </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
-                <th className="px-10 py-6 text-left">Période Hebdomadaire</th>
-                <th className="px-6 py-6 text-center">Jours de Collecte</th>
-                <th className="px-6 py-6 text-center">Fixe / Mobile</th>
-                <th className="px-6 py-6 text-center">Total Réalisé</th>
-                <th className="px-10 py-6 text-right">Taux d'Atteinte</th>
+              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-50 bg-slate-50/30">
+                <th className="px-12 py-6 text-left">Période</th>
+                <th className="px-8 py-6 text-center">Jours Actifs</th>
+                <th className="px-8 py-6 text-center">Mix de Collecte</th>
+                <th className="px-8 py-6 text-center">Réalisé</th>
+                <th className="px-12 py-6 text-right">Performance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {weeklyStats.length > 0 ? weeklyStats.map((w, idx) => {
-                const getStatusIcon = (p: number) => {
-                  if (p >= 100) return <CheckCircle2 size={14} className="text-emerald-500" />;
-                  if (p >= 75) return <AlertTriangle size={14} className="text-orange-500" />;
-                  return <XCircle size={14} className="text-red-500" />;
-                };
-                
+                const sColor = w.percentage >= 100 ? COLORS.green : w.percentage >= 75 ? COLORS.orange : COLORS.red;
                 return (
                   <tr key={idx} 
                     onClick={() => setSelectedWeekNum(w.week)}
                     className={`hover:bg-slate-50 cursor-pointer transition-all group ${selectedWeekNum === w.week ? 'bg-slate-50/80' : ''}`}
                   >
-                    <td className="px-10 py-5">
-                      <div className="flex items-center gap-3">
-                        <ChevronRight size={14} className={`transition-transform ${selectedWeekNum === w.week ? 'rotate-90 text-red-500' : 'text-slate-300'}`} />
-                        <span className="text-sm font-black text-slate-800 uppercase tracking-tighter">Semaine {w.week}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className="text-xs font-bold text-slate-400">{w.days} jours actifs</span>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="flex items-center justify-center gap-3">
-                        <span className="text-xs font-bold text-emerald-600">{w.fixed} F</span>
-                        <span className="text-slate-200">|</span>
-                        <span className="text-xs font-bold text-orange-600">{w.mobile} M</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className="text-lg font-black text-slate-900">{w.total.toLocaleString()}</span>
-                    </td>
-                    <td className="px-10 py-5 text-right">
-                      <div className="flex flex-col items-end gap-1.5">
-                        <div className="flex items-center gap-2">
-                           <span className={`text-[10px] font-black ${w.percentage >= 100 ? 'text-emerald-600' : w.percentage >= 75 ? 'text-orange-500' : 'text-red-500'}`}>
-                             {w.percentage.toFixed(1)}%
-                           </span>
-                           {getStatusIcon(w.percentage)}
+                    <td className="px-12 py-7">
+                      <div className="flex items-center gap-5">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${selectedWeekNum === w.week ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'}`}>
+                           <Calendar size={18} />
                         </div>
-                        <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
-                          <div className={`h-full ${w.percentage >= 100 ? 'bg-emerald-500' : w.percentage >= 75 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${Math.min(w.percentage, 100)}%` }} />
+                        <div>
+                          <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Semaine {w.week}</p>
+                          <p className="text-[10px] font-bold text-slate-400 tracking-tighter uppercase">{w.formattedRange.match(/\(([^)]+)\)/)?.[1] || ""}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-7 text-center">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100 text-[10px] font-black text-slate-500 uppercase">
+                        {w.days} jours <Activity size={10} className="text-blue-400" />
+                      </div>
+                    </td>
+                    <td className="px-8 py-7 text-center">
+                      <div className="flex items-center justify-center gap-4">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-black text-emerald-600">{w.fixed.toLocaleString()}</span>
+                          <span className="text-[8px] font-black text-slate-300 uppercase">F</span>
+                        </div>
+                        <div className="w-px h-6 bg-slate-100"></div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-black text-orange-600">{w.mobile.toLocaleString()}</span>
+                          <span className="text-[8px] font-black text-slate-300 uppercase">M</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-7 text-center">
+                      <p className="text-lg font-black text-slate-900">{w.total.toLocaleString()}</p>
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Poches</p>
+                    </td>
+                    <td className="px-12 py-7 text-right">
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-3">
+                           <span className="text-sm font-black" style={{ color: sColor }}>{w.percentage.toFixed(1)}%</span>
+                           {w.percentage >= 100 ? <CheckCircle2 size={16} className="text-emerald-500" /> : w.percentage >= 75 ? <AlertTriangle size={16} className="text-orange-500" /> : <XCircle size={16} className="text-red-500" />}
+                        </div>
+                        <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                          <div className="h-full transition-all duration-1000" style={{ backgroundColor: sColor, width: `${Math.min(w.percentage, 100)}%` }} />
                         </div>
                       </div>
                     </td>
@@ -270,8 +360,11 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
                 );
               }) : (
                 <tr>
-                  <td colSpan={5} className="px-10 py-20 text-center">
-                    <p className="text-xs font-black text-slate-300 uppercase tracking-[0.3em]">Aucune donnée hebdomadaire pour cette période</p>
+                  <td colSpan={5} className="px-10 py-32 text-center">
+                    <div className="flex flex-col items-center gap-6 opacity-20">
+                      <Layers size={64} className="text-slate-300" />
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-[0.5em]">Aucune séquence détectée pour cette période</p>
+                    </div>
                   </td>
                 </tr>
               )}
