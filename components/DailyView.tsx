@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DashboardData } from '../types';
-import { Calendar, ChevronDown, Zap, Layers, Activity, TrendingUp, Filter, Building2, Truck, AlertCircle, Clock, MessageSquare, FileImage, FileText, Loader2, Target } from 'lucide-react';
+import { Calendar, ChevronDown, Zap, Activity, TrendingUp, Filter, Building2, Truck, AlertCircle, Clock, MessageSquare, FileImage, FileText, Loader2, Target, Phone, Send, CheckCircle2 } from 'lucide-react';
 import { COLORS, SITES_DATA } from '../constants';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -49,15 +49,23 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
     }), { fixed: 0, mobile: 0, total: 0, objective: 0 });
   }, [currentRecord]);
 
-  // Calcul des pourcentages de performance
-  const perfStats = useMemo(() => {
-    const obj = totals.objective || 1; // Éviter division par zéro
-    return {
-      total: (totals.total / obj) * 100,
-      fixed: (totals.fixed / obj) * 100, // Contribution du fixe à l'objectif total
-      mobile: (totals.mobile / obj) * 100  // Contribution du mobile à l'objectif total
-    };
-  }, [totals]);
+  const handleWhatsAppReminder = (site: any) => {
+    if (!site.phone) return;
+    
+    // Nettoyage du numéro (Format WhatsApp nécessite l'indicatif pays sans +)
+    let cleanPhone = site.phone.replace(/\D/g, '');
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
+      cleanPhone = '225' + cleanPhone.substring(1);
+    } else if (cleanPhone.length === 8) {
+      cleanPhone = '2250' + cleanPhone;
+    } else if (cleanPhone.length === 10 && !cleanPhone.startsWith('225')) {
+       cleanPhone = '225' + cleanPhone;
+    }
+    
+    const message = `Bonjour ${site.manager || 'Responsable'}, sauf erreur de notre part, les données de prélèvements du ${selectedDate} pour le site ${site.name} n'ont pas encore été reçues dans le fichier national. Pourriez-vous procéder à la saisie dès que possible ? Merci.\n\nCordialement,\nLa Direction du Système d'Information CNTS.`;
+    
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!contentRef.current) return;
@@ -83,7 +91,6 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
         const pageHeight = pdf.internal.pageSize.getHeight();
         const ratio = pageWidth / (canvas.width / 2);
         const finalWidth = pageWidth;
-        // Fix: Replace non-existent canvasHeight with canvas.height
         const finalHeight = (canvas.height / 2) * ratio;
         let drawHeight = finalHeight;
         let drawWidth = finalWidth;
@@ -106,186 +113,151 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative overflow-hidden bg-blue-600 rounded-[3rem] p-10 lg:p-14 text-white shadow-2xl">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-400/20 blur-[120px] rounded-full -mr-32 -mt-32"></div>
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-10">
-          <div className="flex items-center gap-8">
-            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-inner border border-white/20">
-              <Activity size={36} className="text-white" />
+      {/* HEADER SECTION */}
+      <div className="bg-[#0f172a] rounded-[3rem] p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl border border-white/10">
+              <Calendar size={32} />
             </div>
             <div>
-              <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tighter leading-tight">Journal Quotidien</h2>
-              <div className="flex flex-wrap items-center gap-3 mt-3">
-                <div className="flex items-center gap-2 px-4 py-1.5 bg-white/10 rounded-full border border-white/10">
-                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
-                   <span className="text-[10px] font-black uppercase tracking-widest">{activeSites.length} SITES ACTIFS</span>
-                </div>
-                {missingSites.length > 0 && (
-                  <div className="flex items-center gap-2 px-4 py-1.5 bg-red-500/20 rounded-full border border-red-400/30">
-                     <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                     <span className="text-[10px] font-black uppercase tracking-widest">{missingSites.length} EN ATTENTE</span>
-                  </div>
-                )}
+              <h2 className="text-3xl font-black uppercase tracking-tighter">Bilan Quotidien</h2>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Journal du {selectedDate}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <div className="relative bg-white/10 backdrop-blur-xl rounded-[2rem] px-8 py-5 flex items-center gap-4 flex-1 lg:flex-none border border-white/10">
-              <Filter size={18} className="text-blue-200" />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 flex items-center gap-3">
+              <Filter size={14} className="text-blue-400" />
               <select 
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-sm font-black uppercase tracking-widest outline-none cursor-pointer w-full text-white"
+                value={selectedDate} 
+                onChange={(e) => setSelectedDate(e.target.value)} 
+                className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-white"
               >
-                {data.dailyHistory.map(record => (
-                  <option key={record.date} value={record.date} className="text-slate-900">{record.date}</option>
-                ))}
+                {data.dailyHistory.map(h => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
               </select>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-4 bg-white/10 text-white rounded-2xl hover:bg-white/20 transition-all border border-white/10">
-                {exporting === 'image' ? <Loader2 size={20} className="animate-spin" /> : <FileImage size={20} />}
+              <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all">
+                {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
               </button>
-              <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="p-4 bg-white text-blue-600 rounded-2xl hover:bg-slate-50 transition-all shadow-xl">
-                {exporting === 'pdf' ? <Loader2 size={20} className="animate-spin" /> : <FileText size={20} />}
+              <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-md">
+                {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div ref={contentRef} className="space-y-8 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* CARTE FIXE */}
-          <div className="bg-white rounded-[2.5rem] p-10 border border-emerald-100 shadow-xl border-b-[6px] border-b-emerald-500 relative overflow-hidden group">
-            <div className="flex items-center justify-between mb-6">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><Building2 size={20}/></div>
-                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total Fixe</p>
-               </div>
-               <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{perfStats.fixed.toFixed(0)}% Cap.</span>
-            </div>
-            <p className="text-6xl font-black text-slate-900 tracking-tighter mb-6">{totals.fixed}</p>
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-               <div 
-                className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                style={{ width: `${Math.min(perfStats.fixed, 100)}%` }}
-               ></div>
+      <div ref={contentRef} className="space-y-8">
+        {/* KPI CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:shadow-xl transition-all">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Building2 size={14} className="text-emerald-500" /> Collecte Fixe</p>
+            <div className="flex justify-between items-end">
+              <span className="text-5xl font-black text-slate-900">{totals.fixed.toLocaleString()}</span>
+              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><TrendingUp size={24} /></div>
             </div>
           </div>
-
-          {/* CARTE MOBILE */}
-          <div className="bg-white rounded-[2.5rem] p-10 border border-amber-100 shadow-xl border-b-[6px] border-b-amber-500 relative overflow-hidden group">
-            <div className="flex items-center justify-between mb-6">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center"><Truck size={20}/></div>
-                  <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Total Mobile</p>
-               </div>
-               <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{perfStats.mobile.toFixed(0)}% Cap.</span>
-            </div>
-            <p className="text-6xl font-black text-slate-900 tracking-tighter mb-6">{totals.mobile}</p>
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-               <div 
-                className="h-full bg-amber-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                style={{ width: `${Math.min(perfStats.mobile, 100)}%` }}
-               ></div>
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 group hover:shadow-xl transition-all">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Truck size={14} className="text-orange-500" /> Collecte Mobile</p>
+            <div className="flex justify-between items-end">
+              <span className="text-5xl font-black text-slate-900">{totals.mobile.toLocaleString()}</span>
+              <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center"><Activity size={24} /></div>
             </div>
           </div>
-
-          {/* CARTE CUMUL JOURNEE */}
-          <div className="bg-[#0f172a] rounded-[2.5rem] p-10 shadow-2xl border-b-[6px] border-b-blue-600 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-xl"></div>
-            <div className="flex items-center justify-between mb-6 relative z-10">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center"><Zap size={20}/></div>
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Cumul Journée</p>
-               </div>
-               <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{perfStats.total.toFixed(1)}%</span>
-                  <p className="text-[7px] font-black text-white/20 uppercase tracking-widest">vs {totals.objective}</p>
-               </div>
-            </div>
-            <p className="text-7xl font-black text-white tracking-tighter mb-6 relative z-10">{totals.total}</p>
-            <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden shadow-inner relative z-10">
-               <div 
-                className={`h-full rounded-full transition-all duration-1000 ${perfStats.total >= 100 ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-blue-600 shadow-[0_0_15px_#2563eb]'}`}
-                style={{ width: `${Math.min(perfStats.total, 100)}%` }}
-               ></div>
+          <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white group hover:scale-[1.02] transition-all">
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-4 flex items-center gap-2"><Zap size={14} className="text-red-500" /> Total Réalisé</p>
+            <div className="flex justify-between items-end">
+              <span className="text-5xl font-black">{totals.total.toLocaleString()}</span>
+              <div className="text-right">
+                <p className="text-2xl font-black text-emerald-400">{((totals.total / (totals.objective || 1)) * 100).toFixed(0)}%</p>
+                <p className="text-[8px] font-black uppercase text-white/20">de l'objectif</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {missingSites.length > 0 && (
-          <div className="bg-white rounded-[3rem] shadow-xl border border-red-100 overflow-hidden">
-            <div className="px-10 py-6 bg-red-50 border-b border-red-100 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-red-500 shadow-sm">
-                  <Clock size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black text-lg text-red-900 uppercase tracking-tight">Sites en attente de saisie ({missingSites.length})</h3>
-                  <p className="text-[9px] font-bold text-red-400 uppercase tracking-widest">Aucune donnée reçue pour le {selectedDate}</p>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* SITES ACTIFS */}
+          <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            <div className="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+              <h3 className="font-black text-lg uppercase tracking-tight text-slate-800 flex items-center gap-3">
+                <CheckCircle2 size={20} className="text-emerald-500" /> Transmissions Reçues
+              </h3>
+              <span className="px-3 py-1 bg-white rounded-full border border-slate-200 text-[10px] font-black text-slate-400">{activeSites.length} Sites</span>
             </div>
-            <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-red-50/20">
-              {missingSites.map((site, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-red-50 shadow-sm">
-                  <div className="flex items-center gap-4 overflow-hidden">
-                    <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center text-red-300">
-                      <Building2 size={16} />
+            <div className="divide-y divide-slate-50 overflow-y-auto max-h-[500px]">
+              {activeSites.length > 0 ? activeSites.map((site, idx) => (
+                <div key={idx} className="px-8 py-5 flex items-center justify-between hover:bg-slate-50 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xs font-black">
+                      {idx + 1}
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <p className="text-[10px] font-black text-slate-700 uppercase leading-none truncate">{site.name}</p>
+                    <div>
+                      <p className="text-sm font-black text-slate-800 uppercase leading-none">{site.name}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{site.region}</p>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-slate-900 leading-none">{site.total}</p>
+                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-1">Poches</p>
+                  </div>
                 </div>
-              ))}
+              )) : (
+                <div className="py-20 text-center opacity-30">
+                  <AlertCircle size={48} className="mx-auto mb-4" />
+                  <p className="text-xs font-black uppercase">Aucune donnée reçue</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-          <div className="px-10 py-8 bg-slate-50/50 border-b border-slate-100">
-            <h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">Liste des collectes du {currentRecord.date}</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b bg-slate-50/20">
-                  <th className="px-10 py-6 text-left">Site de Collecte</th>
-                  <th className="px-6 py-6 text-center">Fixe</th>
-                  <th className="px-6 py-6 text-center">Mobile</th>
-                  <th className="px-10 py-6 text-right">Total Jour</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {activeSites.map((site, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-all group">
-                    <td className="px-10 py-6">
-                       <p className="font-black text-slate-800 text-base uppercase">{site.name}</p>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{site.region || "DIRECTION NATIONALE"}</p>
-                    </td>
-                    <td className="px-6 py-6 text-center">
-                      <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black">{site.fixe}</span>
-                    </td>
-                    <td className="px-6 py-6 text-center">
-                      <span className="px-4 py-1.5 bg-amber-50 text-amber-600 rounded-full text-xs font-black">{site.mobile}</span>
-                    </td>
-                    <td className="px-10 py-6 text-right font-black text-slate-900 text-2xl">{site.total}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-[#0f172a] text-white font-black text-sm">
-                <tr>
-                  <td className="px-10 py-8 uppercase tracking-[0.2em]">TOTAL NATIONAL CONSOLIDÉ</td>
-                  <td className="px-6 py-8 text-center text-emerald-400">{totals.fixed}</td>
-                  <td className="px-6 py-8 text-center text-amber-400">{totals.mobile}</td>
-                  <td className="px-10 py-8 text-right text-3xl font-black text-blue-400">{totals.total}</td>
-                </tr>
-              </tfoot>
-            </table>
+          {/* SITES EN ATTENTE AVEC WHATSAPP */}
+          <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            <div className="px-8 py-6 border-b border-slate-50 bg-red-50/50 flex justify-between items-center">
+              <h3 className="font-black text-lg uppercase tracking-tight text-slate-800 flex items-center gap-3">
+                <Clock size={20} className="text-red-500" /> Attente de Saisie
+              </h3>
+              <span className="px-3 py-1 bg-white rounded-full border border-red-100 text-[10px] font-black text-red-400">{missingSites.length} Sites</span>
+            </div>
+            <div className="divide-y divide-slate-50 overflow-y-auto max-h-[500px]">
+              {missingSites.length > 0 ? missingSites.map((site, idx) => (
+                <div key={idx} className="px-8 py-5 flex items-center justify-between hover:bg-slate-50 transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-red-50 text-red-400 rounded-xl flex items-center justify-center text-xs font-black">
+                      !
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-800 uppercase leading-none">{site.name}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 tracking-widest truncate max-w-[150px]">{site.manager || "Resp. inconnu"}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {site.phone ? (
+                      <button 
+                        onClick={() => handleWhatsAppReminder(site)}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all active:scale-95"
+                      >
+                        <MessageSquare size={14} /> Relancer
+                      </button>
+                    ) : (
+                      <div className="px-4 py-2 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200">
+                        Pas de tel
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )) : (
+                <div className="py-20 text-center text-emerald-500 bg-emerald-50/30">
+                  <CheckCircle2 size={48} className="mx-auto mb-4" />
+                  <p className="text-xs font-black uppercase tracking-widest">Saisie Complète !</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
