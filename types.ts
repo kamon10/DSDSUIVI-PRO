@@ -1,4 +1,3 @@
-
 export interface DonationStats {
   realized: number;
   objective: number;
@@ -31,7 +30,6 @@ export interface DailyHistorySite {
   fixe: number;
   mobile: number;
   total: number;
-  /* Added metadata fields to support detailed daily views and historical analysis */
   objective: number;
   region?: string;
   manager?: string;
@@ -60,5 +58,4 @@ export interface DashboardData {
   regions: RegionData[];
 }
 
-/* Extended AppTab to include all navigation identifiers used in the application */
-export type AppTab = 'summary' | 'dashboard' | 'history' | 'recap' | 'daily' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives';
+export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives';
