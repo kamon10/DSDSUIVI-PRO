@@ -70,7 +70,6 @@ const cleanNum = (val: any): number => {
 
 export const fetchSheetData = async (url: string, force = false): Promise<DashboardData | null> => {
   try {
-    const isApi = !url.includes('docs.google.com') && !url.endsWith('.csv');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -109,7 +108,8 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     const latestDateStr = `${latestDateObj.getDate().toString().padStart(2, '0')}/${(latestDateObj.getMonth() + 1).toString().padStart(2, '0')}/${latestDateObj.getFullYear()}`;
 
     const historyMap = new Map<string, DailyHistoryRecord>();
-    const siteMonthlyAgg = new Map<string, { f: number, m: number, t: number, lastT: number, lastF: number, lastM: number }>();
+    // siteAgg collectera les données pour TOUS les sites actifs dans l'année cible
+    const siteAgg = new Map<string, { f: number, m: number, t: number, lastT: number, lastF: number, lastM: number }>();
     let annualRealized = 0;
 
     validRows.forEach(({ row, dateObj, dateStr }) => {
@@ -123,7 +123,25 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       const m = cleanNum(row[col.mobile]);
       const t = cleanNum(row[col.total]) || (f + m);
 
-      if (dateObj.getFullYear() === targetYear) annualRealized += t;
+      if (dateObj.getFullYear() === targetYear) {
+        annualRealized += t;
+        
+        // On initialise l'agrégateur pour tout site actif dans l'année
+        if (!siteAgg.has(finalSiteName)) {
+          siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
+        }
+        const agg = siteAgg.get(finalSiteName)!;
+        
+        // On ne cumule dans 't' (mensuel) que si on est dans le mois cible
+        if (dateObj.getMonth() === targetMonth) {
+          agg.f += f; agg.m += m; agg.t += t;
+        }
+        
+        // On capture la dernière donnée connue pour le "Jour"
+        if (dateStr === latestDateStr) {
+          agg.lastT = t; agg.lastF = f; agg.lastM = m;
+        }
+      }
 
       if (!historyMap.has(dateStr)) {
         historyMap.set(dateStr, { date: dateStr, stats: { realized: 0, fixed: 0, mobile: 0 }, sites: [] });
@@ -139,17 +157,6 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
         objective: siteObjs.daily, region: finalRegion,
         manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
       });
-
-      if (dateObj.getMonth() === targetMonth && dateObj.getFullYear() === targetYear) {
-        if (!siteMonthlyAgg.has(finalSiteName)) {
-          siteMonthlyAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
-        }
-        const agg = siteMonthlyAgg.get(finalSiteName)!;
-        agg.f += f; agg.m += m; agg.t += t;
-        if (dateStr === latestDateStr) {
-          agg.lastT = t; agg.lastF = f; agg.lastM = m;
-        }
-      }
     });
 
     const history = Array.from(historyMap.values()).sort((a, b) => {
@@ -159,7 +166,7 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     });
 
     const regionsMap = new Map<string, RegionData>();
-    siteMonthlyAgg.forEach((stats, name) => {
+    siteAgg.forEach((stats, name) => {
       const siteInfo = getSiteByInput(name);
       const regName = siteInfo ? siteInfo.region : "AUTRES STRUCTURES";
       if (!regionsMap.has(regName)) regionsMap.set(regName, { name: regName, sites: [] });
@@ -172,9 +179,9 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       });
     });
 
-    const monthlyRealized = Array.from(siteMonthlyAgg.values()).reduce((acc, s) => acc + s.t, 0);
-    const monthlyFixed = Array.from(siteMonthlyAgg.values()).reduce((acc, s) => acc + s.f, 0);
-    const monthlyMobile = Array.from(siteMonthlyAgg.values()).reduce((acc, s) => acc + s.m, 0);
+    const monthlyRealized = Array.from(siteAgg.values()).reduce((acc, s) => acc + s.t, 0);
+    const monthlyFixed = Array.from(siteAgg.values()).reduce((acc, s) => acc + s.f, 0);
+    const monthlyMobile = Array.from(siteAgg.values()).reduce((acc, s) => acc + s.m, 0);
     const objAnn = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
     const objMens = Math.round(objAnn / 12);
     const objDay = Math.round(objAnn / WORKING_DAYS_YEAR);
@@ -210,7 +217,6 @@ export const saveRecordToSheet = async (url: string, payload: any): Promise<void
       },
       body: JSON.stringify(payload),
     });
-    // Note: Avec mode 'no-cors', la réponse est opaque. On ne peut pas vérifier response.ok.
     return;
   } catch (error) {
     console.error("Erreur lors de l'enregistrement:", error);
