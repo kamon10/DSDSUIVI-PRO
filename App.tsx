@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1 } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
@@ -203,6 +204,7 @@ const App: React.FC = () => {
             {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
             {activeTab === 'cockpit' && <VisualDashboard data={data} />}
+            {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'evolution' && <EvolutionView data={data} />}
             {activeTab === 'comparison' && <ComparisonView data={data} />}
             {activeTab === 'recap' && <RecapView data={data} />}
