@@ -2,13 +2,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1 } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
 import { PerformanceView } from './components/PerformanceView';
-import { DailyView } from './components/DailyView';
 import { DetailedHistoryView } from './components/DetailedHistoryView';
 import { RecapView } from './components/RecapView';
 import { PulsePerformance } from './components/PulsePerformance';
 import { EvolutionView } from './components/EvolutionView';
 import { ComparisonView } from './components/ComparisonView';
-import { SiteObjectivesView } from './components/SiteObjectivesView';
 import { SummaryView } from './components/SummaryView';
 import { WeeklyView } from './components/WeeklyView';
 import { fetchSheetData } from './services/googleSheetService';
@@ -34,9 +32,7 @@ const App: React.FC = () => {
   }, [sheetInput]);
 
   const handleSync = useCallback(async (isSilent = false, force = false) => {
-    // Empêche les requêtes concurrentes
     if (isSyncingRef.current) return;
-    
     const currentInput = sheetInputRef.current;
     if (!currentInput) return;
     
@@ -46,19 +42,15 @@ const App: React.FC = () => {
 
     try {
       const result = await fetchSheetData(currentInput.trim(), force);
-      
-      // result est null si le contenu CSV n'a pas changé (optimisation)
       if (result) {
         setData(result);
         setLastSync(new Date());
         setSyncStatus('synced');
         localStorage.setItem('gsheet_input_1', currentInput.trim());
       } else {
-        // Le contenu n'a pas changé, on met quand même à jour l'heure de vérification
         setLastSync(new Date());
         setSyncStatus('synced');
       }
-      
       if (!isSilent) setShowSettings(false);
       setError(null);
     } catch (err: any) {
@@ -73,21 +65,17 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Sync initiale
   useEffect(() => {
     handleSync(false, true);
   }, [handleSync]);
 
-  // Polling automatique robuste toutes les 30 secondes
   useEffect(() => {
     const interval = setInterval(() => {
       handleSync(true, false);
     }, 30000); 
-
     return () => clearInterval(interval);
   }, [handleSync]);
 
-  // Détection de données obsolètes (stale) si pas de synchro depuis 5 min
   useEffect(() => {
     const staleCheck = setInterval(() => {
       if (lastSync && (new Date().getTime() - lastSync.getTime() > 300000)) {
@@ -99,12 +87,11 @@ const App: React.FC = () => {
 
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse' },
-    { id: 'daily', icon: <Calendar size={16} />, label: 'Jour' },
+    { id: 'cockpit', icon: <LayoutDashboard size={16} />, label: 'Cockpit' },
     { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine' },
     { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.' },
     { id: 'comparison', icon: <ArrowLeftRight size={16} />, label: 'Compare' },
     { id: 'recap', icon: <FileText size={16} />, label: 'Récap' },
-    { id: 'dashboard', icon: <LayoutDashboard size={16} />, label: 'Stats' },
     { id: 'performance', icon: <BarChart3 size={16} />, label: 'Rang' },
     { id: 'summary', icon: <Layout size={16} />, label: 'Résumé' }
   ];
@@ -215,9 +202,7 @@ const App: React.FC = () => {
             )}
             {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
-            {activeTab === 'dashboard' && <VisualDashboard data={data} />}
-            {activeTab === 'daily' && <DailyView data={data} />}
-            {activeTab === 'weekly' && <WeeklyView data={data} />}
+            {activeTab === 'cockpit' && <VisualDashboard data={data} />}
             {activeTab === 'evolution' && <EvolutionView data={data} />}
             {activeTab === 'comparison' && <ComparisonView data={data} />}
             {activeTab === 'recap' && <RecapView data={data} />}
