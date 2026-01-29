@@ -52,17 +52,32 @@ export const DailyView: React.FC<DailyViewProps> = ({ data }) => {
   const handleWhatsAppReminder = (site: any) => {
     if (!site.phone) return;
     
-    // Nettoyage du numéro (Format WhatsApp nécessite l'indicatif pays sans +)
+    // Nettoyage complet : on ne garde que les chiffres
     let cleanPhone = site.phone.replace(/\D/g, '');
+    
+    /**
+     * FORMATAGE WHATSAPP CÔTE D'IVOIRE
+     * Nouveau format 10 chiffres : 0XXXXXXXXX
+     * Format international requis : 2250XXXXXXXXX (13 chiffres au total)
+     */
     if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
-      cleanPhone = '225' + cleanPhone.substring(1);
-    } else if (cleanPhone.length === 8) {
-      cleanPhone = '2250' + cleanPhone;
+      cleanPhone = '225' + cleanPhone;
     } else if (cleanPhone.length === 10 && !cleanPhone.startsWith('225')) {
+       // Cas où le numéro est saisi sans le 0 mais fait 10 chiffres (peu probable en CI)
+       cleanPhone = '225' + cleanPhone;
+    } else if (cleanPhone.length === 8) {
+       // Ancien format 8 chiffres, on assume l'ajout du 07 par défaut
+       cleanPhone = '22507' + cleanPhone;
+    } else if (cleanPhone.startsWith('225')) {
+       // Déjà au format international, on s'assure qu'il n'y a pas de +
+       cleanPhone = cleanPhone;
+    } else {
+       // Par défaut, on ajoute l'indicatif pays
        cleanPhone = '225' + cleanPhone;
     }
     
-    const message = `Bonjour ${site.manager || 'Responsable'}, sauf erreur de notre part, les données de prélèvements du ${selectedDate} pour le site ${site.name} n'ont pas encore été reçues dans le fichier national. Pourriez-vous procéder à la saisie dès que possible ? Merci.\n\nCordialement,\nLa Direction du Système d'Information CNTS.`;
+    // Nouveau modèle de message officiel DSD
+    const message = `Bonjour ${site.manager || 'Responsable'}, sauf erreur de notre part, les données de prélèvements du ${selectedDate} pour le site ${site.name} n'ont pas encore été reçues dans le fichier national. Pourriez-vous procéder à la saisie dès que possible ? Merci.\n\nCordialement,\nLa Direction des Structures Déconcentrées (DSD) CNTSCI.`;
     
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
