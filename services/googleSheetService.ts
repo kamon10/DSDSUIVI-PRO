@@ -70,14 +70,7 @@ const cleanNum = (val: any): number => {
 
 export const fetchSheetData = async (url: string, force = false): Promise<DashboardData | null> => {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
     const text = await response.text();
     if (!force && text === lastRawContent) return null;
@@ -108,7 +101,6 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     const latestDateStr = `${latestDateObj.getDate().toString().padStart(2, '0')}/${(latestDateObj.getMonth() + 1).toString().padStart(2, '0')}/${latestDateObj.getFullYear()}`;
 
     const historyMap = new Map<string, DailyHistoryRecord>();
-    // siteAgg collectera les données pour TOUS les sites actifs dans l'année cible
     const siteAgg = new Map<string, { f: number, m: number, t: number, lastT: number, lastF: number, lastM: number }>();
     let annualRealized = 0;
 
@@ -116,8 +108,12 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       const codeRaw = cleanStr(row[col.code]);
       const siteRaw = cleanStr(row[col.site]);
       const siteInfo = getSiteByInput(codeRaw) || getSiteByInput(siteRaw);
-      const finalSiteName = siteInfo ? siteInfo.name : (siteRaw || codeRaw);
-      const finalRegion = siteInfo ? siteInfo.region : "AUTRES STRUCTURES";
+      
+      // FILTRAGE STRICT : Ignorer si le site n'est pas dans notre liste officielle
+      if (!siteInfo) return;
+
+      const finalSiteName = siteInfo.name;
+      const finalRegion = siteInfo.region;
 
       const f = cleanNum(row[col.fixe]);
       const m = cleanNum(row[col.mobile]);
@@ -125,19 +121,13 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
 
       if (dateObj.getFullYear() === targetYear) {
         annualRealized += t;
-        
-        // On initialise l'agrégateur pour tout site actif dans l'année
         if (!siteAgg.has(finalSiteName)) {
           siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
         }
         const agg = siteAgg.get(finalSiteName)!;
-        
-        // On ne cumule dans 't' (mensuel) que si on est dans le mois cible
         if (dateObj.getMonth() === targetMonth) {
           agg.f += f; agg.m += m; agg.t += t;
         }
-        
-        // On capture la dernière donnée connue pour le "Jour"
         if (dateStr === latestDateStr) {
           agg.lastT = t; agg.lastF = f; agg.lastM = m;
         }
@@ -168,7 +158,8 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     const regionsMap = new Map<string, RegionData>();
     siteAgg.forEach((stats, name) => {
       const siteInfo = getSiteByInput(name);
-      const regName = siteInfo ? siteInfo.region : "AUTRES STRUCTURES";
+      if (!siteInfo) return;
+      const regName = siteInfo.region;
       if (!regionsMap.has(regName)) regionsMap.set(regName, { name: regName, sites: [] });
       const siteObjs = getSiteObjectives(name);
       regionsMap.get(regName)!.sites.push({
@@ -202,19 +193,12 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
   }
 };
 
-/**
- * Envoie les données de prélèvement vers un Google Apps Script (Web App)
- * @param url L'URL de déploiement de la Web App Apps Script
- * @param payload Les données à enregistrer
- */
 export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
   try {
     await fetch(url, {
       method: 'POST',
       mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     return;
