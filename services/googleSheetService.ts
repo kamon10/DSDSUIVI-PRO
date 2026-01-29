@@ -6,7 +6,6 @@ const MONTHS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-// Variable pour stocker le dernier contenu brut afin d'éviter les calculs inutiles
 let lastRawContent = "";
 
 const cleanStr = (s: any): string => {
@@ -73,7 +72,7 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
   try {
     const isApi = !url.includes('docs.google.com') && !url.endsWith('.csv');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // Timeout 15s
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`, {
       signal: controller.signal
@@ -81,18 +80,8 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
-
-    if (isApi) {
-      const jsonData = await response.json();
-      return jsonData as DashboardData;
-    }
-
     const text = await response.text();
-    
-    // Si le contenu n'a pas changé et qu'on ne force pas, on renvoie null (pas de mise à jour nécessaire)
-    if (!force && text === lastRawContent) {
-      return null;
-    }
+    if (!force && text === lastRawContent) return null;
     lastRawContent = text;
 
     const rows = parseCSV(text);
@@ -128,7 +117,7 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       const siteRaw = cleanStr(row[col.site]);
       const siteInfo = getSiteByInput(codeRaw) || getSiteByInput(siteRaw);
       const finalSiteName = siteInfo ? siteInfo.name : (siteRaw || codeRaw);
-      const finalRegion = siteInfo ? siteInfo.region : "AUTRES SITES";
+      const finalRegion = siteInfo ? siteInfo.region : "AUTRES STRUCTURES";
 
       const f = cleanNum(row[col.fixe]);
       const m = cleanNum(row[col.mobile]);
@@ -172,8 +161,7 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     const regionsMap = new Map<string, RegionData>();
     siteMonthlyAgg.forEach((stats, name) => {
       const siteInfo = getSiteByInput(name);
-      const regName = siteInfo ? siteInfo.region : "AUTRES SITES";
-      if (regName === "AUTRES SITES") return;
+      const regName = siteInfo ? siteInfo.region : "AUTRES STRUCTURES";
       if (!regionsMap.has(regName)) regionsMap.set(regName, { name: regName, sites: [] });
       const siteObjs = getSiteObjectives(name);
       regionsMap.get(regName)!.sites.push({
@@ -207,12 +195,25 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
   }
 };
 
-export const saveRecordToSheet = async (url: string, payload: any) => {
-  const response = await fetch(url, { 
-    method: 'POST', 
-    mode: 'no-cors', 
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload) 
-  });
-  return response;
+/**
+ * Envoie les données de prélèvement vers un Google Apps Script (Web App)
+ * @param url L'URL de déploiement de la Web App Apps Script
+ * @param payload Les données à enregistrer
+ */
+export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    // Note: Avec mode 'no-cors', la réponse est opaque. On ne peut pas vérifier response.ok.
+    return;
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement:", error);
+    throw new Error("Erreur de connexion lors de l'envoi des données.");
+  }
 };
