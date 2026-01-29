@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { Calendar, Layers, TrendingUp, Filter, Target, CheckCircle2, AlertTriangle, XCircle, Clock, MapPin, Zap, Activity } from 'lucide-react';
 import { COLORS } from '../constants';
 
@@ -31,9 +31,27 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     return Array.from(years).sort((a, b) => b.localeCompare(a));
   }, [data.dailyHistory]);
 
-  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<number>(-1);
+  const [selectedWeekNum, setSelectedWeekNum] = useState<number | null>(null);
 
-  // 2. Extraire les mois disponibles pour l'année sélectionnée
+  // Synchronisation des filtres dès que les données arrivent
+  useEffect(() => {
+    if (data.dailyHistory.length > 0) {
+      const latest = data.dailyHistory[0]; // Le service trie par date décroissante
+      const [,, y] = latest.date.split('/');
+      const m = parseInt(latest.date.split('/')[1]) - 1;
+      
+      if (!selectedYear || !availableYears.includes(selectedYear)) {
+        setSelectedYear(y);
+      }
+      if (selectedMonth === -1) {
+        setSelectedMonth(m);
+      }
+    }
+  }, [data.dailyHistory, availableYears]);
+
+  // Extraire les mois pour l'année sélectionnée
   const availableMonths = useMemo(() => {
     const months = new Set<number>();
     data.dailyHistory.forEach(h => {
@@ -42,27 +60,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
         months.add(parseInt(parts[1]) - 1);
       }
     });
-    return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, selectedYear]);
-
-  const [selectedMonth, setSelectedMonth] = useState<number>(-1);
-
-  // Sync initiale et mise à jour quand les données changent
-  useEffect(() => {
-    if (availableYears.length > 0) {
-      if (!selectedYear || !availableYears.includes(selectedYear)) {
-        setSelectedYear(availableYears[0]);
-      }
+    const sorted = Array.from(months).sort((a, b) => a - b);
+    // Auto-ajustement si le mois n'est plus disponible pour l'année choisie
+    if (selectedMonth !== -1 && !months.has(selectedMonth) && sorted.length > 0) {
+      setSelectedMonth(sorted[sorted.length - 1]);
     }
-  }, [availableYears]);
-
-  useEffect(() => {
-    if (availableMonths.length > 0) {
-      if (selectedMonth === -1 || !availableMonths.includes(selectedMonth)) {
-        setSelectedMonth(availableMonths[availableMonths.length - 1]);
-      }
-    }
-  }, [availableMonths]);
+    return sorted;
+  }, [data.dailyHistory, selectedYear, selectedMonth]);
 
   // Calcul des statistiques hebdomadaires
   const weeklyStats = useMemo(() => {
@@ -71,11 +75,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     const weeksMap = new Map<number, any>();
     
     data.dailyHistory.forEach(record => {
-      const [d, m, y] = record.date.split('/');
-      const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+      const parts = record.date.split('/');
+      const d = parseInt(parts[0]);
+      const m = parseInt(parts[1]) - 1;
+      const y = parts[2];
       
-      // Fix: Parse month string to number for arithmetic operation to avoid TypeScript error on line 77
-      if (y === selectedYear && (parseInt(m) - 1) === selectedMonth) {
+      if (y === selectedYear && m === selectedMonth) {
+        const dateObj = new Date(parseInt(y), m, d);
         const weekNum = getWeekNumber(dateObj);
         
         if (!weeksMap.has(weekNum)) {
@@ -107,7 +113,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
       }
     });
 
-    const weeklyObjective = Math.round((data.monthly.objective || 1) / 4.33);
+    const monthlyObjective = data.monthly.objective || 1;
+    const weeklyObjective = Math.round(monthlyObjective / 4.33);
 
     return Array.from(weeksMap.values())
       .sort((a, b) => a.week - b.week)
@@ -122,11 +129,10 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
       }));
   }, [data.dailyHistory, selectedYear, selectedMonth, data.monthly.objective]);
 
-  const [selectedWeekNum, setSelectedWeekNum] = useState<number | null>(null);
-  
-  const activeWeekData = useMemo(() => 
-    selectedWeekNum ? weeklyStats.find(w => w.week === selectedWeekNum) : weeklyStats[weeklyStats.length - 1]
-  , [selectedWeekNum, weeklyStats]);
+  const activeWeekData = useMemo(() => {
+    if (weeklyStats.length === 0) return null;
+    return selectedWeekNum ? (weeklyStats.find(w => w.week === selectedWeekNum) || weeklyStats[weeklyStats.length - 1]) : weeklyStats[weeklyStats.length - 1];
+  }, [selectedWeekNum, weeklyStats]);
 
   const intensityColor = useMemo(() => {
     if (!activeWeekData) return COLORS.blue;
@@ -136,8 +142,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     return COLORS.red;
   }, [activeWeekData]);
 
-  if (!selectedYear || selectedMonth === -1) {
-    return <div className="p-20 text-center opacity-30 font-black uppercase tracking-widest">Initialisation...</div>;
+  if (data.dailyHistory.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40 gap-6 opacity-20">
+        <Layers size={64} className="text-slate-300 animate-pulse" />
+        <p className="text-xs font-black text-slate-400 uppercase tracking-[0.5em]">Aucune donnée historique détectée</p>
+      </div>
+    );
   }
 
   return (
@@ -157,7 +168,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
               <div>
                 <h2 className="text-4xl font-black uppercase tracking-tighter leading-none mb-3">Rythme Hebdomadaire</h2>
                 <p className="text-emerald-300/40 font-black uppercase tracking-[0.6em] text-[10px] flex items-center gap-3">
-                  <Activity size={14} className="text-emerald-500 animate-pulse" /> PERFORMANCE {MONTHS_FR[selectedMonth]?.toUpperCase()} {selectedYear}
+                  <Activity size={14} className="text-emerald-500 animate-pulse" /> 
+                  PERFORMANCE {selectedMonth !== -1 ? MONTHS_FR[selectedMonth].toUpperCase() : '...'} {selectedYear || '...'}
                 </p>
               </div>
             </div>
@@ -202,20 +214,28 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
               </div>
            </div>
            
-           <div className="flex-1 min-h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+           <div className="flex-1 min-h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%" key={selectedMonth}>
                 <BarChart data={weeklyStats} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} onClick={(data: any) => {
                   if (data && data.activePayload) setSelectedWeekNum(data.activePayload[0].payload.week);
                 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} format={(v) => `S${v}`} />
+                  <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} tickFormatter={(v) => `S${v}`} />
                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} />
                   <Tooltip 
                     cursor={{fill: '#f8fafc'}} 
                     contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1.5rem' }} 
                   />
-                  <Bar dataKey="fixed" stackId="a" fill={COLORS.fixed} name="Fixe" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="mobile" stackId="a" fill={COLORS.mobile} radius={[8, 8, 0, 0]} name="Mobile" />
+                  <Bar dataKey="fixed" stackId="a" fill={COLORS.fixed} name="Fixe">
+                    {weeklyStats.map((entry, index) => (
+                      <Cell key={`cell-f-${index}`} fillOpacity={selectedWeekNum === entry.week ? 1 : 0.8} />
+                    ))}
+                  </Bar>
+                  <Bar dataKey="mobile" stackId="a" fill={COLORS.mobile} radius={[8, 8, 0, 0]} name="Mobile">
+                    {weeklyStats.map((entry, index) => (
+                      <Cell key={`cell-m-${index}`} fillOpacity={selectedWeekNum === entry.week ? 1 : 0.8} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
            </div>
@@ -229,53 +249,63 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                 <Clock size={14} style={{ color: intensityColor }} /> Focus Période
               </p>
-              <h3 className="text-2xl font-black text-slate-800 uppercase leading-none tracking-tighter mb-8">
-                {activeWeekData?.formattedRange.split('(')[0] || "Détails"}
-                <span className="block text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest italic">
-                  {activeWeekData?.formattedRange.match(/\(([^)]+)\)/)?.[1] || ""}
-                </span>
-              </h3>
+              {activeWeekData ? (
+                <>
+                  <h3 className="text-2xl font-black text-slate-800 uppercase leading-none tracking-tighter mb-8">
+                    {activeWeekData.formattedRange.split('(')[0]}
+                    <span className="block text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest italic">
+                      {activeWeekData.formattedRange.match(/\(([^)]+)\)/)?.[1] || ""}
+                    </span>
+                  </h3>
 
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                 <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-center group/kpi">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover/kpi:text-emerald-500 transition-colors">Réalisé</p>
-                    <p className="text-3xl font-black text-slate-900">{activeWeekData?.total.toLocaleString() || 0}</p>
-                 </div>
-                 <div className="bg-slate-900 p-6 rounded-[2rem] text-center shadow-xl group/kpi">
-                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1 group-hover/kpi:text-red-400 transition-colors">Atteinte</p>
-                    <p className="text-3xl font-black text-white" style={{ color: intensityColor }}>{(activeWeekData?.percentage || 0).toFixed(0)}%</p>
-                 </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-                  <MapPin size={14} className="text-blue-500" /> Contribution Régionale
-                </p>
-                <div className="space-y-3 max-h-[160px] overflow-y-auto no-scrollbar pr-2">
-                   {activeWeekData?.sortedRegions.slice(0, 4).map((reg: any, i: number) => (
-                     <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all">
-                        <span className="text-[10px] font-black text-slate-700 uppercase truncate pr-4">{reg.name.replace('PRES ', '')}</span>
-                        <div className="flex items-center gap-3">
-                           <span className="text-[10px] font-black text-slate-900">{reg.total.toLocaleString()}</span>
-                           <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: i === 0 ? COLORS.green : i === 1 ? COLORS.blue : '#cbd5e1' }}></div>
-                        </div>
+                  <div className="grid grid-cols-2 gap-4 mb-10">
+                     <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-center group/kpi">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover/kpi:text-emerald-500 transition-colors">Réalisé</p>
+                        <p className="text-3xl font-black text-slate-900">{activeWeekData.total.toLocaleString()}</p>
                      </div>
-                   ))}
+                     <div className="bg-slate-900 p-6 rounded-[2rem] text-center shadow-xl group/kpi">
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1 group-hover/kpi:text-red-400 transition-colors">Atteinte</p>
+                        <p className="text-3xl font-black" style={{ color: intensityColor }}>{activeWeekData.percentage.toFixed(0)}%</p>
+                     </div>
+                  </div>
+
+                  <div className="space-y-4 mb-8">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                      <MapPin size={14} className="text-blue-500" /> Contribution Régionale
+                    </p>
+                    <div className="space-y-3 max-h-[160px] overflow-y-auto no-scrollbar pr-2">
+                       {activeWeekData.sortedRegions.slice(0, 4).map((reg: any, i: number) => (
+                         <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all">
+                            <span className="text-[10px] font-black text-slate-700 uppercase truncate pr-4">{reg.name.replace('PRES ', '')}</span>
+                            <div className="flex items-center gap-3">
+                               <span className="text-[10px] font-black text-slate-900">{reg.total.toLocaleString()}</span>
+                               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: i === 0 ? COLORS.green : i === 1 ? COLORS.blue : '#cbd5e1' }}></div>
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="py-20 text-center text-slate-300 uppercase font-black text-[10px] tracking-widest">
+                  Sélectionnez une semaine
                 </div>
-              </div>
+              )}
            </div>
 
-           <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Intensité</p>
-                <p className="text-lg font-black uppercase tracking-tighter" style={{ color: intensityColor }}>
-                  {activeWeekData?.percentage >= 100 ? 'Élite' : activeWeekData?.percentage >= 75 ? 'Standard' : 'Critique'}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-sm">
-                 <Zap size={24} style={{ fill: activeWeekData?.percentage >= 100 ? intensityColor : 'none', color: intensityColor }} />
-              </div>
-           </div>
+           {activeWeekData && (
+             <div className="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Intensité</p>
+                  <p className="text-lg font-black uppercase tracking-tighter" style={{ color: intensityColor }}>
+                    {activeWeekData.percentage >= 100 ? 'Élite' : activeWeekData.percentage >= 75 ? 'Standard' : 'Critique'}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-sm">
+                   <Zap size={24} style={{ fill: activeWeekData.percentage >= 100 ? intensityColor : 'none', color: intensityColor }} />
+                </div>
+             </div>
+           )}
         </div>
       </div>
 
@@ -287,8 +317,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
                  <Activity size={28} />
               </div>
               <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800 leading-none mb-1">Détails par Semaine</h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tableau consolidé du mois sélectionné</p>
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800 leading-none mb-1">Journal de Séquences</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comparaison des performances par semaine</p>
               </div>
            </div>
         </div>
@@ -297,11 +327,11 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
           <table className="w-full">
             <thead>
               <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-50 bg-slate-50/30">
-                <th className="px-12 py-6 text-left">Période</th>
-                <th className="px-8 py-6 text-center">Jours Actifs</th>
-                <th className="px-8 py-6 text-center">Mix de Collecte</th>
-                <th className="px-8 py-6 text-center">Réalisé</th>
-                <th className="px-12 py-6 text-right">Performance</th>
+                <th className="px-12 py-6 text-left">Séquence</th>
+                <th className="px-8 py-6 text-center">Activité</th>
+                <th className="px-8 py-6 text-center">Mix Fixe/Mob.</th>
+                <th className="px-8 py-6 text-center">Total</th>
+                <th className="px-12 py-6 text-right">Statut</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -325,19 +355,19 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
                     </td>
                     <td className="px-8 py-7 text-center">
                       <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100 text-[10px] font-black text-slate-500 uppercase">
-                        {w.days} jours <Activity size={10} className="text-blue-400" />
+                        {w.days} jours actifs
                       </div>
                     </td>
                     <td className="px-8 py-7 text-center">
                       <div className="flex items-center justify-center gap-4">
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs font-black text-emerald-600">{w.fixed.toLocaleString()}</span>
-                          <span className="text-[8px] font-black text-slate-300 uppercase">F</span>
+                        <div className="text-center">
+                          <p className="text-xs font-black text-emerald-600">{w.fixed.toLocaleString()}</p>
+                          <p className="text-[8px] font-black text-slate-300 uppercase">Fixe</p>
                         </div>
                         <div className="w-px h-6 bg-slate-100"></div>
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs font-black text-orange-600">{w.mobile.toLocaleString()}</span>
-                          <span className="text-[8px] font-black text-slate-300 uppercase">M</span>
+                        <div className="text-center">
+                          <p className="text-xs font-black text-orange-600">{w.mobile.toLocaleString()}</p>
+                          <p className="text-[8px] font-black text-slate-300 uppercase">Mobile</p>
                         </div>
                       </div>
                     </td>
