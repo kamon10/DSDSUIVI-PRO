@@ -4,21 +4,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#f59e0b">
-    <title>DSDSUIVI PRO - Cockpit National</title>
+    <meta name="theme-color" content="#ef4444">
+    <title>DSDSUIVI PRO - Ultra Cockpit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-mesh: #fffcf5;
+        }
         body {
             font-family: 'Inter', sans-serif;
-            /* Fond orangé très clair professionnel */
-            background-color: #fffcf5;
+            background-color: var(--bg-mesh);
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(35,100%,95%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(10,100%,92%,1) 0, transparent 50%),
+                radial-gradient(at 50% 50%, hsla(200,100%,98%,1) 0, transparent 50%);
+            background-attachment: fixed;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
+            color: #1e293b;
         }
+
+        /* Scrollbar Hypnotique */
         ::-webkit-scrollbar {
+            width: 0px;
             display: none;
         }
+
+        /* Animations de pulsation et de flottement */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .pulse-glow { animation: pulse-glow 2s infinite; }
+
+        /* Effet Glassmorphism Premium */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+        }
+
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .text-glow-red { text-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+        
         @keyframes tickerHorizontal {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
@@ -26,11 +71,16 @@
         .animate-ticker-infinite {
           display: flex;
           width: max-content;
-          animation: tickerHorizontal 80s linear infinite;
+          animation: tickerHorizontal 60s linear infinite;
         }
-        /* Ombres plus chaudes pour le fond orangé */
-        .shadow-warm {
-            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.1), 0 8px 10px -6px rgba(245, 158, 11, 0.05);
+
+        /* Transitions fluides de pages */
+        .page-transition {
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
     <script type="importmap">

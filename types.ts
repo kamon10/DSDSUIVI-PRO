@@ -61,4 +61,4 @@ export interface DashboardData {
 }
 
 /* Extended AppTab to include all navigation identifiers used in the application */
-export type AppTab = 'dashboard' | 'history' | 'recap' | 'entry' | 'ai-analyst' | 'daily' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison';
+export type AppTab = 'summary' | 'dashboard' | 'history' | 'recap' | 'daily' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives';
