@@ -10,9 +10,10 @@ import { EvolutionView } from './components/EvolutionView';
 import { ComparisonView } from './components/ComparisonView';
 import { SiteObjectivesView } from './components/SiteObjectivesView';
 import { SummaryView } from './components/SummaryView';
+import { WeeklyView } from './components/WeeklyView';
 import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers } from 'lucide-react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
@@ -99,6 +100,7 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse' },
     { id: 'daily', icon: <Calendar size={16} />, label: 'Jour' },
+    { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine' },
     { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.' },
     { id: 'comparison', icon: <ArrowLeftRight size={16} />, label: 'Compare' },
     { id: 'recap', icon: <FileText size={16} />, label: 'Récap' },
@@ -215,6 +217,7 @@ const App: React.FC = () => {
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
             {activeTab === 'dashboard' && <VisualDashboard data={data} />}
             {activeTab === 'daily' && <DailyView data={data} />}
+            {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'evolution' && <EvolutionView data={data} />}
             {activeTab === 'comparison' && <ComparisonView data={data} />}
             {activeTab === 'recap' && <RecapView data={data} />}
