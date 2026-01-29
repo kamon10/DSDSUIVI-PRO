@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData, AppTab } from '../types';
 import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2 } from 'lucide-react';
@@ -85,7 +84,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
-        <div className="relative overflow-hidden bg-[#0f172a] rounded-[4rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 group">
+        <div className="relative overflow-hidden bg-[#0f172a] rounded-[4.5rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 group">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 blur-[120px] rounded-full -mr-40 -mt-40 animate-pulse"></div>
           <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
             <div className="relative shrink-0">
@@ -168,7 +167,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Vitalité des Régions</h3>
            </div>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.regionsPerf.slice(0, 8).map((reg, idx) => (
+              {stats.regionsPerf.map((reg, idx) => (
                 <div key={idx} className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100">
                   <div className="flex justify-between items-start mb-6">
                      <h4 className="text-base font-black uppercase tracking-tighter text-slate-800 leading-none">{reg.name}</h4>
