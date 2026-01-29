@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { WORKING_DAYS_YEAR, SITES_DATA, COLORS } from '../constants';
-import { ChevronDown, FileImage, FileText, Loader2, TableProperties, AlertCircle, Printer, Download, Maximize } from 'lucide-react';
+import { ChevronDown, FileImage, FileText, Loader2, TableProperties, AlertCircle, Printer, Download, Maximize, CalendarCheck, BarChart3, TrendingUp } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -97,15 +97,36 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   }, [data.regions, dailyRecord, selectedDate, data.dailyHistory]);
 
   const grandTotals = useMemo(() => {
-    if (formattedData.length === 0) return null;
+    if (formattedData.length === 0 || !isValidDate(selectedDate)) return null;
+    
+    const [selD, selM, selY] = selectedDate.split('/').map(Number);
+    
     const fixed = formattedData.reduce((acc, r) => acc + r.fixePres, 0);
     const mobile = formattedData.reduce((acc, r) => acc + r.mobilePres, 0);
     const totalJour = fixed + mobile;
     const totalMois = formattedData.reduce((acc, r) => acc + r.totalMoisPres, 0);
+    
+    // Calcul du cumul annuel à la date sélectionnée
+    const totalAnneeALaDate = data.dailyHistory
+      .filter(h => {
+        const [hD, hM, hY] = h.date.split('/').map(Number);
+        return hY === selY && (hM < selM || (hM === selM && hD <= selD));
+      })
+      .reduce((acc, h) => acc + h.stats.realized, 0);
+
     const objMens = formattedData.reduce((acc, r) => acc + r.objMensPres, 0);
     const achievementGlobal = objMens > 0 ? (totalMois / objMens) * 100 : 0;
-    return { fixed, mobile, totalJour, totalMois, objMens, achievementGlobal };
-  }, [formattedData]);
+    
+    return { 
+      fixed, 
+      mobile, 
+      totalJour, 
+      totalMois, 
+      totalAnnee: totalAnneeALaDate, 
+      objMens, 
+      achievementGlobal 
+    };
+  }, [formattedData, data.dailyHistory, selectedDate]);
 
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!recapRef.current) return;
@@ -209,20 +230,45 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
           className="min-w-[850px] p-6 bg-white text-slate-900"
           style={{ width: '100%', maxWidth: '900px', margin: '0 auto' }}
         >
-          {/* HEADER */}
+          {/* HEADER DOCUMENT */}
           <div className="flex justify-between items-center mb-6 border-b-2 border-slate-900 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <Printer size={24} />
               </div>
               <div>
-                <h1 className="text-2xl font-black uppercase tracking-tighter leading-none text-slate-900">DETAIL PRELEVEMENTS</h1>
+                <h1 className="text-2xl font-black uppercase tracking-tighter leading-none text-slate-900">DETAIL DES PRELEVEMENTS</h1>
                 <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Centre National de Transfusion Sanguine CI</p>
               </div>
             </div>
             <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-center">
               <p className="text-[7px] font-black uppercase tracking-[0.4em] mb-0.5 opacity-50">SITUATION AU</p>
               <p className="text-xl font-black leading-none">{selectedDate}</p>
+            </div>
+          </div>
+
+          {/* SYNTHESE KPI (JOUR / MOIS / ANNEE) - AJOUT DEMANDÉ */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="border-2 border-slate-900 p-3 flex flex-col items-center justify-center bg-slate-50">
+               <div className="flex items-center gap-2 mb-1">
+                 <CalendarCheck size={14} className="text-slate-900" />
+                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Total du Jour</span>
+               </div>
+               <p className="text-3xl font-black text-slate-900 leading-none">{grandTotals.totalJour.toLocaleString()}</p>
+            </div>
+            <div className="border-2 border-slate-900 p-3 flex flex-col items-center justify-center bg-orange-50/30">
+               <div className="flex items-center gap-2 mb-1">
+                 <BarChart3 size={14} className="text-orange-600" />
+                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-orange-400">Total du Mois</span>
+               </div>
+               <p className="text-3xl font-black text-orange-600 leading-none">{grandTotals.totalMois.toLocaleString()}</p>
+            </div>
+            <div className="border-2 border-slate-900 p-3 flex flex-col items-center justify-center bg-red-50/30">
+               <div className="flex items-center gap-2 mb-1">
+                 <TrendingUp size={14} className="text-red-600" />
+                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-400">Total de l'Année</span>
+               </div>
+               <p className="text-3xl font-black text-red-600 leading-none">{grandTotals.totalAnnee.toLocaleString()}</p>
             </div>
           </div>
 
