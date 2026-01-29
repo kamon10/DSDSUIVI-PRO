@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1 } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
@@ -13,61 +12,89 @@ import { SiteObjectivesView } from './components/SiteObjectivesView';
 import { SummaryView } from './components/SummaryView';
 import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock } from 'lucide-react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [scriptUrl, setScriptUrl] = useState(localStorage.getItem('gsheet_script_url') || "");
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isSyncingRef = useRef(false);
   const sheetInputRef = useRef(sheetInput);
+  
   useEffect(() => {
     sheetInputRef.current = sheetInput;
   }, [sheetInput]);
 
-  const handleSync = useCallback(async (isSilent = false) => {
+  const handleSync = useCallback(async (isSilent = false, force = false) => {
+    // Empêche les requêtes concurrentes
+    if (isSyncingRef.current) return;
+    
     const currentInput = sheetInputRef.current;
     if (!currentInput) return;
     
+    isSyncingRef.current = true;
     if (!isSilent) setLoading(true);
-    const refreshIconNode = document.getElementById('sync-icon');
-    if (refreshIconNode) refreshIconNode.classList.add('animate-spin');
+    setSyncStatus('syncing');
 
     try {
-      const result = await fetchSheetData(currentInput.trim());
-      setData(result);
-      localStorage.setItem('gsheet_input_1', currentInput.trim());
+      const result = await fetchSheetData(currentInput.trim(), force);
+      
+      // result est null si le contenu CSV n'a pas changé (optimisation)
+      if (result) {
+        setData(result);
+        setLastSync(new Date());
+        setSyncStatus('synced');
+        localStorage.setItem('gsheet_input_1', currentInput.trim());
+      } else {
+        // Le contenu n'a pas changé, on met quand même à jour l'heure de vérification
+        setLastSync(new Date());
+        setSyncStatus('synced');
+      }
+      
       if (!isSilent) setShowSettings(false);
       setError(null);
     } catch (err: any) {
-      console.error(err);
-      if (!isSilent) setError(err.message || "Échec de la connexion à la source.");
+      console.error("Sync Error:", err);
+      setSyncStatus('error');
+      if (!isSilent) {
+        setError(err.message || "Échec de la connexion à la source.");
+      }
     } finally {
-      if (!isSilent) setLoading(false);
-      if (refreshIconNode) refreshIconNode.classList.remove('animate-spin');
+      setLoading(false);
+      isSyncingRef.current = false;
     }
   }, []);
 
+  // Sync initiale
   useEffect(() => {
-    handleSync();
+    handleSync(false, true);
   }, [handleSync]);
 
+  // Polling automatique robuste toutes les 30 secondes
   useEffect(() => {
     const interval = setInterval(() => {
-      handleSync(true);
-    }, 3000);
+      handleSync(true, false);
+    }, 30000); 
+
     return () => clearInterval(interval);
   }, [handleSync]);
 
-  const saveConfig = () => {
-    localStorage.setItem('gsheet_script_url', scriptUrl.trim());
-    handleSync();
-  };
+  // Détection de données obsolètes (stale) si pas de synchro depuis 5 min
+  useEffect(() => {
+    const staleCheck = setInterval(() => {
+      if (lastSync && (new Date().getTime() - lastSync.getTime() > 300000)) {
+        setSyncStatus('stale');
+      }
+    }, 10000);
+    return () => clearInterval(staleCheck);
+  }, [lastSync]);
 
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse' },
@@ -79,6 +106,11 @@ const App: React.FC = () => {
     { id: 'performance', icon: <BarChart3 size={16} />, label: 'Rang' },
     { id: 'summary', icon: <Layout size={16} />, label: 'Résumé' }
   ];
+
+  const formatLastSync = () => {
+    if (!lastSync) return "--:--";
+    return lastSync.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0 selection:bg-red-200">
@@ -92,9 +124,11 @@ const App: React.FC = () => {
                <span className="font-black text-xl tracking-tighter leading-none uppercase text-white">DSDSUIVI</span>
                <div className="flex items-center gap-2 mt-1">
                  <span className="text-[8px] text-orange-400 font-black uppercase tracking-[0.3em] leading-none">Cockpit National CI</span>
-                 <div className="flex items-center gap-1 bg-green-500/20 px-1.5 py-0.5 rounded-full border border-green-500/30">
-                    <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-[6px] text-green-400 font-black uppercase">LIVE</span>
+                 <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${syncStatus === 'error' ? 'bg-red-500/20 border-red-500/30' : 'bg-green-500/20 border-green-500/30'}`}>
+                    <div className={`w-1 h-1 rounded-full ${syncStatus === 'error' ? 'bg-red-400' : 'bg-green-400 animate-pulse'}`}></div>
+                    <span className={`text-[6px] font-black uppercase ${syncStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+                      {syncStatus === 'syncing' ? 'SYNC...' : syncStatus === 'error' ? 'ERROR' : 'LIVE'}
+                    </span>
                  </div>
                </div>
              </div>
@@ -119,13 +153,19 @@ const App: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-3">
+            <div className="hidden xl:flex flex-col items-end mr-2">
+               <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">Dernière vérification</span>
+               <div className="flex items-center gap-1 text-[9px] font-bold text-white/60">
+                  <Clock size={10} className="text-blue-400" />
+                  {formatLastSync()}
+               </div>
+            </div>
             <button 
-              onClick={() => handleSync(false)} 
-              disabled={loading} 
+              onClick={() => handleSync(false, true)} 
+              disabled={syncStatus === 'syncing'} 
               className="p-3 bg-white/10 text-white rounded-xl shadow-md disabled:opacity-50 hover:bg-white/20 transition-all border border-white/10 flex items-center gap-2 group"
             >
-              <RefreshCw id="sync-icon" size={18} className={loading ? 'animate-spin' : ''} />
-              <span className="hidden lg:block text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Sync</span>
+              <RefreshCw size={18} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
             </button>
             <button onClick={() => setShowSettings(true)} className="p-3 bg-white/10 rounded-xl border border-white/10 text-white hover:bg-white/20 transition-all">
               <Settings size={18} />
@@ -158,10 +198,19 @@ const App: React.FC = () => {
                 <div className="absolute inset-0 bg-red-500 blur-[40px] opacity-40 animate-pulse"></div>
                 <Activity size={64} className="text-red-600 animate-bounce relative z-10" />
              </div>
-             <p className="text-xs font-black text-slate-800 uppercase tracking-[0.5em] animate-pulse">Initialisation du Flux National...</p>
+             <p className="text-xs font-black text-slate-800 uppercase tracking-[0.5em] animate-pulse">Chargement du Flux...</p>
           </div>
         ) : (
           <div className="page-transition">
+            {syncStatus === 'error' && !loading && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-between text-red-600 animate-in slide-in-from-top-4">
+                 <div className="flex items-center gap-3">
+                    <AlertCircle size={20} />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Connexion interrompue. Nouvelle tentative en cours...</p>
+                 </div>
+                 <button onClick={() => handleSync(false, true)} className="px-4 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase">Réessayer maintenant</button>
+              </div>
+            )}
             {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
             {activeTab === 'dashboard' && <VisualDashboard data={data} />}
@@ -187,22 +236,22 @@ const App: React.FC = () => {
             <div className="space-y-6">
               <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-2">
                 <p className="text-[9px] font-black text-blue-800 uppercase leading-relaxed">
-                  L'application supporte désormais les sources <b>SQL Server</b> via une API REST. Collez simplement l'URL de votre endpoint JSON ci-dessous.
+                  L'application synchronise automatiquement les données toutes les 30 secondes pour garantir un cockpit à jour.
                 </p>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Endpoint (CSV ou JSON API)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Endpoint CSV / Google Sheet</label>
                 <input 
                   value={sheetInput} 
                   onChange={(e) => setSheetInput(e.target.value)} 
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 ring-red-50 outline-none transition-all"
-                  placeholder="URL Google Sheet ou API SQL"
+                  placeholder="URL Google Sheet"
                 />
               </div>
             </div>
             {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3"><AlertCircle size={18}/> {error}</div>}
             <div className="flex gap-4">
-              <button onClick={saveConfig} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95">Sauvegarder</button>
+              <button onClick={() => handleSync(false, true)} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95">Valider</button>
               <button onClick={() => setShowSettings(false)} className="flex-1 border border-slate-200 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all">Fermer</button>
             </div>
           </div>
