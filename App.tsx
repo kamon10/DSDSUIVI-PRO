@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1 } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
@@ -10,9 +9,10 @@ import { EvolutionView } from './components/EvolutionView';
 import { ComparisonView } from './components/ComparisonView';
 import { SummaryView } from './components/SummaryView';
 import { WeeklyView } from './components/WeeklyView';
+import { SiteSynthesisView } from './components/SiteSynthesisView';
 import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck } from 'lucide-react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
@@ -89,6 +89,7 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse' },
     { id: 'cockpit', icon: <LayoutDashboard size={16} />, label: 'Cockpit' },
+    { id: 'site-focus', icon: <UserCheck size={16} />, label: 'Focus' },
     { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine' },
     { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.' },
     { id: 'comparison', icon: <ArrowLeftRight size={16} />, label: 'Compare' },
@@ -203,7 +204,8 @@ const App: React.FC = () => {
             )}
             {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
-            {activeTab === 'cockpit' && <VisualDashboard data={data} />}
+            {activeTab === 'cockpit' && <VisualDashboard data={data} setActiveTab={setActiveTab} />}
+            {activeTab === 'site-focus' && <SiteSynthesisView data={data} />}
             {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'evolution' && <EvolutionView data={data} />}
             {activeTab === 'comparison' && <ComparisonView data={data} />}

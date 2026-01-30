@@ -1,3 +1,4 @@
+
 export interface DonationStats {
   realized: number;
   objective: number;
@@ -13,6 +14,8 @@ export interface SiteRecord {
   mobile: number;
   totalJour: number;
   totalMois: number;
+  monthlyFixed?: number;
+  monthlyMobile?: number;
   objDate: number;
   objMensuel: number;
   manager?: string;
@@ -58,4 +61,4 @@ export interface DashboardData {
   regions: RegionData[];
 }
 
-export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives';
+export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus';
