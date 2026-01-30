@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { DashboardData } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Line } from 'recharts';
@@ -294,6 +293,10 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ data }) => {
                 </p>
              </div>
              <div className="flex gap-4">
+                <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+                   <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                   <span className="text-[9px] font-black uppercase text-blue-700 tracking-widest">Total</span>
+                </div>
                 <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100">
                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                    <span className="text-[9px] font-black uppercase text-emerald-700 tracking-widest">Site Fixe</span>

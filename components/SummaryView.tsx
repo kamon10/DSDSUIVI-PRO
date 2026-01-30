@@ -91,8 +91,11 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
-        {/* CARTE VEDETTE : RESTE À COLLECTER */}
-        <div className="relative group overflow-hidden">
+        {/* CARTE VEDETTE : RESTE À COLLECTER -> Lien vers Pulse */}
+        <div 
+          onClick={() => setActiveTab('pulse')}
+          className="relative group overflow-hidden cursor-pointer"
+        >
           <div className={`absolute -inset-1 bg-gradient-to-r ${stats.isReached ? 'from-emerald-600 to-teal-400' : 'from-red-600 to-orange-500'} rounded-[4rem] blur opacity-25 group-hover:opacity-40 transition duration-1000`}></div>
           <div className="relative bg-white rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white flex flex-col lg:flex-row items-center justify-between gap-10">
             <div className="flex items-center gap-8">
@@ -119,26 +122,18 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
                    </p>
                 </div>
                 <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
-                  Il manque <span className="text-red-600">{stats.pochesRestantes.toLocaleString()} prélèvements</span> pour valider le contrat mensuel de <span className="text-slate-900">{data.monthly.objective.toLocaleString()} poches</span>.
-                </p>
-              </div>
-            )}
-            {stats.isReached && (
-              <div className="text-right">
-                <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 mb-4">
-                   <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
-                     <Heart size={14} className="fill-current"/> Excellence atteinte
-                   </p>
-                </div>
-                <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
-                  Félicitations aux équipes ! L'objectif national de ce mois a été surpassé.
+                  Il manque <span className="text-red-600">{stats.pochesRestantes.toLocaleString()} prélèvements</span> pour valider le contrat mensuel. <span className="text-slate-900 font-black block mt-1">Cliquez pour voir le Pulse →</span>
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="relative overflow-hidden bg-[#0f172a] rounded-[4.5rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 group">
+        {/* RÉSUMÉ NATIONAL -> Lien vers Cockpit */}
+        <div 
+          onClick={() => setActiveTab('cockpit')}
+          className="relative overflow-hidden bg-[#0f172a] rounded-[4.5rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 group cursor-pointer"
+        >
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 blur-[120px] rounded-full -mr-40 -mt-40 animate-pulse"></div>
           <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
             <div className="relative shrink-0">
@@ -181,14 +176,18 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
           </div>
         </div>
 
-        <div className="bg-white rounded-[3.5rem] p-10 shadow-xl border border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+        {/* MIX DE COLLECTE -> Lien vers Évolution */}
+        <div 
+          onClick={() => setActiveTab('evolution')}
+          className="bg-white rounded-[3.5rem] p-10 shadow-xl border border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-10 cursor-pointer hover:border-blue-200 transition-all"
+        >
            <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center shrink-0">
                  <PieChart size={32} />
               </div>
               <div>
                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Mix de Collecte National</h3>
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Répartition Fixe vs Mobile sur le mois</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Voir l'évolution temporelle →</p>
               </div>
            </div>
            <div className="flex-1 max-w-2xl space-y-6">
@@ -213,6 +212,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
            </div>
         </div>
 
+        {/* VITALITÉ DES RÉGIONS -> Lien vers Performance */}
         <div className="space-y-8">
            <div className="flex items-center gap-4 px-6">
               <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
@@ -222,7 +222,11 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
            </div>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {stats.regionsPerf.map((reg, idx) => (
-                <div key={idx} className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100">
+                <div 
+                  key={idx} 
+                  onClick={() => setActiveTab('performance')}
+                  className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
+                >
                   <div className="flex justify-between items-start mb-6">
                      <h4 className="text-base font-black uppercase tracking-tighter text-slate-800 leading-none">{reg.name}</h4>
                      <span className={`text-[10px] font-black px-3 py-1 rounded-full ${reg.percent >= 100 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>

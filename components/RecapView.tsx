@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { SITES_DATA } from '../constants';
-import { FileImage, FileText, Loader2, TableProperties, Printer, CalendarCheck, BarChart3, TrendingUp, Info, Target } from 'lucide-react';
+import { FileImage, FileText, Loader2, TableProperties, Printer, CalendarCheck, BarChart3, Target, Info } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -28,6 +28,12 @@ const isValidDate = (s: string) => {
   return parts.length === 3;
 };
 
+const getPerfColor = (perc: number) => {
+  if (perc > 100) return 'text-emerald-600';
+  if (perc === 100) return 'text-orange-500';
+  return 'text-red-600';
+};
+
 export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   const [selectedDate, setSelectedDate] = useState(data.date);
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -46,9 +52,24 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   const formattedData = useMemo(() => {
     if (!isValidDate(selectedDate)) return [];
     const [selD, selM, selY] = selectedDate.split('/').map(Number);
+    const isCurrentLatest = selectedDate === data.date;
 
     return data.regions.map(region => {
       const regionSites = region.sites.map(site => {
+        // Si c'est la date de situation actuelle, on utilise directement les données agrégées par le service
+        if (isCurrentLatest) {
+          const achievementGlobal = site.objMensuel > 0 ? (site.totalMois / site.objMensuel) * 100 : 0;
+          return {
+            ...site,
+            fixe: site.fixe,
+            mobile: site.mobile,
+            totalJour: site.totalJour,
+            totalMois: site.totalMois,
+            achievementGlobal
+          };
+        }
+
+        // Sinon (historique), on recalcule le cumul à date pour cette période spécifique
         const siteDaily = dailyRecord?.sites.find(s => 
           s.name.trim().toUpperCase() === site.name.trim().toUpperCase()
         );
@@ -92,14 +113,27 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
         mobilePres: regionSites.reduce((acc, s) => acc + s.mobile, 0)
       };
     });
-  }, [data.regions, dailyRecord, selectedDate, data.dailyHistory]);
+  }, [data.regions, dailyRecord, selectedDate, data.dailyHistory, data.date]);
 
   const grandTotals = useMemo(() => {
     if (formattedData.length === 0 || !isValidDate(selectedDate)) return null;
     
+    // Si c'est la date courante, on utilise directement les données consolidées du dashboard
+    if (selectedDate === data.date) {
+      return { 
+        fixed: data.monthly.fixed, 
+        mobile: data.monthly.mobile, 
+        totalJour: data.daily.realized, 
+        totalMois: data.monthly.realized, 
+        objMens: data.monthly.objective, 
+        achievementGlobal: data.monthly.percentage 
+      };
+    }
+
+    // Sinon, on somme les colonnes du tableau formaté
     const fixed = formattedData.reduce((acc, r) => acc + r.fixePres, 0);
     const mobile = formattedData.reduce((acc, r) => acc + r.mobilePres, 0);
-    const totalJour = fixed + mobile;
+    const totalJour = formattedData.reduce((acc, r) => acc + r.totalJourPres, 0);
     const totalMois = formattedData.reduce((acc, r) => acc + r.totalMoisPres, 0);
     const objMens = formattedData.reduce((acc, r) => acc + r.objMensPres, 0);
     const achievementGlobal = objMens > 0 ? (totalMois / objMens) * 100 : 0;
@@ -112,7 +146,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
       objMens, 
       achievementGlobal 
     };
-  }, [formattedData, selectedDate]);
+  }, [formattedData, selectedDate, data]);
 
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!recapRef.current) return;
@@ -198,14 +232,14 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
             <div className="border-2 border-slate-900 p-3 flex flex-col items-center justify-center bg-orange-50/30">
                <div className="flex items-center gap-2 mb-1">
                  <BarChart3 size={14} className="text-orange-600" />
-                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-orange-400">Cumul Mensuel (à date)</span>
+                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-orange-400">CUMUL MENSUEL NATIONAL</span>
                </div>
                <p className="text-3xl font-black text-orange-600 leading-none">{grandTotals.totalMois.toLocaleString()}</p>
             </div>
             <div className="border-2 border-slate-900 p-3 flex flex-col items-center justify-center bg-blue-50/30">
                <div className="flex items-center gap-2 mb-1">
                  <Target size={14} className="text-blue-600" />
-                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">Objectif Mensuel Global</span>
+                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-500">OBJECTIF MENSUEL NATIONAL</span>
                </div>
                <p className="text-3xl font-black text-blue-600 leading-none">{grandTotals.objMens.toLocaleString()}</p>
             </div>
@@ -228,6 +262,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
               {formattedData.map((region, rIdx) => {
                 const regionNameKey = region.name.trim().toUpperCase();
                 const regionColor = REGION_COLORS[regionNameKey] || '#ffffff';
+                const regionPerf = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
                 return (
                   <React.Fragment key={rIdx}>
                     {region.sites.map((site, sIdx) => (
@@ -243,7 +278,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
                         <td className="border border-slate-800 p-1.5 text-center font-black bg-white/50 text-[12px] text-slate-950">{site.totalJour.toLocaleString()}</td>
                         <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{site.totalMois.toLocaleString()}</td>
                         <td className="border border-slate-800 p-1.5 text-center bg-black/5 text-[11px] text-slate-950">{site.objMensuel.toLocaleString()}</td>
-                        <td className="border border-slate-800 p-1.5 text-center font-black text-[12px] text-slate-950">{site.achievementGlobal.toFixed(0)}%</td>
+                        <td className={`border border-slate-800 p-1.5 text-center font-black text-[12px] ${getPerfColor(site.achievementGlobal)}`}>{site.achievementGlobal.toFixed(0)}%</td>
                       </tr>
                     ))}
                     <tr style={{ backgroundColor: regionColor }} className="font-black brightness-90">
@@ -253,7 +288,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
                       <td className="border border-slate-800 p-1.5 text-center bg-white/60 text-[13px] text-slate-950">{region.totalJourPres.toLocaleString()}</td>
                       <td className="border border-slate-800 p-1.5 text-center text-[11px] text-slate-950">{region.totalMoisPres.toLocaleString()}</td>
                       <td className="border border-slate-800 p-1.5 text-center bg-black/5 text-[11px] text-slate-950">{region.objMensPres.toLocaleString()}</td>
-                      <td className="border border-slate-800 p-1.5 text-center text-blue-900 text-[12px] font-black">{region.objMensPres > 0 ? ((region.totalMoisPres / region.objMensPres) * 100).toFixed(0) : "0"}%</td>
+                      <td className={`border border-slate-800 p-1.5 text-center text-[12px] font-black ${getPerfColor(regionPerf)}`}>{regionPerf.toFixed(0)}%</td>
                     </tr>
                   </React.Fragment>
                 );
@@ -267,7 +302,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
                 <td className="border border-slate-800 p-3 text-center text-red-400 bg-white/10 text-[18px]">{grandTotals.totalJour.toLocaleString()}</td>
                 <td className="border border-slate-800 p-3 text-center text-[12px]">{grandTotals.totalMois.toLocaleString()}</td>
                 <td className="border border-slate-800 p-3 text-center bg-white/10 text-[12px]">{grandTotals.objMens.toLocaleString()}</td>
-                <td className="border border-slate-800 p-3 text-center text-emerald-400 text-[18px]">{grandTotals.achievementGlobal.toFixed(1)}%</td>
+                <td className={`border border-slate-800 p-3 text-center text-[18px] ${getPerfColor(grandTotals.achievementGlobal)}`}>{grandTotals.achievementGlobal.toFixed(1)}%</td>
               </tr>
             </tfoot>
           </table>
@@ -275,9 +310,9 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
           <div className="mt-4 flex justify-between items-center opacity-70 italic border-t-2 border-slate-100 pt-3">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 bg-slate-900 rounded-full"></div>
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-900">Document Officiel CNTS - Direction du Système d'Information</p>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-900">Document Officiel CNTS - Direction des Structures déconcentrées</p>
             </div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-900">SNAPSHOT - {selectedDate}</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-900">DSDSUIVI - {selectedDate}</p>
           </div>
         </div>
       </div>
