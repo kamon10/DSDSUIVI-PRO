@@ -54,8 +54,24 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     const [selD, selM, selY] = selectedDate.split('/').map(Number);
     const isCurrentLatest = selectedDate === data.date;
 
+    const getSitePriority = (name: string) => {
+      const n = name.toUpperCase();
+      if (n.startsWith('CRTS')) return 1;
+      if (n.startsWith('CDTS')) return 2;
+      if (n.startsWith('SP')) return 3;
+      return 4;
+    };
+
     return data.regions.map(region => {
-      const regionSites = region.sites.map(site => {
+      // Trier les sites de la région : CRTS > CDTS > SP
+      const sortedBaseSites = [...region.sites].sort((a, b) => {
+        const pA = getSitePriority(a.name);
+        const pB = getSitePriority(b.name);
+        if (pA !== pB) return pA - pB;
+        return a.name.localeCompare(b.name);
+      });
+
+      const regionSites = sortedBaseSites.map(site => {
         // Si c'est la date de situation actuelle, on utilise directement les données agrégées par le service
         if (isCurrentLatest) {
           const achievementGlobal = site.objMensuel > 0 ? (site.totalMois / site.objMensuel) * 100 : 0;
