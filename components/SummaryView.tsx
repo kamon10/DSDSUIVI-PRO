@@ -1,8 +1,9 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData, AppTab } from '../types';
-import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2 } from 'lucide-react';
+import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { COLORS } from '../constants';
 
 interface SummaryViewProps {
   data: DashboardData;
@@ -15,8 +16,13 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
 
   const stats = useMemo(() => {
     const totalMois = data.monthly.realized || 1;
+    const objectiveMois = data.monthly.objective;
+    const pochesRestantes = Math.max(0, objectiveMois - data.monthly.realized);
+    const isReached = pochesRestantes === 0;
+    
     const fixePerc = (data.monthly.fixed / totalMois) * 100;
     const mobilePerc = (data.monthly.mobile / totalMois) * 100;
+    
     const regionsPerf = data.regions.map(r => {
       const total = r.sites.reduce((acc, s) => acc + s.totalMois, 0);
       const obj = r.sites.reduce((acc, s) => acc + s.objMensuel, 0);
@@ -27,7 +33,8 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
         percent: obj > 0 ? (total / obj) * 100 : 0
       };
     }).sort((a, b) => b.percent - a.percent);
-    return { fixePerc, mobilePerc, regionsPerf };
+
+    return { fixePerc, mobilePerc, regionsPerf, pochesRestantes, isReached };
   }, [data]);
 
   const handleExport = async (type: 'image' | 'pdf') => {
@@ -84,6 +91,53 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
+        {/* CARTE VEDETTE : RESTE À COLLECTER */}
+        <div className="relative group overflow-hidden">
+          <div className={`absolute -inset-1 bg-gradient-to-r ${stats.isReached ? 'from-emerald-600 to-teal-400' : 'from-red-600 to-orange-500'} rounded-[4rem] blur opacity-25 group-hover:opacity-40 transition duration-1000`}></div>
+          <div className="relative bg-white rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white flex flex-col lg:flex-row items-center justify-between gap-10">
+            <div className="flex items-center gap-8">
+              <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl ${stats.isReached ? 'bg-emerald-500' : 'bg-red-600'}`}>
+                {stats.isReached ? <CheckCircle2 size={48} /> : <Target size={48} />}
+              </div>
+              <div>
+                <h2 className={`text-sm font-black uppercase tracking-[0.4em] mb-2 ${stats.isReached ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {stats.isReached ? "Objectif Atteint !" : "Reste à collecter ce mois"}
+                </h2>
+                <div className="flex items-baseline gap-4">
+                  <span className="text-7xl lg:text-9xl font-black tracking-tighter text-slate-900 leading-none">
+                    {stats.pochesRestantes.toLocaleString()}
+                  </span>
+                  <span className="text-xl lg:text-3xl font-black text-slate-300 uppercase tracking-tighter">Poches</span>
+                </div>
+              </div>
+            </div>
+            {!stats.isReached && (
+              <div className="flex flex-col items-center lg:items-end text-center lg:text-right">
+                <div className="bg-red-50 px-6 py-3 rounded-2xl border border-red-100 mb-4">
+                   <p className="text-[10px] font-black text-red-600 uppercase tracking-widest flex items-center gap-2">
+                     <AlertCircle size={14}/> Effort requis
+                   </p>
+                </div>
+                <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
+                  Il manque <span className="text-red-600">{stats.pochesRestantes.toLocaleString()} prélèvements</span> pour valider le contrat mensuel de <span className="text-slate-900">{data.monthly.objective.toLocaleString()} poches</span>.
+                </p>
+              </div>
+            )}
+            {stats.isReached && (
+              <div className="text-right">
+                <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 mb-4">
+                   <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                     <Heart size={14} className="fill-current"/> Excellence atteinte
+                   </p>
+                </div>
+                <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
+                  Félicitations aux équipes ! L'objectif national de ce mois a été surpassé.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="relative overflow-hidden bg-[#0f172a] rounded-[4.5rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 group">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 blur-[120px] rounded-full -mr-40 -mt-40 animate-pulse"></div>
           <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
@@ -91,7 +145,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
                <div className="w-56 h-56 lg:w-72 lg:h-72 rounded-full border-[10px] border-white/5 flex items-center justify-center relative">
                  <div className="text-center">
                     <span className="text-6xl lg:text-7xl font-black tracking-tighter block">{data.monthly.percentage.toFixed(0)}%</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 block mt-2">Objectif Mois</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 block mt-2">Taux de Vitalité</span>
                  </div>
                  <svg className="absolute inset-0 w-full h-full -rotate-90">
                    <circle cx="50%" cy="50%" r="48%" fill="none" stroke={data.monthly.percentage >= 100 ? '#10b981' : '#ef4444'} strokeWidth="10" strokeDasharray="854" strokeDashoffset={(854 - (854 * Math.min(data.monthly.percentage, 100)) / 100).toString()} strokeLinecap="round" className="transition-all duration-1000"/>
@@ -107,11 +161,11 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10">
-                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Jour J</p>
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Réalisé Jour</p>
                   <p className="text-2xl font-black text-white">{data.daily.realized.toLocaleString()}</p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10">
-                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Mois en cours</p>
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Réalisé Mois</p>
                   <p className="text-2xl font-black text-white">{data.monthly.realized.toLocaleString()}</p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10">
@@ -119,7 +173,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
                   <p className="text-2xl font-black text-white">{data.monthly.objective.toLocaleString()}</p>
                 </div>
                 <div className="bg-gradient-to-br from-red-600 to-orange-600 p-5 rounded-3xl shadow-xl">
-                  <p className="text-[8px] font-black text-white/60 uppercase tracking-widest mb-1">Vitalité</p>
+                  <p className="text-[8px] font-black text-white/60 uppercase tracking-widest mb-1">Précision</p>
                   <p className="text-2xl font-black text-white">{data.monthly.percentage.toFixed(1)}%</p>
                 </div>
               </div>
