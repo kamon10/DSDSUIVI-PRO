@@ -102,35 +102,30 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
 
     const historyMap = new Map<string, DailyHistoryRecord>();
     const siteAgg = new Map<string, { f: number, m: number, t: number, lastT: number, lastF: number, lastM: number }>();
-    let annualRealized = 0;
 
     validRows.forEach(({ row, dateObj, dateStr }) => {
       const codeRaw = cleanStr(row[col.code]);
       const siteRaw = cleanStr(row[col.site]);
       const siteInfo = getSiteByInput(codeRaw) || getSiteByInput(siteRaw);
       
-      // FILTRAGE STRICT : Ignorer si le site n'est pas dans notre liste officielle
       if (!siteInfo) return;
 
       const finalSiteName = siteInfo.name;
       const finalRegion = siteInfo.region;
-
       const f = cleanNum(row[col.fixe]);
       const m = cleanNum(row[col.mobile]);
       const t = cleanNum(row[col.total]) || (f + m);
 
-      if (dateObj.getFullYear() === targetYear) {
-        annualRealized += t;
-        if (!siteAgg.has(finalSiteName)) {
-          siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
-        }
-        const agg = siteAgg.get(finalSiteName)!;
-        if (dateObj.getMonth() === targetMonth) {
-          agg.f += f; agg.m += m; agg.t += t;
-        }
-        if (dateStr === latestDateStr) {
-          agg.lastT = t; agg.lastF = f; agg.lastM = m;
-        }
+      if (!siteAgg.has(finalSiteName)) {
+        siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
+      }
+      const agg = siteAgg.get(finalSiteName)!;
+      
+      if (dateObj.getFullYear() === targetYear && dateObj.getMonth() === targetMonth) {
+        agg.f += f; agg.m += m; agg.t += t;
+      }
+      if (dateStr === latestDateStr) {
+        agg.lastT = t; agg.lastF = f; agg.lastM = m;
       }
 
       if (!historyMap.has(dateStr)) {
@@ -164,15 +159,35 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       const siteObjs = getSiteObjectives(name);
       regionsMap.get(regName)!.sites.push({
         name, region: regName, fixe: stats.lastF, mobile: stats.lastM,
-        totalJour: stats.lastT, totalMois: stats.t,
+        totalJour: stats.lastT, 
+        totalMois: stats.t,
+        monthlyFixed: stats.f,
+        monthlyMobile: stats.m,
         objDate: 0, objMensuel: siteObjs.monthly,
         manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
       });
     });
 
-    const monthlyRealized = Array.from(siteAgg.values()).reduce((acc, s) => acc + s.t, 0);
-    const monthlyFixed = Array.from(siteAgg.values()).reduce((acc, s) => acc + s.f, 0);
-    const monthlyMobile = Array.from(siteAgg.values()).reduce((acc, s) => acc + s.m, 0);
+    const regionsList = Array.from(regionsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
+
+    // CALCUL CONSOLIDÉ UNIQUE : On fait la somme des sites réellement affectés aux régions
+    // Cela garantit que le Résumé National = Somme des Régions = Somme des Sites
+    let monthlyRealized = 0;
+    let monthlyFixed = 0;
+    let monthlyMobile = 0;
+
+    regionsList.forEach(reg => {
+      reg.sites.forEach(site => {
+        monthlyRealized += site.totalMois;
+        monthlyFixed += (site.monthlyFixed || 0);
+        monthlyMobile += (site.monthlyMobile || 0);
+      });
+    });
+
+    const annualRealized = history
+      .filter(h => h.date.split('/')[2] === targetYear.toString())
+      .reduce((acc, h) => acc + h.stats.realized, 0);
+
     const objAnn = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
     const objMens = Math.round(objAnn / 12);
     const objDay = Math.round(objAnn / WORKING_DAYS_YEAR);
@@ -181,11 +196,29 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       date: latestDateStr,
       month: `${MONTHS_FR[targetMonth]} ${targetYear}`,
       year: targetYear,
-      daily: { realized: history[0]?.stats.realized || 0, objective: objDay, percentage: objDay > 0 ? (history[0]?.stats.realized / objDay) * 100 : 0, fixed: history[0]?.stats.fixed || 0, mobile: history[0]?.stats.mobile || 0 },
-      monthly: { realized: monthlyRealized, objective: objMens, percentage: objMens > 0 ? (monthlyRealized / objMens) * 100 : 0, fixed: monthlyFixed, mobile: monthlyMobile },
-      annual: { realized: annualRealized, objective: objAnn, percentage: objAnn > 0 ? (annualRealized / objAnn) * 100 : 0, fixed: 0, mobile: 0 },
+      daily: { 
+        realized: history[0]?.stats.realized || 0, 
+        objective: objDay, 
+        percentage: objDay > 0 ? (history[0]?.stats.realized / objDay) * 100 : 0, 
+        fixed: history[0]?.stats.fixed || 0, 
+        mobile: history[0]?.stats.mobile || 0 
+      },
+      monthly: { 
+        realized: monthlyRealized, 
+        objective: objMens, 
+        percentage: objMens > 0 ? (monthlyRealized / objMens) * 100 : 0, 
+        fixed: monthlyFixed, 
+        mobile: monthlyMobile 
+      },
+      annual: { 
+        realized: annualRealized, 
+        objective: objAnn, 
+        percentage: objAnn > 0 ? (annualRealized / objAnn) * 100 : 0, 
+        fixed: 0, 
+        mobile: 0 
+      },
       dailyHistory: history,
-      regions: Array.from(regionsMap.values()).sort((a,b) => a.name.localeCompare(b.name))
+      regions: regionsList
     };
   } catch (err) {
     console.error("fetchSheetData error:", err);
