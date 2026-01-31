@@ -37,6 +37,29 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
     return { fixePerc, mobilePerc, regionsPerf, pochesRestantes, isReached };
   }, [data]);
 
+  const getVitalityClasses = (percent: number) => {
+    if (percent >= 110) return {
+      text: 'text-emerald-600',
+      bgTag: 'bg-emerald-50',
+      bgProgress: 'bg-emerald-500'
+    };
+    if (percent >= 100) return {
+      text: 'text-blue-600',
+      bgTag: 'bg-blue-50',
+      bgProgress: 'bg-blue-500'
+    };
+    if (percent >= 75) return {
+      text: 'text-orange-500',
+      bgTag: 'bg-orange-50',
+      bgProgress: 'bg-orange-500'
+    };
+    return {
+      text: 'text-red-600',
+      bgTag: 'bg-red-50',
+      bgProgress: 'bg-red-500'
+    };
+  };
+
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!contentRef.current) return;
     setExporting(type);
@@ -221,27 +244,30 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Vitalité des Régions</h3>
            </div>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.regionsPerf.map((reg, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => setActiveTab('performance')}
-                  className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
-                >
-                  <div className="flex justify-between items-start mb-6">
-                     <h4 className="text-base font-black uppercase tracking-tighter text-slate-800 leading-none">{reg.name}</h4>
-                     <span className={`text-[10px] font-black px-3 py-1 rounded-full ${reg.percent >= 100 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                        {reg.percent.toFixed(0)}%
-                     </span>
+              {stats.regionsPerf.map((reg, idx) => {
+                const colors = getVitalityClasses(reg.percent);
+                return (
+                  <div 
+                    key={idx} 
+                    onClick={() => setActiveTab('performance')}
+                    className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 cursor-pointer hover:shadow-xl hover:scale-105 transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                       <h4 className="text-base font-black uppercase tracking-tighter text-slate-800 leading-none">{reg.name}</h4>
+                       <span className={`text-[10px] font-black px-3 py-1 rounded-full ${colors.bgTag} ${colors.text}`}>
+                          {reg.percent.toFixed(0)}%
+                       </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-4">
+                       <span className="text-3xl font-black text-slate-900">{reg.realized.toLocaleString()}</span>
+                       <span className="text-[10px] font-bold text-slate-300 uppercase">Poches</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                       <div className={`h-full transition-all duration-1000 ${colors.bgProgress}`} style={{ width: `${Math.min(reg.percent, 100)}%` }}/>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-4">
-                     <span className="text-3xl font-black text-slate-900">{reg.realized.toLocaleString()}</span>
-                     <span className="text-[10px] font-bold text-slate-300 uppercase">Poches</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                     <div className={`h-full transition-all duration-1000 ${reg.percent >= 100 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${Math.min(reg.percent, 100)}%` }}/>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
            </div>
         </div>
       </div>
