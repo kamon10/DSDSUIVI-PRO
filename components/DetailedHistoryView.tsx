@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
-import { SITES_DATA, WORKING_DAYS_YEAR } from '../constants';
+import { SITES_DATA, WORKING_DAYS_YEAR, COLORS } from '../constants';
 import { MapPin, User, Mail, Phone, Calendar, Search, Building2, Truck, Target, CheckCircle2, XCircle, AlertTriangle, History, Zap, Globe, BarChart3 } from 'lucide-react';
 
 interface DetailedHistoryViewProps {
@@ -51,7 +50,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
   const [selectedRegion, setSelectedRegion] = useState(regions[0] || "TOUS LES SITES");
 
   // Filtre Site (dynamique selon région ou liste complète)
-  // Ajout d'une option de cumul virtuel au début de la liste
   const sitesInRegion = useMemo(() => {
     let baseSites = [];
     let label = "";
@@ -277,7 +275,7 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
             <div className="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center">
               <Target size={24} />
             </div>
-            <h3 className="text-xl font-black uppercase tracking-tighter">Performance & Objectifs Consolider</h3>
+            <h3 className="text-xl font-black uppercase tracking-tighter">Performance & Objectifs</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
@@ -333,10 +331,10 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
            </div>
            <div className="hidden lg:flex items-center gap-6">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-blue-500 rounded-sm"></div> COLLECTE SITE FIXE
+                 <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> COLLECTE SITE FIXE
               </div>
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-violet-500 rounded-sm"></div> COLLECTE MOBILE
+                 <div className="w-3 h-3 bg-orange-500 rounded-sm"></div> COLLECTE MOBILE
               </div>
            </div>
         </div>
@@ -361,10 +359,10 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
                       <span className="text-sm font-black text-slate-800 uppercase tracking-tighter">{row.date}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <span className="text-sm font-bold text-blue-600">{row.fixe.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-emerald-600">{row.fixe.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <span className="text-sm font-bold text-violet-600">{row.mobile.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-orange-600">{row.mobile.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-5 text-center">
                       <span className="text-lg font-black text-slate-900">{row.total.toLocaleString()}</span>
