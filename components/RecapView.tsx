@@ -1,13 +1,18 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { DashboardData } from '../types';
 import { SITES_DATA } from '../constants';
-import { FileImage, FileText, Loader2, TableProperties, Printer, CalendarCheck, BarChart3, Target, Info } from 'lucide-react';
+import { FileImage, FileText, Loader2, TableProperties, Printer, CalendarCheck, BarChart3, Target, Calendar, Filter } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 interface RecapViewProps {
   data: DashboardData;
 }
+
+const MONTHS_FR = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+];
 
 const REGION_COLORS: Record<string, string> = {
   "PRES ABIDJAN": "#e2efda", 
@@ -35,15 +40,60 @@ const getPerfColor = (perc: number) => {
 };
 
 export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
+  // 1. Extraire les années disponibles
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    data.dailyHistory.forEach(h => {
+      const year = h.date.split('/')[2];
+      if (year) years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [data.dailyHistory]);
+
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<number>(-1);
   const [selectedDate, setSelectedDate] = useState(data.date);
+  
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const recapRef = useRef<HTMLDivElement>(null);
 
+  // Initialisation et synchronisation
   useEffect(() => {
-    if (data.date && data.date !== "---") {
+    if (data.date && data.date !== "---" && !selectedYear) {
+      const parts = data.date.split('/');
+      setSelectedYear(parts[2]);
+      setSelectedMonth(parseInt(parts[1]) - 1);
       setSelectedDate(data.date);
     }
   }, [data.date]);
+
+  // Extraire les mois disponibles pour l'année sélectionnée
+  const availableMonths = useMemo(() => {
+    if (!selectedYear) return [];
+    const months = new Set<number>();
+    data.dailyHistory.forEach(h => {
+      const parts = h.date.split('/');
+      if (parts[2] === selectedYear) {
+        months.add(parseInt(parts[1]) - 1);
+      }
+    });
+    return Array.from(months).sort((a, b) => a - b);
+  }, [data.dailyHistory, selectedYear]);
+
+  // Filtrer les jours disponibles pour l'année et le mois sélectionnés
+  const filteredDates = useMemo(() => {
+    return data.dailyHistory.filter(h => {
+      const parts = h.date.split('/');
+      return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
+    }).map(h => h.date);
+  }, [data.dailyHistory, selectedYear, selectedMonth]);
+
+  // Ajuster la date sélectionnée quand on change de mois
+  useEffect(() => {
+    if (filteredDates.length > 0 && !filteredDates.includes(selectedDate)) {
+      setSelectedDate(filteredDates[0]);
+    }
+  }, [filteredDates]);
 
   const dailyRecord = useMemo(() => 
     data.dailyHistory.find(h => h.date === selectedDate)
@@ -63,7 +113,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     };
 
     return data.regions.map(region => {
-      // Trier les sites de la région : CRTS > CDTS > SP
       const sortedBaseSites = [...region.sites].sort((a, b) => {
         const pA = getSitePriority(a.name);
         const pB = getSitePriority(b.name);
@@ -72,7 +121,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
       });
 
       const regionSites = sortedBaseSites.map(site => {
-        // Si c'est la date de situation actuelle, on utilise directement les données agrégées par le service
         if (isCurrentLatest) {
           const achievementGlobal = site.objMensuel > 0 ? (site.totalMois / site.objMensuel) * 100 : 0;
           return {
@@ -85,7 +133,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
           };
         }
 
-        // Sinon (historique), on recalcule le cumul à date pour cette période spécifique
         const siteDaily = dailyRecord?.sites.find(s => 
           s.name.trim().toUpperCase() === site.name.trim().toUpperCase()
         );
@@ -134,7 +181,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   const grandTotals = useMemo(() => {
     if (formattedData.length === 0 || !isValidDate(selectedDate)) return null;
     
-    // Si c'est la date courante, on utilise directement les données consolidées du dashboard
     if (selectedDate === data.date) {
       return { 
         fixed: data.monthly.fixed, 
@@ -146,7 +192,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
       };
     }
 
-    // Sinon, on somme les colonnes du tableau formaté
     const fixed = formattedData.reduce((acc, r) => acc + r.fixePres, 0);
     const mobile = formattedData.reduce((acc, r) => acc + r.mobilePres, 0);
     const totalJour = formattedData.reduce((acc, r) => acc + r.totalJourPres, 0);
@@ -191,29 +236,50 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-10">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200">
+      
+      {/* BARRE DE SÉLECTION DYNAMIQUE */}
+      <div className="flex flex-col xl:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
         <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-              <TableProperties size={20} />
+           <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
+              <TableProperties size={24} />
            </div>
            <div>
-              <h3 className="text-lg font-black uppercase tracking-tighter text-slate-900 leading-none">Situation Nationale</h3>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Synthèse arrêtée à date</p>
+              <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-none">Situation Nationale</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Synthèse détaillée par PRES et CDTS</p>
            </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-blue-50 p-2 rounded-xl border border-blue-100">
-          <span className="font-black text-blue-800 text-[8px] uppercase tracking-widest">Date Situation :</span>
-          <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-blue-200 px-3 py-1 font-black text-blue-900 text-xs rounded-lg outline-none cursor-pointer">
-            {data.dailyHistory.map(h => <option key={h.date} value={h.date}>{h.date}</option>)}
-          </select>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {/* SÉLECTEUR ANNÉE */}
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
+            <Calendar size={14} className="text-slate-400" />
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent font-black text-slate-800 text-xs outline-none cursor-pointer uppercase">
+              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+
+          {/* SÉLECTEUR MOIS */}
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
+            <Filter size={14} className="text-slate-400" />
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent font-black text-slate-800 text-xs outline-none cursor-pointer uppercase">
+              {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
+            </select>
+          </div>
+
+          {/* SÉLECTEUR JOUR (SITUATION AU) */}
+          <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
+            <span className="font-black text-blue-800 text-[9px] uppercase tracking-widest">Situation au :</span>
+            <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-blue-200 px-3 py-1 font-black text-blue-900 text-xs rounded-lg outline-none cursor-pointer">
+              {filteredDates.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="flex gap-2">
-          <button onClick={() => handleExport('image')} disabled={!!exporting} className="px-3 py-2 bg-slate-100 text-slate-800 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
-            {exporting === 'image' ? <Loader2 size={12} className="animate-spin" /> : <FileImage size={14} />} PNG
+          <button onClick={() => handleExport('image')} disabled={!!exporting} className="px-4 py-2.5 bg-slate-100 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
+            {exporting === 'image' ? <Loader2 size={12} className="animate-spin" /> : <FileImage size={14} />} Image
           </button>
-          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="px-3 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-100">
+          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="px-4 py-2.5 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-red-700 transition-all shadow-lg shadow-red-100">
             {exporting === 'pdf' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={14} />} PDF
           </button>
         </div>
