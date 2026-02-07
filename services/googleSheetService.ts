@@ -170,8 +170,6 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
 
     const regionsList = Array.from(regionsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
 
-    // CALCUL CONSOLIDÉ UNIQUE : On fait la somme des sites réellement affectés aux régions
-    // Cela garantit que le Résumé National = Somme des Régions = Somme des Sites
     let monthlyRealized = 0;
     let monthlyFixed = 0;
     let monthlyMobile = 0;
@@ -228,15 +226,22 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
 
 export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
   try {
+    // Utilisation d'un appel simple pour éviter les problèmes de pré-vol CORS
+    // Google Apps Script ne supporte pas bien le Content-Type: application/json en mode standard
     await fetch(url, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      mode: 'no-cors', // Crucial pour Google Apps Script
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'text/plain', // On envoie le JSON comme du texte
+      },
       body: JSON.stringify(payload),
     });
+    // On attend un tout petit peu pour laisser le temps au script de s'exécuter côté serveur
+    await new Promise(resolve => setTimeout(resolve, 500));
     return;
   } catch (error) {
     console.error("Erreur lors de l'enregistrement:", error);
-    throw new Error("Erreur de connexion lors de l'envoi des données.");
+    throw new Error("Impossible de joindre le serveur d'injection.");
   }
 };
