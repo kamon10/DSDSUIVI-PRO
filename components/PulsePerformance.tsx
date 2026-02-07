@@ -1,305 +1,320 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { DashboardData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { ArrowLeftRight, TrendingUp, Calendar as CalendarIcon, Clock, ChevronDown, TrendingDown, Activity, ChevronLeft, ChevronRight, X, MapPin, Building2, Globe, Sparkles } from 'lucide-react';
-import { COLORS, SITES_DATA } from '../constants';
-
-interface ComparisonViewProps {
-  data: DashboardData;
-}
+import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const MONTHS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-const DAYS_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
-const ElegantDatePicker: React.FC<{
-  selectedDate: string;
-  availableDates: string[];
-  onSelect: (date: string) => void;
-  onClose: () => void;
-  label: string;
-}> = ({ selectedDate, availableDates, onSelect, onClose, label }) => {
-  const [viewDate, setViewDate] = useState(() => {
-    const [d, m, y] = (selectedDate || availableDates[0] || "01/01/2026").split('/').map(Number);
-    return new Date(y, m - 1, 1);
-  });
-
-  const monthDays = useMemo(() => {
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const startingDay = firstDay === 0 ? 6 : firstDay - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    const days = [];
-    for (let i = 0; i < startingDay; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = `${i.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}`;
-      days.push({ day: i, dateStr, hasData: availableDates.includes(dateStr) });
-    }
-    return days;
-  }, [viewDate, availableDates]);
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="bg-white rounded-[3rem] shadow-3xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
-        <div className="bg-slate-900 p-8 text-white flex justify-between items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/20 blur-2xl rounded-full -mr-12 -mt-12"></div>
-          <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 mb-1">{label}</p>
-            <h4 className="text-2xl font-black uppercase tracking-tighter leading-none">{MONTHS_FR[viewDate.getMonth()]} {viewDate.getFullYear()}</h4>
-          </div>
-          <button onClick={onClose} className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all relative z-10"><X size={20}/></button>
-        </div>
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
-            <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all"><ChevronLeft size={20}/></button>
-            <div className="flex gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-200"></div>
-            </div>
-            <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all"><ChevronRight size={20}/></button>
-          </div>
-          <div className="grid grid-cols-7 gap-1 mb-3">
-            {DAYS_SHORT.map(d => <div key={d} className="text-[9px] font-black text-slate-300 uppercase text-center py-2">{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-2">
-            {monthDays.map((d, i) => {
-              if (!d) return <div key={`empty-${i}`} className="aspect-square"></div>;
-              const isSelected = d.dateStr === selectedDate;
-              return (
-                <button
-                  key={d.dateStr}
-                  disabled={!d.hasData}
-                  onClick={() => { onSelect(d.dateStr); onClose(); }}
-                  className={`aspect-square rounded-2xl text-[11px] font-black transition-all flex flex-col items-center justify-center relative group
-                    ${isSelected ? 'bg-blue-600 text-white shadow-xl shadow-blue-200 scale-110' : d.hasData ? 'hover:bg-blue-50 text-slate-700' : 'opacity-10 cursor-not-allowed'}
-                  `}
-                >
-                  {d.day}
-                  {d.hasData && !isSelected && <div className="w-1 h-1 bg-blue-400 rounded-full mt-1 group-hover:scale-150 transition-transform"></div>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const getDynamicColor = (perf: number) => {
+  if (perf > 100) return '#10b981'; // Vert (Objectif dépassé)
+  if (perf === 100) return '#f59e0b'; // Orange (Objectif atteint)
+  if (perf >= 90) return '#fb923c';  // Orange corail
+  if (perf >= 75) return '#f97316';  // Orange vif
+  if (perf >= 50) return '#ea580c';  // Rouge-Orange
+  return '#ef4444';                  // Rouge alerte
 };
 
-export const ComparisonView: React.FC<ComparisonViewProps> = ({ data }) => {
-  const [scale, setScale] = useState<'days' | 'months' | 'years'>('days');
-  const [showPicker, setShowPicker] = useState<'A' | 'B' | null>(null);
-
-  const regions = useMemo(() => Array.from(new Set(SITES_DATA.map(s => s.region))).sort(), []);
-  
-  const [scopeA, setScopeA] = useState<'national' | 'region' | 'site'>('national');
-  const [regionA, setRegionA] = useState(regions[0]);
-  const [siteA, setSiteA] = useState(SITES_DATA.find(s => s.region === regions[0])?.name || "");
-
-  const [scopeB, setScopeB] = useState<'national' | 'region' | 'site'>('national');
-  const [regionB, setRegionB] = useState(regions[0]);
-  const [siteB, setSiteB] = useState(SITES_DATA.find(s => s.region === regions[0])?.name || "");
-
-  const sitesA = useMemo(() => SITES_DATA.filter(s => s.region === regionA), [regionA]);
-  const sitesB = useMemo(() => SITES_DATA.filter(s => s.region === regionB), [regionB]);
-
-  const availableDates = useMemo(() => data.dailyHistory.map(h => h.date), [data.dailyHistory]);
-  const [dateA, setDateA] = useState(availableDates[0] || "");
-  const [dateB, setDateB] = useState(availableDates[1] || availableDates[0] || "");
+export const PulsePerformance: React.FC<{ data: DashboardData }> = ({ data }) => {
+  const [pulsePhase, setPulsePhase] = useState(0);
+  const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
+  const pulseRef = useRef<HTMLDivElement>(null);
 
   const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    data.dailyHistory.forEach(h => years.add(parseInt(h.date.split('/')[2])));
-    return Array.from(years).sort((a, b) => b - a);
-  }, [data.dailyHistory]);
-  
-  const [yearA, setYearA] = useState(availableYears[0] || 2026);
-  const [yearB, setYearB] = useState(availableYears[1] || availableYears[0] || 2026);
-
-  const [monthA, setMonthA] = useState(new Date().getMonth());
-  const [monthB, setMonthB] = useState((new Date().getMonth() - 1 + 12) % 12);
-
-  const calculateStats = (pScope: string, pRegion: string, pSite: string, pScale: string, pDate: string, pMonth: number, pYear: number) => {
-    const res = { total: 0, fixed: 0, mobile: 0, label: "" };
+    const years = new Set<string>();
     data.dailyHistory.forEach(h => {
-      const [d, m, y] = h.date.split('/').map(Number);
-      let matchTime = false;
-      if (pScale === 'days') matchTime = h.date === pDate;
-      else if (pScale === 'months') matchTime = (y === pYear && (m - 1) === pMonth);
-      else matchTime = (y === pYear);
-      if (matchTime) {
-        h.sites.forEach(s => {
-          let matchStructure = false;
-          if (pScope === 'national') matchStructure = true;
-          else if (pScope === 'region') matchStructure = s.region === pRegion;
-          else matchStructure = s.name === pSite;
-          if (matchStructure) {
-            res.total += s.total;
-            res.fixed += s.fixe;
-            res.mobile += s.mobile;
-          }
-        });
+      const year = h.date.split('/')[2];
+      if (year) years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [data.dailyHistory]);
+
+  const [selectedYear, setSelectedYear] = useState(availableYears[0] || data.year.toString());
+
+  const availableMonths = useMemo(() => {
+    const months = new Set<number>();
+    data.dailyHistory.forEach(h => {
+      const parts = h.date.split('/');
+      if (parts[2] === selectedYear) {
+        months.add(parseInt(parts[1]) - 1);
       }
     });
-    if (pScale === 'days') res.label = pDate;
-    else if (pScale === 'months') res.label = `${MONTHS_FR[pMonth]} ${pYear}`;
-    else res.label = pYear.toString();
-    const scopeLabel = pScope === 'national' ? 'National' : pScope === 'region' ? pRegion : pSite;
-    res.label = `${res.label} (${scopeLabel})`;
-    return res;
-  };
+    return Array.from(months).sort((a, b) => a - b);
+  }, [data.dailyHistory, selectedYear]);
 
-  const comparisonResults = useMemo(() => {
-    const statsA = calculateStats(scopeA, regionA, siteA, scale, dateA, monthA, yearA);
-    const statsB = calculateStats(scopeB, regionB, siteB, scale, dateB, monthB, yearB);
-    const diff = statsA.total - statsB.total;
-    const perc = statsB.total > 0 ? (diff / statsB.total) * 100 : 0;
-    return { a: statsA, b: statsB, diff, perc };
-  }, [scale, dateA, dateB, monthA, monthB, yearA, yearB, scopeA, regionA, siteA, scopeB, regionB, siteB, data.dailyHistory]);
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()
+  );
 
-  const chartData = [
-    { name: 'Total', A: comparisonResults.a.total, B: comparisonResults.b.total },
-    { name: 'Fixe', A: comparisonResults.a.fixed, B: comparisonResults.b.fixed },
-    { name: 'Mobile', A: comparisonResults.a.mobile, B: comparisonResults.b.mobile },
-  ];
+  const availableDays = useMemo(() => {
+    return data.dailyHistory
+      .filter(h => {
+        const parts = h.date.split('/');
+        return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
+      })
+      .map(h => h.date);
+  }, [data.dailyHistory, selectedYear, selectedMonth]);
 
-  const getCategoryColor = (name: string) => {
-    if (name === 'Fixe') return COLORS.fixed;
-    if (name === 'Mobile') return COLORS.mobile;
-    return COLORS.total;
+  const [selectedDay, setSelectedDay] = useState(availableDays[0] || data.date);
+
+  useEffect(() => {
+    if (availableDays.length > 0 && !availableDays.includes(selectedDay)) {
+      setSelectedDay(availableDays[0]);
+    }
+  }, [availableDays, selectedDay]);
+
+  const dayRecord = useMemo(() => 
+    data.dailyHistory.find(h => h.date === selectedDay) || data.dailyHistory[0]
+  , [selectedDay, data.dailyHistory]);
+
+  const { perfDaily, bestSite, top5Sites } = useMemo(() => {
+    if (!dayRecord) return { perfDaily: 0, bestSite: null, top5Sites: [] };
+    
+    const realized = dayRecord.stats.realized;
+    const objective = 1137; 
+    
+    const sitesWithPerf = dayRecord.sites.map(s => ({
+      ...s,
+      perf: s.objective > 0 ? (s.total / s.objective) * 100 : 0
+    }));
+
+    const best = [...sitesWithPerf].sort((a, b) => b.total - a.total)[0] || null;
+    const top5 = [...sitesWithPerf].sort((a, b) => b.perf - a.perf).slice(0, 5);
+
+    return { 
+      perfDaily: (realized / objective) * 100, 
+      bestSite: best,
+      top5Sites: top5
+    };
+  }, [dayRecord]);
+
+  const nationalPulseColor = useMemo(() => getDynamicColor(perfDaily), [perfDaily]);
+  const championPulseColor = useMemo(() => bestSite ? getDynamicColor(bestSite.perf) : '#f59e0b', [bestSite]);
+
+  const isHealthy = perfDaily >= 100;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulsePhase(p => (p + 1) % 100);
+    }, 40);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleExport = async (type: 'image' | 'pdf') => {
+    if (!pulseRef.current) return;
+    setExporting(type);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const element = pulseRef.current;
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      if (type === 'image') {
+        const link = document.createElement('a');
+        link.download = `PULSE_CNTS_${selectedDay.replace(/\//g, '-')}.png`;
+        link.href = imgData;
+        link.click();
+      } else {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth(); 
+        const ratio = pageWidth / (canvas.width / 2);
+        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
+        pdf.save(`PULSE_CNTS_${selectedDay.replace(/\//g, '-')}.pdf`);
+      }
+    } catch (err) { console.error("Export Pulse Error:", err); } finally { setExporting(null); }
   };
 
   return (
-    <div className="space-y-12 pb-24 animate-in fade-in duration-1000">
-      {showPicker === 'A' && <ElegantDatePicker selectedDate={dateA} availableDates={availableDates} onSelect={setDateA} onClose={() => setShowPicker(null)} label="Période A" />}
-      {showPicker === 'B' && <ElegantDatePicker selectedDate={dateB} availableDates={availableDates} onSelect={setDateB} onClose={() => setShowPicker(null)} label="Période B" />}
+    <div className="space-y-16 lg:space-y-20 pb-10">
+      <div className="glass-card p-4 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-6 shadow-xl">
+        <div className="flex items-center gap-5 px-4">
+           <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
+             <Filter size={20} />
+           </div>
+           <div>
+             <h3 className="text-base font-black uppercase tracking-tighter text-slate-800">Sélecteur de Flux</h3>
+             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Voyage temporel CNTS</p>
+           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+           <div className="bg-white/5 border border-white/80 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center gap-3">
+             <Calendar size={14} className="text-blue-500" />
+             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
+               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+             </select>
+           </div>
+           <div className="bg-white/5 border border-white/80 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center gap-3">
+             <Waves size={14} className="text-orange-500" />
+             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
+               {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
+             </select>
+           </div>
+           <div className="bg-slate-900 border border-white/10 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-2xl mr-2">
+             <Activity size={14} className="text-red-500" />
+             <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-white">
+               {availableDays.map(d => <option key={d} value={d} className="text-slate-900">{d}</option>)}
+             </select>
+           </div>
+           <div className="flex gap-2">
+             <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-all shadow-sm">
+               {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
+             </button>
+             <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100">
+               {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+             </button>
+           </div>
+        </div>
+      </div>
 
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-400 rounded-[4rem] blur opacity-25"></div>
-        <div className="relative bg-[#0f172a] rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl overflow-hidden border border-white/5">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 blur-[150px] rounded-full -mr-40 -mt-40 animate-pulse"></div>
-          <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-12">
-            <div className="flex items-center gap-10">
-              <div className="w-20 h-20 bg-blue-600 rounded-[2.5rem] flex items-center justify-center shadow-2xl pulse-glow border border-white/10">
-                <ArrowLeftRight size={40} />
-              </div>
-              <div>
-                <h2 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter leading-none mb-4">Comparateur</h2>
-                <p className="text-blue-300/40 font-black uppercase tracking-[0.5em] text-[10px] flex items-center gap-3">
-                  <Activity size={14} className="text-blue-500" /> Analyse Multidimensionnelle
-                </p>
+      <div ref={pulseRef} className="space-y-12 lg:space-y-16">
+        <div className="relative overflow-hidden bg-[#0f172a] rounded-[4.5rem] p-12 lg:p-20 text-white shadow-3xl border border-white/5">
+          <div className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden">
+            <svg width="100%" height="100%" viewBox="0 0 800 400" preserveAspectRatio="none">
+              <path 
+                d={`M0 200 L 150 200 L 170 120 L 190 280 L 210 200 L 400 200 L 420 40 L 440 360 L 460 200 L 650 200 L 670 180 L 690 220 L 710 200 L 800 200`}
+                fill="none" stroke={nationalPulseColor} strokeWidth="5" strokeDasharray="1000" strokeDashoffset={1000 - (pulsePhase * 10)}
+                className="transition-all duration-300" style={{ filter: `drop-shadow(0 0 10px ${nationalPulseColor})` }}
+              />
+            </svg>
+          </div>
+          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-20">
+            <div className="relative animate-float">
+              <div className={`w-72 h-72 rounded-full border-[15px] flex items-center justify-center transition-all duration-700 shadow-[0_0_80px_rgba(255,255,255,0.05)]`} style={{ borderColor: `${nationalPulseColor}22` }}>
+                <div className="absolute inset-0 rounded-full animate-ping opacity-10" style={{ backgroundColor: nationalPulseColor }}></div>
+                <div className="text-center">
+                    <Heart size={70} className="mx-auto mb-3 fill-current transition-transform duration-300" style={{ color: nationalPulseColor, transform: `scale(${1 + (pulsePhase % 12) / 40})` }} />
+                    <p className="text-7xl font-black tracking-tighter text-white">{perfDaily.toFixed(1)}%</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40 mt-2">VITALITÉ NATIONALE</p>
+                </div>
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  <circle cx="144" cy="144" r="136" fill="none" stroke={nationalPulseColor} strokeWidth="15" strokeDasharray="854" strokeDashoffset={854 - (854 * Math.min(perfDaily, 100)) / 100} strokeLinecap="round" className="transition-all duration-1000"/>
+                </svg>
               </div>
             </div>
-            <div className="flex bg-white/5 p-1.5 rounded-[2rem] border border-white/10 backdrop-blur-2xl shadow-inner">
-              {['days', 'months', 'years'].map(s => (
-                <button key={s} onClick={() => setScale(s as any)} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${scale === s ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:text-white'}`}>
-                  {s.toUpperCase()}
-                </button>
-              ))}
+            <div className="flex-1 space-y-12 text-center lg:text-left">
+              <div>
+                <h2 className="text-6xl font-black uppercase tracking-tighter leading-none mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/40">Rythme National</h2>
+                <p className="text-white/40 font-black uppercase tracking-[0.6em] text-[10px] flex items-center justify-center lg:justify-start gap-3">
+                  <Activity size={16} className="text-red-500 animate-pulse" /> STATUT GÉNÉRAL DU {selectedDay}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 shadow-2xl group transition-all hover:bg-white/10 hover:scale-105 text-center">
+                    <p className="text-[10px] font-black text-blue-400 uppercase mb-4 tracking-widest flex items-center justify-center gap-3"><Zap size={16}/> SITES FIXES</p>
+                    <div className="flex items-baseline justify-center gap-3">
+                      <span className="text-5xl font-black">{dayRecord?.stats.fixed || 0}</span>
+                    </div>
+                </div>
+                <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 shadow-2xl group transition-all hover:bg-white/10 hover:scale-105 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase mb-4 tracking-widest flex items-center justify-center gap-3"><Flame size={16}/> UNITÉS MOBILES</p>
+                    <div className="flex items-baseline justify-center gap-3">
+                      <span className="text-5xl font-black">{dayRecord?.stats.mobile || 0}</span>
+                    </div>
+                </div>
+                <div className="bg-gradient-to-br from-red-600 to-orange-600 p-8 rounded-[3rem] border border-white/20 shadow-2xl group transition-all hover:scale-105 text-center">
+                    <p className="text-[10px] font-black text-white/60 uppercase mb-4 tracking-widest flex items-center justify-center gap-3"><Target size={16}/> TOTAL JOUR</p>
+                    <div className="flex items-baseline justify-center gap-3">
+                      <span className="text-5xl font-black text-white">{(dayRecord?.stats.realized || 0).toLocaleString()}</span>
+                    </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="glass-card p-12 rounded-[3.5rem] shadow-3xl border border-white/40 relative overflow-hidden group">
-           <div className="absolute top-0 left-0 w-2.5 h-full bg-blue-500 opacity-50"></div>
-           <div className="flex items-center gap-4 mb-10">
-              <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl"><Sparkles size={24} /></div>
-              <div><p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">MÉTRIQUE A</p><h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Référence Primaire</h4></div>
-           </div>
-           <div className="space-y-6">
-              <div className="flex gap-2 p-1.5 bg-slate-100/50 rounded-2xl">{['national', 'region', 'site'].map(s => (
-                <button key={s} onClick={() => setScopeA(s as any)} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${scopeA === s ? 'bg-white text-blue-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{s}</button>
-              ))}</div>
-              {scopeA !== 'national' && (
-                <div className="space-y-4">
-                  <div className="relative"><MapPin size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-400" /><select value={regionA} onChange={(e) => setRegionA(e.target.value)} className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-[1.5rem] text-xs font-black uppercase text-slate-800 outline-none appearance-none focus:ring-4 ring-blue-50 shadow-inner">{regions.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
-                  {scopeA === 'site' && <div className="relative"><Building2 size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-400" /><select value={siteA} onChange={(e) => setSiteA(e.target.value)} className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-[1.5rem] text-xs font-black uppercase text-slate-800 outline-none appearance-none focus:ring-4 ring-blue-50 shadow-inner">{sitesA.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}</select></div>}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="glass-card rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full -mr-32 -mt-32"></div>
+            <div className="flex items-center justify-between mb-12">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-2xl">
+                  <Trophy size={28} />
                 </div>
-              )}
-              {scale === 'days' ? (
-                <button onClick={() => setShowPicker('A')} className="w-full bg-slate-900 text-white rounded-[1.5rem] px-8 py-5 flex items-center justify-between group hover:bg-slate-800 transition-all shadow-xl"><div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em]"><CalendarIcon size={18} className="text-blue-400" /> {dateA}</div><ChevronDown size={18} className="text-white/40 group-hover:text-white" /></button>
-              ) : (
-                <div className="flex gap-4"><select value={yearA} onChange={(e) => setYearA(Number(e.target.value))} className="flex-1 bg-white border border-slate-200 rounded-[1.5rem] px-6 py-5 text-xs font-black uppercase outline-none focus:ring-4 ring-blue-50 shadow-inner">{availableYears.map(y => <option key={y} value={y}>{y}</option>)}</select>{scale === 'months' && <select value={monthA} onChange={(e) => setMonthA(Number(e.target.value))} className="flex-1 bg-white border border-slate-200 rounded-[1.5rem] px-6 py-5 text-xs font-black uppercase outline-none focus:ring-4 ring-blue-50 shadow-inner">{MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>}</div>
-              )}
-           </div>
-           <div className="pt-10 mt-10 border-t border-slate-100 flex flex-col"><span className="text-7xl font-black text-slate-900 tracking-tighter leading-none">{comparisonResults.a.total.toLocaleString()}</span><p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] mt-3">POCHES DE SANG RÉCOLTÉES (A)</p></div>
-        </div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Cibles de Vitalité</h3>
+              </div>
+              <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Top 5 Performance %</div>
+            </div>
+            <div className="space-y-8">
+              {top5Sites.map((site, i) => {
+                const sColor = getDynamicColor(site.perf);
+                return (
+                  <div key={i} className="relative group">
+                    <div className="flex justify-between items-end mb-3 px-2">
+                      <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-black text-slate-300">{i+1}</span>
+                          <span className="text-sm font-black" style={{ color: sColor }}>{site.perf.toFixed(1)}%</span>
+                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{site.name}</span>
+                      </div>
+                    </div>
+                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-50 shadow-inner">
+                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(site.perf, 100)}%`, backgroundColor: sColor }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-        <div className="glass-card p-12 rounded-[3.5rem] shadow-3xl border border-white/40 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-2.5 h-full bg-purple-500 opacity-50"></div>
-           <div className="flex items-center gap-4 mb-10">
-              <div className="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center text-white shadow-xl"><Activity size={24} /></div>
-              <div><p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em]">MÉTRIQUE B</p><h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Point de Comparaison</h4></div>
-           </div>
-           <div className="space-y-6">
-              <div className="flex gap-2 p-1.5 bg-slate-100/50 rounded-2xl">{['national', 'region', 'site'].map(s => (
-                <button key={s} onClick={() => setScopeB(s as any)} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${scopeB === s ? 'bg-white text-purple-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{s}</button>
-              ))}</div>
-              {scopeB !== 'national' && (
-                <div className="space-y-4">
-                  <div className="relative"><MapPin size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-purple-400" /><select value={regionB} onChange={(e) => setRegionB(e.target.value)} className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-[1.5rem] text-xs font-black uppercase text-slate-800 outline-none appearance-none focus:ring-4 ring-purple-50 shadow-inner">{regions.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
-                  {scopeB === 'site' && <div className="relative"><Building2 size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-purple-400" /><select value={siteB} onChange={(e) => setSiteB(e.target.value)} className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-[1.5rem] text-xs font-black uppercase text-slate-800 outline-none appearance-none focus:ring-4 ring-purple-50 shadow-inner">{sitesB.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}</select></div>}
+          <div className="bg-slate-900 rounded-[3.5rem] p-12 shadow-3xl text-white relative overflow-hidden border border-white/5">
+            <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-[100px]" style={{ backgroundColor: `${championPulseColor}11` }}></div>
+            <div className="flex items-center gap-5 mb-10">
+                <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-900/50">
+                  <Activity size={28} />
                 </div>
-              )}
-              {scale === 'days' ? (
-                <button onClick={() => setShowPicker('B')} className="w-full bg-slate-900 text-white rounded-[1.5rem] px-8 py-5 flex items-center justify-between group hover:bg-slate-800 transition-all shadow-xl"><div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em]"><CalendarIcon size={18} className="text-purple-400" /> {dateB}</div><ChevronDown size={18} className="text-white/40 group-hover:text-white" /></button>
-              ) : (
-                <div className="flex gap-4"><select value={yearB} onChange={(e) => setYearB(Number(e.target.value))} className="flex-1 bg-white border border-slate-200 rounded-[1.5rem] px-6 py-5 text-xs font-black uppercase outline-none focus:ring-4 ring-purple-50 shadow-inner">{availableYears.map(y => <option key={y} value={y}>{y}</option>)}</select>{scale === 'months' && <select value={monthB} onChange={(e) => setMonthB(Number(e.target.value))} className="flex-1 bg-white border border-slate-200 rounded-[1.5rem] px-6 py-5 text-xs font-black uppercase outline-none focus:ring-4 ring-purple-50 shadow-inner">{MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>}</div>
-              )}
-           </div>
-           <div className="pt-10 mt-10 border-t border-slate-100 flex flex-col"><span className="text-7xl font-black text-slate-900 tracking-tighter leading-none">{comparisonResults.b.total.toLocaleString()}</span><p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] mt-3">POCHES DE SANG RÉCOLTÉES (B)</p></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-         <div className="bg-[#0f172a] rounded-[4rem] p-12 text-white flex flex-col justify-center items-center shadow-3xl relative overflow-hidden">
-            <div className={`absolute -inset-1 blur-[60px] opacity-40 rounded-full transition-all duration-1000 ${comparisonResults.diff >= 0 ? 'bg-emerald-500 scale-125' : 'bg-red-500 scale-125'}`}></div>
-            <div className="relative z-10 text-center">
-              <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.4em] mb-8">DELTA PERFORMANCE</p>
-              <div className="flex flex-col items-center gap-6">
-                 <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-2xl ${comparisonResults.diff >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`}>{comparisonResults.diff >= 0 ? <TrendingUp size={40} /> : <TrendingDown size={40} />}</div>
-                 <div><p className="text-8xl font-black tracking-tighter leading-none mb-3">{comparisonResults.diff > 0 ? '+' : ''}{comparisonResults.diff.toLocaleString()}</p><div className={`inline-flex items-center gap-2 px-6 py-2 rounded-full font-black text-lg ${comparisonResults.perc >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{comparisonResults.perc.toFixed(1)}%</div></div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter">CHAMPION DU JOUR</h3>
+            </div>
+            {bestSite && (
+              <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/10 shadow-inner overflow-hidden">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 text-slate-900 rounded-2xl flex items-center justify-center shadow-2xl transition-colors duration-1000 shrink-0" style={{ backgroundColor: championPulseColor }}>
+                      <Star size={32} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-4">
+                         <span className="text-4xl font-black transition-colors duration-1000" style={{ color: championPulseColor }}>{bestSite.perf.toFixed(1)}%</span>
+                         <h4 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">{bestSite.name}</h4>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="relative w-full h-4 bg-white/5 rounded-full mb-14 mt-10">
+                  <div className={`h-full transition-all duration-1000 rounded-full relative ${bestSite.perf >= 100 ? 'animate-pulse' : ''}`} style={{ width: `${Math.min((bestSite.perf / 125) * 100, 100)}%`, backgroundColor: championPulseColor, boxShadow: `0 0 20px ${championPulseColor}66` }}>
+                     <div className="absolute top-0 right-0 translate-x-1/2 -translate-y-[130%] flex flex-col items-center">
+                        <div className="px-2 py-1 rounded-xl bg-emerald-600 border shadow-xl flex items-center" style={{ borderColor: 'white' }}>
+                           <span className="text-xs font-black text-white">{bestSite.total}</span>
+                        </div>
+                        <div className="w-px h-3 bg-white/40 mt-1"></div>
+                     </div>
+                  </div>
+                  <div className="absolute top-0 left-[80%] h-full w-0.5 bg-white/60 z-10 shadow-[0_0_8px_white]">
+                     <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                       <div className="w-px h-10 bg-white/30 mb-1"></div>
+                       <span className="text-[10px] font-black text-white bg-orange-500 px-2 py-0.5 rounded border border-white/10">{bestSite.objective}</span>
+                     </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 pt-4">
+                    <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Fixe</p><p className="text-xl font-black text-emerald-400">{bestSite.fixe}</p></div>
+                    <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Mobile</p><p className="text-xl font-black text-orange-400">{bestSite.mobile}</p></div>
+                    <div className="bg-white/10 p-4 rounded-2xl text-center border border-white/10"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Total</p><p className="text-xl font-black text-white">{bestSite.total}</p></div>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-6 mt-8">
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-2">TENSION</p>
+                  <p className={`text-xl font-black transition-colors duration-1000 ${isHealthy ? 'text-emerald-400' : 'text-orange-400 uppercase'}`}>{isHealthy ? 'STABLE' : 'VARIABLE'}</p>
+              </div>
+              <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-2">VITALITÉ IA</p>
+                  <p className="text-xl font-black transition-colors duration-1000" style={{ color: nationalPulseColor }}>{perfDaily.toFixed(1)}%</p>
               </div>
             </div>
-         </div>
-
-         <div className="lg:col-span-2 glass-card rounded-[4rem] p-12 lg:p-16 shadow-3xl border border-white/40">
-            <div className="flex items-center justify-between mb-12">
-               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800 flex items-center gap-6"><Globe size={32} className="text-blue-600" /> Analyse Mixte</h3>
-               <div className="flex gap-4">
-                  <div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full bg-slate-400"></div><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">A (Opaque)</span></div>
-                  <div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full bg-slate-400 opacity-40"></div><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">B (40%)</span></div>
-               </div>
-            </div>
-            
-            <div className="h-80">
-               <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} barGap={20}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#64748b'}} />
-                    <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1.5rem' }} />
-                    <Bar dataKey="A" radius={[8, 8, 0, 0]} name="Période A">
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-a-${index}`} fill={getCategoryColor(entry.name)} />
-                      ))}
-                    </Bar>
-                    <Bar dataKey="B" radius={[8, 8, 0, 0]} name="Période B">
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-b-${index}`} fill={getCategoryColor(entry.name)} fillOpacity={0.4} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-               </ResponsiveContainer>
-            </div>
-         </div>
+          </div>
+        </div>
       </div>
     </div>
   );

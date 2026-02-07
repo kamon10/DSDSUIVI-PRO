@@ -40,7 +40,7 @@ const getPerfColor = (perc: number) => {
 };
 
 export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
-  // 1. Extraire les années disponibles
+  // 1. Extraction des années disponibles
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
@@ -57,7 +57,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const recapRef = useRef<HTMLDivElement>(null);
 
-  // Initialisation et synchronisation
+  // Initialisation par rapport à la date la plus récente
   useEffect(() => {
     if (data.date && data.date !== "---" && !selectedYear) {
       const parts = data.date.split('/');
@@ -67,7 +67,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     }
   }, [data.date]);
 
-  // Extraire les mois disponibles pour l'année sélectionnée
+  // Extraction des mois disponibles pour l'année sélectionnée
   const availableMonths = useMemo(() => {
     if (!selectedYear) return [];
     const months = new Set<number>();
@@ -80,7 +80,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     return Array.from(months).sort((a, b) => a - b);
   }, [data.dailyHistory, selectedYear]);
 
-  // Filtrer les jours disponibles pour l'année et le mois sélectionnés
+  // Filtrage des dates de situation (jours) disponibles pour le couple Année/Mois
   const filteredDates = useMemo(() => {
     return data.dailyHistory.filter(h => {
       const parts = h.date.split('/');
@@ -88,12 +88,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
     }).map(h => h.date);
   }, [data.dailyHistory, selectedYear, selectedMonth]);
 
-  // Ajuster la date sélectionnée quand on change de mois
+  // Ajustement automatique de la date quand on change de mois
   useEffect(() => {
     if (filteredDates.length > 0 && !filteredDates.includes(selectedDate)) {
       setSelectedDate(filteredDates[0]);
     }
-  }, [filteredDates]);
+  }, [filteredDates, selectedDate]);
 
   const dailyRecord = useMemo(() => 
     data.dailyHistory.find(h => h.date === selectedDate)
@@ -141,6 +141,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data }) => {
         const mobileJour = siteDaily?.mobile || 0;
         const totalJour = siteDaily?.total || (fixeJour + mobileJour);
 
+        // Recalcul du cumul mensuel arrêté au jour choisi
         const totalMoisALaDate = data.dailyHistory
           .filter(h => {
             const [hD, hM, hY] = h.date.split('/').map(Number);
