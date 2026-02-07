@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1 } from './constants';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_SCRIPT_URL } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
 import { PerformanceView } from './components/PerformanceView';
 import { DetailedHistoryView } from './components/DetailedHistoryView';
@@ -10,9 +11,10 @@ import { ComparisonView } from './components/ComparisonView';
 import { SummaryView } from './components/SummaryView';
 import { WeeklyView } from './components/WeeklyView';
 import { SiteSynthesisView } from './components/SiteSynthesisView';
+import { DataEntryForm } from './components/DataEntryForm';
 import { fetchSheetData } from './services/googleSheetService';
 import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock } from 'lucide-react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
@@ -22,6 +24,7 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
+  const [scriptUrl, setScriptUrl] = useState(localStorage.getItem('gsheet_script_url') || DEFAULT_SCRIPT_URL);
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +69,12 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const saveSettings = () => {
+    localStorage.setItem('gsheet_input_1', sheetInput);
+    localStorage.setItem('gsheet_script_url', scriptUrl);
+    handleSync(false, true);
+  };
+
   useEffect(() => {
     handleSync(false, true);
   }, [handleSync]);
@@ -89,6 +98,7 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse' },
     { id: 'cockpit', icon: <LayoutDashboard size={16} />, label: 'Cockpit' },
+    { id: 'entry', icon: <PlusSquare size={16} />, label: 'Saisie' },
     { id: 'site-focus', icon: <UserCheck size={16} />, label: 'Focus' },
     { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine' },
     { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.' },
@@ -205,6 +215,7 @@ const App: React.FC = () => {
             {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
             {activeTab === 'cockpit' && <VisualDashboard data={data} setActiveTab={setActiveTab} />}
+            {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} />}
             {activeTab === 'site-focus' && <SiteSynthesisView data={data} />}
             {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'evolution' && <EvolutionView data={data} />}
@@ -223,7 +234,7 @@ const App: React.FC = () => {
                <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center">
                   <Database size={24} />
                </div>
-               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Source de Données</h3>
+               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Configuration</h3>
             </div>
             <div className="space-y-6">
               <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-2">
@@ -232,7 +243,7 @@ const App: React.FC = () => {
                 </p>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Endpoint CSV / Google Sheet</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">URL Google Sheet (CSV)</label>
                 <input 
                   value={sheetInput} 
                   onChange={(e) => setSheetInput(e.target.value)} 
@@ -240,10 +251,28 @@ const App: React.FC = () => {
                   placeholder="URL Google Sheet"
                 />
               </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">URL Apps Script (Injection)</label>
+                   <span className="flex items-center gap-1 text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-widest border border-emerald-100"><Lock size={8}/> Figé</span>
+                </div>
+                <div className="relative">
+                  <input 
+                    readOnly
+                    value={scriptUrl} 
+                    className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-5 py-4 text-[10px] font-bold text-slate-400 outline-none cursor-not-allowed opacity-70"
+                    placeholder="URL Script Web App"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300">
+                     <Lock size={16} />
+                  </div>
+                </div>
+                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase">L'URL d'injection a été fixée par l'administrateur.</p>
+              </div>
             </div>
             {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3"><AlertCircle size={18}/> {error}</div>}
             <div className="flex gap-4">
-              <button onClick={() => handleSync(false, true)} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95">Valider</button>
+              <button onClick={saveSettings} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95">Valider</button>
               <button onClick={() => setShowSettings(false)} className="flex-1 border border-slate-200 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all">Fermer</button>
             </div>
           </div>

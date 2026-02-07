@@ -1,3 +1,4 @@
+
 import { DashboardData } from './types';
 
 export const WORKING_DAYS_YEAR = 313;
@@ -97,20 +98,23 @@ export const INITIAL_DATA: DashboardData = {
   regions: []
 };
 
-// NOUVELLE PALETTE PROFESSIONNELLE HARMONISÉE
+// NOUVELLE PALETTE PROFESSIONNELLE AVEC TONS CHAUDS
 export const COLORS = {
-  blue: '#2563eb',   // Bleu Royal (Total / Structure)
-  green: '#10b981',  // Vert Émeraude (Fixe)
-  orange: '#f59e0b', // Orange Ambre (Mobile)
-  red: '#ef4444',    // Rouge (Alertes)
-  yellow: '#facc15', // Jaune (IA)
-  slate: '#1e293b',  // Ardoise
-  warmBg: '#fffcf5', // Fond
+  blue: '#2563eb',   // Bleu Royal (Données / Structure)
+  green: '#10b981',  // Vert Émeraude (Succès / Fixe)
+  orange: '#f59e0b', // Ambre/Orange (Énergie / Mobile)
+  red: '#ef4444',    // Rouge (Alertes / Annuel)
+  yellow: '#facc15', // Jaune (Intelligence / IA)
+  slate: '#1e293b',  // Ardoise (Texte / Dark mode elements)
+  warmBg: '#fffcf5', // Nouveau fond orangé
   
-  // Alias explicites pour les prélèvements
+  // Alias pour compatibilité
   fixed: '#10b981',
   mobile: '#f59e0b',
-  total: '#2563eb'
+  total: '#ef4444'
 };
 
 export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
+
+// URL FIGÉE POUR L'INJECTION APPS SCRIPT
+export const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-Ha5g-WwM5J0RGXpJwOM0qSw61j2TS4slMT4h5Dfxua0UOy7eZs9Y7SeIJ6-8sCRm/exec";
