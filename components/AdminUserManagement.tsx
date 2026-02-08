@@ -226,6 +226,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest outline-none focus:ring-4 ring-red-50 cursor-pointer"
                     >
                       <option value="">Tous les sites</option>
+                      <option value="DIRECTION GENERALE">DIRECTION GENERALE</option>
                       {SITES_DATA.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
                     </select>
                  </div>

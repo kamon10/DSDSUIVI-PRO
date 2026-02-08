@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Building2, Briefcase, Send, X, ShieldCheck, AlertCircle, RefreshCw, UserCheck } from 'lucide-react';
 import { SITES_DATA } from '../constants';
@@ -168,6 +167,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                     <Building2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                     <select required value={formData.site} onChange={e => setFormData({...formData, site: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase outline-none focus:ring-4 ring-red-50 appearance-none">
                       <option value="">Sélectionner un site...</option>
+                      <option value="DIRECTION GENERALE">DIRECTION GENERALE</option>
                       {SITES_DATA.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
                     </select>
                   </div>
