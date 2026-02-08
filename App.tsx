@@ -11,11 +11,12 @@ import { SummaryView } from './components/SummaryView';
 import { WeeklyView } from './components/WeeklyView';
 import { SiteSynthesisView } from './components/SiteSynthesisView';
 import { DataEntryForm } from './components/DataEntryForm';
+import { ContactsView } from './components/ContactsView';
 import { LoginView } from './components/LoginView';
 import { AdminUserManagement } from './components/AdminUserManagement';
 import { fetchSheetData, fetchUsers } from './services/googleSheetService';
 import { AppTab, DashboardData, User } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -140,6 +141,7 @@ const App: React.FC = () => {
     { id: 'comparison', icon: <ArrowLeftRight size={14} />, label: 'Compare', public: false },
     { id: 'recap', icon: <FileText size={14} />, label: 'Récap', public: false },
     { id: 'performance', icon: <BarChart3 size={14} />, label: 'Rang', public: false },
+    { id: 'contact', icon: <BookOpen size={14} />, label: 'Contact', public: true },
     { id: 'administration', icon: <ShieldCheck size={14} />, label: 'Admin', public: false, superOnly: true }
   ];
 
@@ -247,6 +249,7 @@ const App: React.FC = () => {
         ) : (
           <div className="page-transition">
             {activeTab === 'pulse' && <PulsePerformance data={filteredData} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
+            {activeTab === 'contact' && <ContactsView />}
             
             {currentUser && (
               <>
@@ -263,7 +266,7 @@ const App: React.FC = () => {
               </>
             )}
 
-            {!currentUser && activeTab !== 'pulse' && (
+            {!currentUser && activeTab !== 'pulse' && activeTab !== 'contact' && (
               <div className="py-40 flex flex-col items-center gap-6 text-center">
                 <Lock size={64} className="text-slate-200" />
                 <h2 className="text-2xl font-black uppercase text-slate-800">Accès Restreint</h2>
