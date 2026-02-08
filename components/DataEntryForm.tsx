@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus } from 'lucide-react';
+import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { SITES_DATA } from '../constants';
 import { DashboardData } from '../types';
@@ -20,20 +20,28 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
     fixe: 0,
-    mobile: 0
+    mobile1: 0,
+    mobile2: 0,
+    mobile3: 0
   });
 
   const [status, setStatus] = useState<'idle' | 'success' | 'submitting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // CALCULS AUTOMATIQUES
+  // Somme des activités mobiles
+  const totalMobile = (Number(formData.mobile1) || 0) + (Number(formData.mobile2) || 0) + (Number(formData.mobile3) || 0);
+  
+  // Total général des poches
+  const totalPoches = (Number(formData.fixe) || 0) + totalMobile;
+
+  // CALCULS AUTOMATIQUES DU SITE SÉLECTIONNÉ
   const selectedSite = useMemo(() => {
     if (formData.siteIndex === "") return null;
     return SITES_DATA[parseInt(formData.siteIndex)];
   }, [formData.siteIndex]);
 
-  // DÉTECTION DE L'EXISTENCE D'UNE DONNÉE
+  // DÉTECTION DE L'EXISTENCE D'UNE DONNÉE DANS LE SHEET
   useEffect(() => {
     if (selectedSite && formData.date) {
       const [y, m, d] = formData.date.split('-');
@@ -44,20 +52,20 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
       
       if (existingSiteData) {
         setIsEditing(true);
+        // Si une donnée existe, on met le total mobile dans le premier champ mobile
         setFormData(prev => ({
           ...prev,
           fixe: existingSiteData.fixe,
-          mobile: existingSiteData.mobile
+          mobile1: existingSiteData.mobile,
+          mobile2: 0,
+          mobile3: 0
         }));
-      } else {
+      } else if (isEditing) {
+        // Si on change de site/date et qu'on n'est plus en mode édition
         setIsEditing(false);
-        // On ne reset pas à 0 si l'utilisateur est en train de taper pour éviter les flashs
-        // Mais si on change juste le site/date et qu'on trouve rien, on peut remettre à 0
       }
     }
-  }, [selectedSite, formData.date, data.dailyHistory]);
-
-  const totalPoches = (Number(formData.fixe) || 0) + (Number(formData.mobile) || 0);
+  }, [selectedSite, formData.date]); // Détection lors du changement de site ou date
 
   const calculatedFields = useMemo(() => {
     if (!formData.date) return { endOfMonth: "", monthName: "" };
@@ -91,7 +99,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
     try {
       const [y, m, d] = formData.date.split('-');
       
-      // PAYLOAD CONFORME À VOTRE STRUCTURE DE FEUILLE
+      // PAYLOAD CONFORME À LA STRUCTURE DU GOOGLE SHEET NATIONAL
       const payload = {
         "Date Collecte": `${d}/${m}/${y}`,
         "Code site": selectedSite.code,
@@ -100,10 +108,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
         "Activité Fixe": "FIXE",
         "NombreFixe": Number(formData.fixe),
         "Activité Mobile": "MOBILE",
-        "NombreMobile": Number(formData.mobile),
+        "NombreMobile": totalMobile, // Somme des 3 saisies mobiles
         "Total poches": totalPoches,
         "Mois": calculatedFields.monthName,
-        "Mode": isEditing ? "UPDATE" : "APPEND" // Information utile pour le script
+        "Mode": isEditing ? "UPDATE" : "APPEND"
       };
 
       await saveRecordToSheet(cleanUrl, payload);
@@ -119,7 +127,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
       siteIndex: "",
       date: new Date().toISOString().split('T')[0],
       fixe: 0,
-      mobile: 0
+      mobile1: 0,
+      mobile2: 0,
+      mobile3: 0
     });
     setIsEditing(false);
     setStatus('idle');
@@ -136,7 +146,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
             {isEditing ? "Mise à jour Réussie" : "Transmission Réussie"}
           </h2>
           <p className="text-slate-500 text-sm mb-8 font-medium">
-            {isEditing ? "La ligne existante a été écrasée avec succès." : "Les données ont été injectées dans le fichier national."}
+            {isEditing ? "L'enregistrement existant a été mis à jour." : "Les données ont été injectées dans le fichier national."}
           </p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
             <RefreshCw size={18} /> Nouvelle saisie
@@ -159,13 +169,13 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
         <div className="p-4 bg-blue-600 rounded-3xl flex items-center justify-between text-white animate-in slide-in-from-top-4 shadow-xl">
            <div className="flex items-center gap-3 px-2">
               <Edit3 size={20} />
-              <p className="text-[10px] font-black uppercase tracking-widest">Saisie existante détectée • Mode Modification activé</p>
+              <p className="text-[10px] font-black uppercase tracking-widest">Saisie existante détectée • Mode Mise à jour actif</p>
            </div>
            <button 
-            onClick={() => { setFormData({...formData, fixe: 0, mobile: 0}); setIsEditing(false); }}
+            onClick={() => { setFormData({...formData, fixe: 0, mobile1: 0, mobile2: 0, mobile3: 0}); setIsEditing(false); }}
             className="text-[9px] font-black uppercase bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition-all"
            >
-            Ignorer
+            Annuler modification
            </button>
         </div>
       )}
@@ -182,14 +192,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                 {isEditing ? "Modifier les Flux" : "Saisie des Flux"}
               </h2>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1 italic">
-                {isEditing ? "Mise à jour d'un enregistrement existant" : "Module d'injection temps-réel"}
+                {isEditing ? "Remplacement des données existantes" : "Module d'injection temps-réel national"}
               </p>
             </div>
           </div>
           
           <div className="flex gap-4 w-full lg:w-auto">
             <div className="bg-slate-900 px-8 py-5 rounded-[2rem] text-center flex-1 lg:flex-none min-w-[140px] shadow-xl">
-               <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Poches Total</p>
+               <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Total Général</p>
                <p className="text-3xl font-black text-white leading-none">{totalPoches}</p>
             </div>
           </div>
@@ -198,7 +208,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
         <form onSubmit={handleSubmit} className="p-8 lg:p-12 space-y-10">
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* COLONNE GAUCHE : SÉLECTION */}
+            {/* COLONNE GAUCHE : SÉLECTION SITE ET DATE */}
             <div className="space-y-8">
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
@@ -220,7 +230,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                 </div>
                 {selectedSite && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl border border-blue-100 animate-in fade-in duration-300">
-                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Code Automatique :</span>
+                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Code Site :</span>
                     <span className="text-xs font-black text-blue-700">{selectedSite.code}</span>
                   </div>
                 )}
@@ -250,16 +260,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* COLONNE DROITE : CHIFFRES */}
-            <div className="space-y-8">
+              {/* SECTION ACTIVITÉ FIXE */}
               <div className="bg-emerald-50/30 p-8 rounded-[2.5rem] border border-emerald-100 space-y-4">
                 <div className="flex justify-between items-center">
                   <label className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
                     <Hash size={14} /> Activité Fixe
                   </label>
-                  <span className="text-[8px] font-black px-2 py-0.5 bg-emerald-600 text-white rounded-full">FIGÉ</span>
+                  <span className="text-[8px] font-black px-2 py-0.5 bg-emerald-600 text-white rounded-full">SITE</span>
                 </div>
                 <input 
                   type="number"
@@ -269,33 +277,65 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                   className="w-full bg-white border border-emerald-200 rounded-2xl px-6 py-6 text-4xl font-black text-emerald-700 outline-none text-center shadow-inner focus:ring-4 ring-emerald-500/10 transition-all"
                 />
               </div>
+            </div>
 
-              <div className="bg-orange-50/30 p-8 rounded-[2.5rem] border border-orange-100 space-y-4">
+            {/* COLONNE DROITE : ACTIVITÉS MOBILES (3 SAISIES) */}
+            <div className="space-y-6">
+              <div className="bg-orange-50/40 p-8 rounded-[3rem] border border-orange-100 space-y-6">
                 <div className="flex justify-between items-center">
                   <label className="flex items-center gap-2 text-[10px] font-black text-orange-600 uppercase tracking-widest">
-                    <Hash size={14} /> Activité Mobile
+                    <Smartphone size={14} /> Activités Mobiles
                   </label>
-                  <span className="text-[8px] font-black px-2 py-0.5 bg-orange-600 text-white rounded-full">FIGÉ</span>
+                  <div className="bg-orange-600 text-white px-3 py-1 rounded-full text-[10px] font-black">
+                    TOTAL MOBILE : {totalMobile}
+                  </div>
                 </div>
-                <input 
-                  type="number"
-                  min="0"
-                  value={formData.mobile}
-                  onChange={(e) => setFormData({...formData, mobile: parseInt(e.target.value) || 0})}
-                  className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-6 text-4xl font-black text-orange-700 outline-none text-center shadow-inner focus:ring-4 ring-orange-500/10 transition-all"
-                />
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <span className="text-[8px] font-black text-orange-400 uppercase ml-2 tracking-widest">Saisie 1</span>
+                    <input 
+                      type="number"
+                      min="0"
+                      value={formData.mobile1}
+                      onChange={(e) => setFormData({...formData, mobile1: parseInt(e.target.value) || 0})}
+                      className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-4 text-2xl font-black text-orange-700 outline-none text-center shadow-sm focus:ring-4 ring-orange-500/10 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[8px] font-black text-orange-400 uppercase ml-2 tracking-widest">Saisie 2</span>
+                    <input 
+                      type="number"
+                      min="0"
+                      value={formData.mobile2}
+                      onChange={(e) => setFormData({...formData, mobile2: parseInt(e.target.value) || 0})}
+                      className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-4 text-2xl font-black text-orange-700 outline-none text-center shadow-sm focus:ring-4 ring-orange-500/10 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[8px] font-black text-orange-400 uppercase ml-2 tracking-widest">Saisie 3</span>
+                    <input 
+                      type="number"
+                      min="0"
+                      value={formData.mobile3}
+                      onChange={(e) => setFormData({...formData, mobile3: parseInt(e.target.value) || 0})}
+                      className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-4 text-2xl font-black text-orange-700 outline-none text-center shadow-sm focus:ring-4 ring-orange-500/10 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-slate-900 rounded-[2.5rem] text-white/80 text-[10px] font-black uppercase tracking-widest flex flex-col items-center justify-center gap-2 border border-white/5 shadow-2xl">
+                 <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 ${isEditing ? 'bg-blue-400' : 'bg-red-500'} rounded-full animate-pulse`}></div> 
+                    {isEditing ? "Modification en cours" : "Injection active"}
+                 </div>
+                 <div className="text-white text-lg font-black tracking-tighter">
+                   {totalPoches} POCHES AU TOTAL
+                 </div>
+                 <div className="text-white/40">{calculatedFields.monthName} {new Date(formData.date).getFullYear()}</div>
               </div>
             </div>
-          </div>
-
-          {/* RÉCAPITULATIF AVANT ENVOI */}
-          <div className="p-6 bg-slate-900 rounded-[2rem] text-white/80 text-[10px] font-black uppercase tracking-widest flex flex-wrap items-center justify-center gap-x-8 gap-y-2 border border-white/5 shadow-2xl">
-             <div className="flex items-center gap-2">
-                <div className={`w-1.5 h-1.5 ${isEditing ? 'bg-blue-400' : 'bg-red-500'} rounded-full animate-pulse`}></div> 
-                {isEditing ? "Mode Mise à jour actif" : "Injection directe active"}
-             </div>
-             <div className="flex items-center gap-2">Total : {totalPoches} poches</div>
-             <div className="flex items-center gap-2 text-white">Mois : {calculatedFields.monthName}</div>
           </div>
 
           {status === 'error' && (
@@ -319,9 +359,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
       <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
         <Calculator size={24} className="text-blue-600 shrink-0" />
         <div>
-          <h4 className="text-[11px] font-black text-blue-900 uppercase mb-1">Aide au calcul</h4>
+          <h4 className="text-[11px] font-black text-blue-900 uppercase mb-1">Aide au calcul mobile</h4>
           <p className="text-[10px] font-bold text-blue-700/70 leading-relaxed uppercase">
-            L'application détecte automatiquement si une saisie existe déjà pour la date et le site choisis. Dans ce cas, elle passe en mode modification pour vous permettre d'ajuster les chiffres sans créer de doublon dans le Sheet.
+            Vous pouvez désormais saisir jusqu'à 3 collectes mobiles différentes pour un même site. L'application fait automatiquement la somme et l'enregistre dans la colonne "NombreMobile" de votre fichier central.
           </p>
         </div>
       </div>
