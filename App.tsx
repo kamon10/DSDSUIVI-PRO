@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
@@ -86,6 +85,7 @@ const App: React.FC = () => {
 
     if (currentUser.role === 'PRES') {
       const regionName = currentUser.region || "";
+      // Si regionName est 'TOUS LES PRES', on ne filtre rien (vision nationale)
       if (regionName.toUpperCase() !== "TOUS LES PRES") {
         filtered.regions = fullData.regions.filter(r => r.name.toUpperCase() === regionName.toUpperCase());
         filtered.dailyHistory = fullData.dailyHistory.map(h => ({
