@@ -1,4 +1,16 @@
 
+export type UserRole = 'AGENT' | 'PRES' | 'ADMIN' | 'SUPERADMIN';
+
+export interface User {
+  nom: string;
+  prenoms: string;
+  email: string;
+  fonction: string;
+  site: string;
+  role: UserRole;
+  region?: string;
+}
+
 export interface DonationStats {
   realized: number;
   objective: number;
@@ -61,4 +73,4 @@ export interface DashboardData {
   regions: RegionData[];
 }
 
-export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry';
+export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration';

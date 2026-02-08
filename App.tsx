@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_SCRIPT_URL } from './constants';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
 import { PerformanceView } from './components/PerformanceView';
 import { DetailedHistoryView } from './components/DetailedHistoryView';
@@ -12,12 +12,14 @@ import { SummaryView } from './components/SummaryView';
 import { WeeklyView } from './components/WeeklyView';
 import { SiteSynthesisView } from './components/SiteSynthesisView';
 import { DataEntryForm } from './components/DataEntryForm';
-import { fetchSheetData } from './services/googleSheetService';
-import { AppTab, DashboardData } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock } from 'lucide-react';
+import { LoginView } from './components/LoginView';
+import { AdminUserManagement } from './components/AdminUserManagement';
+import { fetchSheetData, fetchUsers } from './services/googleSheetService';
+import { AppTab, DashboardData, User } from './types';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [data, setData] = useState<DashboardData>(INITIAL_DATA);
+  const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -25,11 +27,11 @@ const App: React.FC = () => {
   
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
   const [showSettings, setShowSettings] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(JSON.parse(localStorage.getItem('dsd_user') || 'null'));
   const [error, setError] = useState<string | null>(null);
 
-  // URL Figée : On utilise directement la constante au lieu d'un état modifiable
   const scriptUrl = DEFAULT_SCRIPT_URL;
-
   const isSyncingRef = useRef(false);
   const sheetInputRef = useRef(sheetInput);
   
@@ -49,7 +51,7 @@ const App: React.FC = () => {
     try {
       const result = await fetchSheetData(currentInput.trim(), force);
       if (result) {
-        setData(result);
+        setFullData(result);
         setLastSync(new Date());
         setSyncStatus('synced');
         localStorage.setItem('gsheet_input_1', currentInput.trim());
@@ -57,62 +59,102 @@ const App: React.FC = () => {
         setLastSync(new Date());
         setSyncStatus('synced');
       }
-      if (!isSilent) setShowSettings(false);
       setError(null);
     } catch (err: any) {
-      console.error("Sync Error:", err);
       setSyncStatus('error');
-      if (!isSilent) {
-        setError(err.message || "Échec de la connexion à la source.");
-      }
+      if (!isSilent) setError(err.message || "Échec de la connexion.");
     } finally {
       setLoading(false);
       isSyncingRef.current = false;
     }
   }, []);
 
+  useEffect(() => { handleSync(false, true); }, [handleSync]);
+
   const saveSettings = () => {
-    localStorage.setItem('gsheet_input_1', sheetInput);
-    // On ne sauvegarde plus scriptUrl car elle est figée dans le code
+    localStorage.setItem('gsheet_input_1', sheetInput.trim());
+    setShowSettings(false);
     handleSync(false, true);
   };
 
-  useEffect(() => {
-    handleSync(false, true);
-  }, [handleSync]);
+  const filteredData = useMemo(() => {
+    if (!currentUser || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') {
+      return fullData;
+    }
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      handleSync(true, false);
-    }, 30000); 
-    return () => clearInterval(interval);
-  }, [handleSync]);
+    const filtered = { ...fullData };
 
-  useEffect(() => {
-    const staleCheck = setInterval(() => {
-      if (lastSync && (new Date().getTime() - lastSync.getTime() > 300000)) {
-        setSyncStatus('stale');
+    if (currentUser.role === 'PRES') {
+      const regionName = currentUser.region || "";
+      if (regionName.toUpperCase() !== "TOUS LES PRES") {
+        filtered.regions = fullData.regions.filter(r => r.name.toUpperCase() === regionName.toUpperCase());
+        filtered.dailyHistory = fullData.dailyHistory.map(h => ({
+          ...h,
+          sites: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()),
+          stats: {
+            realized: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.total, 0),
+            fixed: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.fixe, 0),
+            mobile: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
+          }
+        }));
       }
-    }, 10000);
-    return () => clearInterval(staleCheck);
-  }, [lastSync]);
+    } else if (currentUser.role === 'AGENT') {
+      const siteName = currentUser.site || "";
+      filtered.regions = fullData.regions.map(r => ({
+        ...r,
+        sites: r.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase())
+      })).filter(r => r.sites.length > 0);
+      
+      filtered.dailyHistory = fullData.dailyHistory.map(h => ({
+        ...h,
+        sites: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()),
+        stats: {
+          realized: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()).reduce((acc, s) => acc + s.total, 0),
+          fixed: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()).reduce((acc, s) => acc + s.fixe, 0),
+          mobile: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
+        }
+      }));
+    }
+
+    const mRealized = filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + s.totalMois, 0), 0);
+    const mObj = filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + s.objMensuel, 0), 0);
+    
+    filtered.monthly = {
+      realized: mRealized,
+      objective: mObj || 1,
+      percentage: mObj > 0 ? (mRealized / mObj) * 100 : 0,
+      fixed: filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + (s.monthlyFixed || 0), 0), 0),
+      mobile: filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + (s.monthlyMobile || 0), 0), 0),
+    };
+
+    return filtered;
+  }, [fullData, currentUser]);
 
   const navItems = [
-    { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse' },
-    { id: 'cockpit', icon: <LayoutDashboard size={16} />, label: 'Cockpit' },
-    { id: 'entry', icon: <PlusSquare size={16} />, label: 'Saisie' },
-    { id: 'site-focus', icon: <UserCheck size={16} />, label: 'Focus' },
-    { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine' },
-    { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.' },
-    { id: 'comparison', icon: <ArrowLeftRight size={16} />, label: 'Compare' },
-    { id: 'recap', icon: <FileText size={16} />, label: 'Récap' },
-    { id: 'performance', icon: <BarChart3 size={16} />, label: 'Rang' },
-    { id: 'summary', icon: <Layout size={16} />, label: 'Résumé' }
+    { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse', public: true },
+    { id: 'cockpit', icon: <LayoutDashboard size={16} />, label: 'Cockpit', public: false },
+    { id: 'entry', icon: <PlusSquare size={16} />, label: 'Saisie', public: false },
+    { id: 'site-focus', icon: <UserCheck size={16} />, label: 'Focus', public: false },
+    { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine', public: false },
+    { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.', public: false },
+    { id: 'comparison', icon: <ArrowLeftRight size={16} />, label: 'Compare', public: false },
+    { id: 'recap', icon: <FileText size={16} />, label: 'Récap', public: false },
+    { id: 'performance', icon: <BarChart3 size={16} />, label: 'Rang', public: false },
+    { id: 'summary', icon: <Layout size={16} />, label: 'Résumé', public: false },
+    { id: 'administration', icon: <ShieldCheck size={16} />, label: 'Admin', public: false, superOnly: true }
   ];
 
-  const formatLastSync = () => {
-    if (!lastSync) return "--:--";
-    return lastSync.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const visibleNavItems = navItems.filter(item => {
+    if (item.public) return true;
+    if (!currentUser) return false;
+    if (item.superOnly && currentUser.role !== 'SUPERADMIN') return false;
+    return true;
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem('dsd_user');
+    setCurrentUser(null);
+    setActiveTab('pulse');
   };
 
   return (
@@ -127,18 +169,17 @@ const App: React.FC = () => {
                <span className="font-black text-xl tracking-tighter leading-none uppercase text-white">DSDSUIVI</span>
                <div className="flex items-center gap-2 mt-1">
                  <span className="text-[8px] text-orange-400 font-black uppercase tracking-[0.3em] leading-none">Cockpit National CI</span>
-                 <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${syncStatus === 'error' ? 'bg-red-500/20 border-red-500/30' : 'bg-green-500/20 border-green-500/30'}`}>
-                    <div className={`w-1 h-1 rounded-full ${syncStatus === 'error' ? 'bg-red-400' : 'bg-green-400 animate-pulse'}`}></div>
-                    <span className={`text-[6px] font-black uppercase ${syncStatus === 'error' ? 'text-red-400' : 'text-green-400'}`}>
-                      {syncStatus === 'syncing' ? 'SYNC...' : syncStatus === 'error' ? 'ERROR' : 'LIVE'}
-                    </span>
-                 </div>
+                 {currentUser && (
+                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
+                      <span className="text-[6px] font-black uppercase text-blue-400">{currentUser.role}</span>
+                   </div>
+                 )}
                </div>
              </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[70%] py-2">
-            {navItems.map((tab) => (
+          <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[60%] py-2">
+            {visibleNavItems.map((tab) => (
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as AppTab)} 
@@ -156,20 +197,21 @@ const App: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            <div className="hidden xl:flex flex-col items-end mr-2">
-               <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">Dernière vérification</span>
-               <div className="flex items-center gap-1 text-[9px] font-bold text-white/60">
-                  <Clock size={10} className="text-blue-400" />
-                  {formatLastSync()}
-               </div>
-            </div>
-            <button 
-              onClick={() => handleSync(false, true)} 
-              disabled={syncStatus === 'syncing'} 
-              className="p-3 bg-white/10 text-white rounded-xl shadow-md disabled:opacity-50 hover:bg-white/20 transition-all border border-white/10 flex items-center gap-2 group"
-            >
-              <RefreshCw size={18} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
-            </button>
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <div className="hidden xl:flex flex-col items-end">
+                   <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{currentUser.nom}</span>
+                   <span className="text-[7px] font-bold text-white/30 uppercase">{currentUser.site || currentUser.region || 'National'}</span>
+                </div>
+                <button onClick={handleLogout} className="p-3 bg-white/10 rounded-xl text-white hover:bg-red-500/20 transition-all border border-white/10" title="Déconnexion">
+                  <LogOut size={18} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowLogin(true)} className="px-6 py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg flex items-center gap-2">
+                <UserIcon size={14} /> Connexion
+              </button>
+            )}
             <button onClick={() => setShowSettings(true)} className="p-3 bg-white/10 rounded-xl border border-white/10 text-white hover:bg-white/20 transition-all">
               <Settings size={18} />
             </button>
@@ -179,7 +221,7 @@ const App: React.FC = () => {
 
       <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100]">
         <div className="glass-nav rounded-[2.5rem] px-4 py-3 flex justify-between items-center shadow-2xl border border-white/10 overflow-x-auto no-scrollbar">
-           {navItems.map((tab) => (
+           {visibleNavItems.map((tab) => (
              <button 
                key={tab.id}
                onClick={() => setActiveTab(tab.id as AppTab)}
@@ -195,39 +237,47 @@ const App: React.FC = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 lg:px-6 pt-28 lg:pt-36 pb-24">
-        {loading && !data.dailyHistory.length ? (
+        {loading && !fullData.dailyHistory.length ? (
           <div className="flex flex-col items-center justify-center py-40 gap-8">
              <div className="relative">
                 <div className="absolute inset-0 bg-red-500 blur-[40px] opacity-40 animate-pulse"></div>
                 <Activity size={64} className="text-red-600 animate-bounce relative z-10" />
              </div>
-             <p className="text-xs font-black text-slate-800 uppercase tracking-[0.5em] animate-pulse">Chargement du Flux...</p>
+             <p className="text-xs font-black text-slate-800 uppercase tracking-[0.5em] animate-pulse">Chargement...</p>
           </div>
         ) : (
           <div className="page-transition">
-            {syncStatus === 'error' && !loading && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-between text-red-600 animate-in slide-in-from-top-4">
-                 <div className="flex items-center gap-3">
-                    <AlertCircle size={20} />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Connexion interrompue. Nouvelle tentative en cours...</p>
-                 </div>
-                 <button onClick={() => handleSync(false, true)} className="px-4 py-2 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase">Réessayer maintenant</button>
+            {activeTab === 'pulse' && <PulsePerformance data={filteredData} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
+            
+            {currentUser && (
+              <>
+                {activeTab === 'summary' && <SummaryView data={filteredData} setActiveTab={setActiveTab} />}
+                {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} />}
+                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} />}
+                {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} />}
+                {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
+                {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
+                {activeTab === 'comparison' && <ComparisonView data={filteredData} />}
+                {activeTab === 'recap' && <RecapView data={filteredData} />}
+                {activeTab === 'performance' && <PerformanceView data={filteredData} />}
+                {activeTab === 'history' && <DetailedHistoryView data={filteredData} />}
+                {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} />}
+              </>
+            )}
+
+            {!currentUser && activeTab !== 'pulse' && (
+              <div className="py-40 flex flex-col items-center gap-6 text-center">
+                <Lock size={64} className="text-slate-200" />
+                <h2 className="text-2xl font-black uppercase text-slate-800">Accès Restreint</h2>
+                <p className="text-slate-500 text-sm max-w-sm font-medium">Cette section est réservée aux agents habilités du CNTS CI. Veuillez vous connecter pour accéder au cockpit.</p>
+                <button onClick={() => setShowLogin(true)} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Se connecter maintenant</button>
               </div>
             )}
-            {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
-            {activeTab === 'pulse' && <PulsePerformance data={data} />}
-            {activeTab === 'cockpit' && <VisualDashboard data={data} setActiveTab={setActiveTab} />}
-            {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={data} />}
-            {activeTab === 'site-focus' && <SiteSynthesisView data={data} />}
-            {activeTab === 'weekly' && <WeeklyView data={data} />}
-            {activeTab === 'evolution' && <EvolutionView data={data} />}
-            {activeTab === 'comparison' && <ComparisonView data={data} />}
-            {activeTab === 'recap' && <RecapView data={data} />}
-            {activeTab === 'performance' && <PerformanceView data={data} />}
-            {activeTab === 'history' && <DetailedHistoryView data={data} />}
           </div>
         )}
       </main>
+
+      {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} />}
 
       {showSettings && (
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
@@ -239,42 +289,21 @@ const App: React.FC = () => {
                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Configuration</h3>
             </div>
             <div className="space-y-6">
-              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-2">
-                <p className="text-[9px] font-black text-blue-800 uppercase leading-relaxed">
-                  L'application synchronise automatiquement les données toutes les 30 secondes pour garantir un cockpit à jour.
-                </p>
-              </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">URL Google Sheet (CSV)</label>
                 <input 
                   value={sheetInput} 
                   onChange={(e) => setSheetInput(e.target.value)} 
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 ring-red-50 outline-none transition-all"
-                  placeholder="URL Google Sheet"
                 />
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">URL Apps Script (Injection)</label>
-                   <span className="flex items-center gap-1 text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-widest border border-emerald-100"><Lock size={8}/> Figé</span>
-                </div>
-                <div className="relative">
-                  <input 
-                    readOnly
-                    value={scriptUrl} 
-                    className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-5 py-4 text-[10px] font-bold text-slate-400 outline-none cursor-not-allowed opacity-70"
-                    placeholder="URL Script Web App"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300">
-                     <Lock size={16} />
-                  </div>
-                </div>
-                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase">L'URL d'injection a été fixée de manière permanente par l'administrateur.</p>
+              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Système d'Injection</p>
+                <p className="text-[10px] font-bold text-blue-800 uppercase leading-relaxed">URL Apps Script configurée et sécurisée par la direction.</p>
               </div>
             </div>
-            {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3"><AlertCircle size={18}/> {error}</div>}
             <div className="flex gap-4">
-              <button onClick={saveSettings} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95">Valider</button>
+              <button onClick={saveSettings} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl">Valider</button>
               <button onClick={() => setShowSettings(false)} className="flex-1 border border-slate-200 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all">Fermer</button>
             </div>
           </div>

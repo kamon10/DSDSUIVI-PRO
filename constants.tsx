@@ -98,17 +98,15 @@ export const INITIAL_DATA: DashboardData = {
   regions: []
 };
 
-// NOUVELLE PALETTE PROFESSIONNELLE AVEC TONS CHAUDS
+// NOUVELLE PALETTE PROFESSIONNELLE
 export const COLORS = {
-  blue: '#2563eb',   // Bleu Royal (Données / Structure)
-  green: '#10b981',  // Vert Émeraude (Succès / Fixe)
-  orange: '#f59e0b', // Ambre/Orange (Énergie / Mobile)
-  red: '#ef4444',    // Rouge (Alertes / Annuel)
-  yellow: '#facc15', // Jaune (Intelligence / IA)
-  slate: '#1e293b',  // Ardoise (Texte / Dark mode elements)
-  warmBg: '#fffcf5', // Nouveau fond orangé
-  
-  // Alias pour compatibilité
+  blue: '#2563eb',
+  green: '#10b981',
+  orange: '#f59e0b',
+  red: '#ef4444',
+  yellow: '#facc15',
+  slate: '#1e293b',
+  warmBg: '#fffcf5',
   fixed: '#10b981',
   mobile: '#f59e0b',
   total: '#ef4444'
@@ -117,4 +115,4 @@ export const COLORS = {
 export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 
 // URL FIGÉE POUR L'INJECTION APPS SCRIPT
-export const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-Ha5g-WwM5J0RGXpJwOM0qSw61j2TS4slMT4h5Dfxua0UOy7eZs9Y7SeIJ6-8sCRm/exec";
+export const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRrIftmEeSUAutygeL2GHngC_kqV_repT9ArEP9okIz4zZPMtOxPVIfEOg8KvGezAf/exec";
