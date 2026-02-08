@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
 import { PerformanceView } from './components/PerformanceView';
 import { DetailedHistoryView } from './components/DetailedHistoryView';
@@ -12,11 +13,12 @@ import { WeeklyView } from './components/WeeklyView';
 import { SiteSynthesisView } from './components/SiteSynthesisView';
 import { DataEntryForm } from './components/DataEntryForm';
 import { ContactsView } from './components/ContactsView';
+import { DistributionView } from './components/DistributionView';
 import { LoginView } from './components/LoginView';
 import { AdminUserManagement } from './components/AdminUserManagement';
 import { fetchSheetData, fetchUsers } from './services/googleSheetService';
 import { AppTab, DashboardData, User } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -26,6 +28,7 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
+  const [distSheetInput] = useState(DEFAULT_LINK_DISTRIBUTION); 
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(JSON.parse(localStorage.getItem('dsd_user') || 'null'));
@@ -34,22 +37,24 @@ const App: React.FC = () => {
   const scriptUrl = DEFAULT_SCRIPT_URL;
   const isSyncingRef = useRef(false);
   const sheetInputRef = useRef(sheetInput);
+  const distInputRef = useRef(distSheetInput);
   
   useEffect(() => {
     sheetInputRef.current = sheetInput;
-  }, [sheetInput]);
+    distInputRef.current = distSheetInput;
+  }, [sheetInput, distSheetInput]);
 
   const handleSync = useCallback(async (isSilent = false, force = false) => {
     if (isSyncingRef.current) return;
     const currentInput = sheetInputRef.current;
-    if (!currentInput) return;
+    const currentDistInput = distInputRef.current;
     
     isSyncingRef.current = true;
     if (!isSilent) setLoading(true);
     setSyncStatus('syncing');
 
     try {
-      const result = await fetchSheetData(currentInput.trim(), force);
+      const result = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim());
       if (result) {
         setFullData(result);
         setLastSync(new Date());
@@ -135,6 +140,7 @@ const App: React.FC = () => {
     { id: 'summary', icon: <Layout size={14} />, label: 'Résumé', public: false },
     { id: 'cockpit', icon: <LayoutDashboard size={14} />, label: 'Cockpit', public: false },
     { id: 'entry', icon: <PlusSquare size={14} />, label: 'Saisie', public: false },
+    { id: 'hemo-stats', icon: <Truck size={14} />, label: 'HEMO-STATS', public: false },
     { id: 'site-focus', icon: <UserCheck size={14} />, label: 'Focus', public: false },
     { id: 'weekly', icon: <Layers size={14} />, label: 'Semaine', public: false },
     { id: 'evolution', icon: <LineChart size={14} />, label: 'Évol.', public: false },
@@ -256,6 +262,7 @@ const App: React.FC = () => {
                 {activeTab === 'summary' && <SummaryView data={filteredData} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} />}
+                {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
@@ -271,43 +278,51 @@ const App: React.FC = () => {
                 <Lock size={64} className="text-slate-200" />
                 <h2 className="text-2xl font-black uppercase text-slate-800">Accès Restreint</h2>
                 <p className="text-slate-500 text-sm max-w-sm font-medium">Cette section est réservée aux agents habilités du CNTS CI. Veuillez vous connecter pour accéder au cockpit.</p>
-                <button onClick={() => setShowLogin(true)} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Se connecter maintenant</button>
+                <button onClick={() => setShowLogin(true)} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Se connecter</button>
               </div>
             )}
           </div>
         )}
       </main>
 
+      {showSettings && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3.5rem] p-10 lg:p-14 max-w-lg w-full shadow-3xl border border-slate-100 animate-in zoom-in-95 duration-300">
+             <div className="flex items-center gap-6 mb-10">
+               <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl"><Settings size={28} /></div>
+               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Configuration</h3>
+             </div>
+             <div className="space-y-8">
+               <div className="space-y-3">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Source de données (DATABASE 1)</label>
+                 <input 
+                   value={sheetInput} 
+                   onChange={(e) => setSheetInput(e.target.value)}
+                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-xs font-bold text-slate-600 outline-none focus:ring-4 ring-slate-100"
+                 />
+               </div>
+               <div className="p-6 bg-blue-50 border border-blue-100 rounded-3xl flex items-start gap-4">
+                  <Database size={20} className="text-blue-600 shrink-0 mt-1" />
+                  <p className="text-[10px] font-bold text-blue-800 leading-relaxed uppercase tracking-tight">
+                    Le flux de distribution (HEMO-STATS) est actuellement figé sur la base de données officielle pour garantir l'intégrité des rapports nationaux.
+                  </p>
+               </div>
+               <div className="flex gap-4 pt-4">
+                 <button onClick={() => setShowSettings(false)} className="flex-1 px-8 py-5 border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all">Annuler</button>
+                 <button onClick={saveSettings} className="flex-1 px-8 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-2xl active:scale-95">Appliquer</button>
+               </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} />}
 
-      {showSettings && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3rem] p-8 lg:p-12 max-w-md w-full shadow-2xl border border-slate-100 space-y-8 animate-in zoom-in-95 duration-300">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center">
-                  <Database size={24} />
-               </div>
-               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Configuration</h3>
-            </div>
-            <div className="space-y-6">
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">URL Google Sheet (CSV)</label>
-                <input 
-                  value={sheetInput} 
-                  onChange={(e) => setSheetInput(e.target.value)} 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 ring-red-50 outline-none transition-all"
-                />
-              </div>
-              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Système d'Injection</p>
-                <p className="text-[10px] font-bold text-blue-800 uppercase leading-relaxed">URL Apps Script configurée et sécurisée par la direction.</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <button onClick={saveSettings} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl">Valider</button>
-              <button onClick={() => setShowSettings(false)} className="flex-1 border border-slate-200 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all">Fermer</button>
-            </div>
-          </div>
+      {error && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 bg-red-600 text-white rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10">
+           <AlertCircle size={20} />
+           <p className="text-[11px] font-black uppercase tracking-widest">{error}</p>
+           <button onClick={() => setError(null)} className="ml-4 opacity-50 hover:opacity-100">×</button>
         </div>
       )}
     </div>

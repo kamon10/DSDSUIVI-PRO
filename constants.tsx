@@ -9,7 +9,7 @@ export const SITES_DATA = [
   { code: "9000", name: "CDTS BINGERVILLE", region: "PRES ABIDJAN", annualObjective: 4000, manager: "Dr. ABE Nicole", email: "abedkn@yahoo.fr", phone: "01 01 05 07 35" },
   { code: "6000", name: "SP PORT BOUET", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. ASSOUKPOU Francine", email: "francineass@yahoo.fr", phone: "07 07 70 14 41" },
   { code: "4000", name: "SP ABOBO", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. AMON épouse BOUKALO Renaude Jani", email: "brenaudeamon@gmail.com", phone: "01 60 57 53 93" },
-  { code: "7000", name: "SP ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. ANAUD NÉE YAO Akissi Marie Chantal", email: "akissimariechantaly@gmail.com", phone: "01 02 62 13 43" },
+  { code: "7000", name: "SP ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99" },
   { code: "5000", name: "SP CHU COCODY", region: "PRES ABIDJAN", annualObjective: 11000, manager: "M. AKELE Antoine", email: "antoineakele72@gmail.com", phone: "07 47 43 93 39" },
   { code: "2000", name: "SP YOPOUGON CHU", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. SARAPAHI Zadi Antonin", email: "zadisarapahi83@gmail.com", phone: "05 96 67 56 39" },
   { code: "11000", name: "CDTS ABOISSO", region: "PRES ABIDJAN", annualObjective: 9000, manager: "Dr. N'GUESSAN Koffi Antoine", email: "antoine_nguessan@yahoo.fr", phone: "07 48 10 08 34" },
@@ -55,7 +55,7 @@ export const SITES_DATA = [
   { code: "27000", name: "CDTS DUEKOUE", region: "PRES TONPKI", annualObjective: 7000, manager: "Dr. DIOMANDE", email: "dr,manthin@gmail.com", phone: "07 49 95 79 37" },
   
   // PRES KABADOUGOU
-  { code: "24000", name: "CRTS ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. KOUMAN Kouadio Fidèle", email: "koumanfidele@gmail.com", phone: "07 12 07 10 10" }
+  { code: "24000", name: "CRTS ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95" }
 ];
 
 const normalizeStr = (s: string) => 
@@ -95,10 +95,13 @@ export const INITIAL_DATA: DashboardData = {
   monthly: { realized: 0, objective: 0, percentage: 0, fixed: 0, mobile: 0 },
   annual: { realized: 0, objective: 0, percentage: 0, fixed: 0, mobile: 0 },
   dailyHistory: [],
-  regions: []
+  regions: [],
+  distributions: {
+    records: [],
+    stats: { total: 0, totalRendu: 0, average: 0, lastUpdate: "---" }
+  }
 };
 
-// NOUVELLE PALETTE PROFESSIONNELLE
 export const COLORS = {
   blue: '#2563eb',
   green: '#10b981',
@@ -109,10 +112,31 @@ export const COLORS = {
   warmBg: '#fffcf5',
   fixed: '#10b981',
   mobile: '#f59e0b',
-  total: '#ef4444'
+  total: '#ef4444',
+  distribution: '#6366f1'
+};
+
+// COULEURS MÉDICALES PRODUITS
+export const PRODUCT_COLORS: Record<string, string> = {
+  "CGR ADULTE": "#ef4444", // Rouge
+  "CGR NOURRISON": "#f97316", // Orange
+  "CGR PEDIATRIQUE": "#22c55e", // Vert
+  "CONCENTRE DE PLAQUETTES": "#3b82f6", // Bleu
+  "PLASMA A USAGE THERAPEUTIQUE": "#eab308" // Jaune
+};
+
+// COULEURS MÉDICALES GROUPES
+export const GROUP_COLORS: Record<string, string> = {
+  "O+": "#ef4444", // Rouge
+  "B+": "#8b5cf6", // Violet
+  "A+": "#3b82f6", // Bleu
+  "AB+": "#22c55e", // Vert
+  "AB-": "#eab308", // Jaune
+  "O-": "#94a3b8", // Gris
+  "A-": "#06b6d4", // Turquoise
+  "B-": "#4f46e5"  // Indigo
 };
 
 export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
-
-// URL FIGÉE POUR L'INJECTION APPS SCRIPT
+export const DEFAULT_LINK_DISTRIBUTION = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=237684642&single=true&output=csv";
 export const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRrIftmEeSUAutygeL2GHngC_kqV_repT9ArEP9okIz4zZPMtOxPVIfEOg8KvGezAf/exec";

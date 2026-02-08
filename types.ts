@@ -19,6 +19,13 @@ export interface DonationStats {
   mobile: number;
 }
 
+export interface DistributionStats {
+  total: number;
+  totalRendu: number;
+  average: number;
+  lastUpdate: string;
+}
+
 export interface SiteRecord {
   name: string;
   region?: string;
@@ -33,6 +40,18 @@ export interface SiteRecord {
   manager?: string;
   email?: string;
   phone?: string;
+}
+
+export interface DistributionRecord {
+  date: string;
+  codeSite: string;
+  site: string;
+  region: string;
+  etablissement: string;
+  typeProduit: string;
+  groupeSanguin: string;
+  quantite: number;
+  rendu: number;
 }
 
 export interface RegionData {
@@ -71,6 +90,10 @@ export interface DashboardData {
   annual: DonationStats;
   dailyHistory: DailyHistoryRecord[];
   regions: RegionData[];
+  distributions?: {
+    records: DistributionRecord[];
+    stats: DistributionStats;
+  };
 }
 
-export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact';
+export type AppTab = 'summary' | 'cockpit' | 'history' | 'recap' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats';
