@@ -1,4 +1,5 @@
-import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord } from "../types.ts";
+
+import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
 const MONTHS_FR = [
@@ -68,6 +69,30 @@ const cleanNum = (val: any): number => {
   return isNaN(n) ? 0 : Math.round(n);
 };
 
+/**
+ * Récupère les utilisateurs via le Web App Apps Script
+ */
+export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
+  if (!scriptUrl) return [];
+  try {
+    const response = await fetch(`${scriptUrl}?action=getUsers&_t=${Date.now()}`);
+    if (!response.ok) throw new Error("Erreur script utilisateurs");
+    const users = await response.json();
+    return users.map((u: any) => ({
+      nom: cleanStr(u.nom),
+      prenoms: cleanStr(u.prenoms),
+      email: cleanStr(u.email),
+      fonction: cleanStr(u.fonction),
+      site: cleanStr(u.site),
+      role: (cleanStr(u.role) as UserRole) || 'AGENT',
+      region: cleanStr(u.region)
+    }));
+  } catch (err) {
+    console.error("fetchUsers error:", err);
+    return [];
+  }
+};
+
 export const fetchSheetData = async (url: string, force = false): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
@@ -107,7 +132,6 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       const codeRaw = cleanStr(row[col.code]);
       const siteRaw = cleanStr(row[col.site]);
       const siteInfo = getSiteByInput(codeRaw) || getSiteByInput(siteRaw);
-      
       if (!siteInfo) return;
 
       const finalSiteName = siteInfo.name;
@@ -120,7 +144,6 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
         siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
       }
       const agg = siteAgg.get(finalSiteName)!;
-      
       if (dateObj.getFullYear() === targetYear && dateObj.getMonth() === targetMonth) {
         agg.f += f; agg.m += m; agg.t += t;
       }
@@ -159,10 +182,7 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       const siteObjs = getSiteObjectives(name);
       regionsMap.get(regName)!.sites.push({
         name, region: regName, fixe: stats.lastF, mobile: stats.lastM,
-        totalJour: stats.lastT, 
-        totalMois: stats.t,
-        monthlyFixed: stats.f,
-        monthlyMobile: stats.m,
+        totalJour: stats.lastT, totalMois: stats.t, monthlyFixed: stats.f, monthlyMobile: stats.m,
         objDate: 0, objMensuel: siteObjs.monthly,
         manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
       });
@@ -173,7 +193,6 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     let monthlyRealized = 0;
     let monthlyFixed = 0;
     let monthlyMobile = 0;
-
     regionsList.forEach(reg => {
       reg.sites.forEach(site => {
         monthlyRealized += site.totalMois;
@@ -194,27 +213,9 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       date: latestDateStr,
       month: `${MONTHS_FR[targetMonth]} ${targetYear}`,
       year: targetYear,
-      daily: { 
-        realized: history[0]?.stats.realized || 0, 
-        objective: objDay, 
-        percentage: objDay > 0 ? (history[0]?.stats.realized / objDay) * 100 : 0, 
-        fixed: history[0]?.stats.fixed || 0, 
-        mobile: history[0]?.stats.mobile || 0 
-      },
-      monthly: { 
-        realized: monthlyRealized, 
-        objective: objMens, 
-        percentage: objMens > 0 ? (monthlyRealized / objMens) * 100 : 0, 
-        fixed: monthlyFixed, 
-        mobile: monthlyMobile 
-      },
-      annual: { 
-        realized: annualRealized, 
-        objective: objAnn, 
-        percentage: objAnn > 0 ? (annualRealized / objAnn) * 100 : 0, 
-        fixed: 0, 
-        mobile: 0 
-      },
+      daily: { realized: history[0]?.stats.realized || 0, objective: objDay, percentage: objDay > 0 ? (history[0]?.stats.realized / objDay) * 100 : 0, fixed: history[0]?.stats.fixed || 0, mobile: history[0]?.stats.mobile || 0 },
+      monthly: { realized: monthlyRealized, objective: objMens, percentage: objMens > 0 ? (monthlyRealized / objMens) * 100 : 0, fixed: monthlyFixed, mobile: monthlyMobile },
+      annual: { realized: annualRealized, objective: objAnn, percentage: objAnn > 0 ? (annualRealized / objAnn) * 100 : 0, fixed: 0, mobile: 0 },
       dailyHistory: history,
       regions: regionsList
     };
@@ -224,24 +225,25 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
   }
 };
 
+/**
+ * Envoie un enregistrement vers Google Apps Script
+ */
 export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
+  if (!url) throw new Error("URL du script non configurée.");
   try {
-    // Utilisation d'un appel simple pour éviter les problèmes de pré-vol CORS
-    // Google Apps Script ne supporte pas bien le Content-Type: application/json en mode standard
+    // Utilisation du mode 'no-cors' pour envoyer vers Apps Script sans preflight OPTIONS
     await fetch(url, {
       method: 'POST',
-      mode: 'no-cors', // Crucial pour Google Apps Script
+      mode: 'no-cors',
       cache: 'no-cache',
-      headers: {
-        'Content-Type': 'text/plain', // On envoie le JSON comme du texte
-      },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    // On attend un tout petit peu pour laisser le temps au script de s'exécuter côté serveur
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Attente pour synchronisation serveur
+    await new Promise(resolve => setTimeout(resolve, 1000));
     return;
   } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error);
-    throw new Error("Impossible de joindre le serveur d'injection.");
+    console.error("Erreur d'enregistrement:", error);
+    throw new Error("Connexion au serveur d'injection impossible.");
   }
 };
