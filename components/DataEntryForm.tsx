@@ -19,10 +19,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
-    fixe: 0,
-    mobile1: 0,
-    mobile2: 0,
-    mobile3: 0
+    fixe: ,
+    mobile1: ,
+    mobile2: ,
+    mobile3: 
   });
 
   const [status, setStatus] = useState<'idle' | 'success' | 'submitting' | 'error'>('idle');
