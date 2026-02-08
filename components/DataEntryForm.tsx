@@ -1,11 +1,13 @@
 
-import React, { useState, useMemo } from 'react';
-import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { SITES_DATA } from '../constants';
+import { DashboardData } from '../types';
 
 interface DataEntryFormProps {
   scriptUrl: string | null;
+  data: DashboardData;
 }
 
 const MONTHS_FR_UPPER = [
@@ -13,7 +15,7 @@ const MONTHS_FR_UPPER = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE"
 ];
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data }) => {
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
@@ -23,12 +25,37 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
   const [status, setStatus] = useState<'idle' | 'success' | 'submitting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   // CALCULS AUTOMATIQUES
   const selectedSite = useMemo(() => {
     if (formData.siteIndex === "") return null;
     return SITES_DATA[parseInt(formData.siteIndex)];
   }, [formData.siteIndex]);
+
+  // DÉTECTION DE L'EXISTENCE D'UNE DONNÉE
+  useEffect(() => {
+    if (selectedSite && formData.date) {
+      const [y, m, d] = formData.date.split('-');
+      const formattedDate = `${d}/${m}/${y}`;
+      
+      const existingDay = data.dailyHistory.find(h => h.date === formattedDate);
+      const existingSiteData = existingDay?.sites.find(s => s.name.toUpperCase() === selectedSite.name.toUpperCase());
+      
+      if (existingSiteData) {
+        setIsEditing(true);
+        setFormData(prev => ({
+          ...prev,
+          fixe: existingSiteData.fixe,
+          mobile: existingSiteData.mobile
+        }));
+      } else {
+        setIsEditing(false);
+        // On ne reset pas à 0 si l'utilisateur est en train de taper pour éviter les flashs
+        // Mais si on change juste le site/date et qu'on trouve rien, on peut remettre à 0
+      }
+    }
+  }, [selectedSite, formData.date, data.dailyHistory]);
 
   const totalPoches = (Number(formData.fixe) || 0) + (Number(formData.mobile) || 0);
 
@@ -75,7 +102,8 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
         "Activité Mobile": "MOBILE",
         "NombreMobile": Number(formData.mobile),
         "Total poches": totalPoches,
-        "Mois": calculatedFields.monthName
+        "Mois": calculatedFields.monthName,
+        "Mode": isEditing ? "UPDATE" : "APPEND" // Information utile pour le script
       };
 
       await saveRecordToSheet(cleanUrl, payload);
@@ -93,6 +121,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
       fixe: 0,
       mobile: 0
     });
+    setIsEditing(false);
     setStatus('idle');
   };
 
@@ -103,8 +132,12 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
           <div className="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
             <CheckCircle2 size={40} />
           </div>
-          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">Transmission Réussie</h2>
-          <p className="text-slate-500 text-sm mb-8 font-medium">Les données ont été injectées dans le fichier national.</p>
+          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">
+            {isEditing ? "Mise à jour Réussie" : "Transmission Réussie"}
+          </h2>
+          <p className="text-slate-500 text-sm mb-8 font-medium">
+            {isEditing ? "La ligne existante a été écrasée avec succès." : "Les données ont été injectées dans le fichier national."}
+          </p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
             <RefreshCw size={18} /> Nouvelle saisie
           </button>
@@ -122,16 +155,35 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
         </div>
       )}
 
+      {isEditing && (
+        <div className="p-4 bg-blue-600 rounded-3xl flex items-center justify-between text-white animate-in slide-in-from-top-4 shadow-xl">
+           <div className="flex items-center gap-3 px-2">
+              <Edit3 size={20} />
+              <p className="text-[10px] font-black uppercase tracking-widest">Saisie existante détectée • Mode Modification activé</p>
+           </div>
+           <button 
+            onClick={() => { setFormData({...formData, fixe: 0, mobile: 0}); setIsEditing(false); }}
+            className="text-[9px] font-black uppercase bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition-all"
+           >
+            Ignorer
+           </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
         {/* EN-TETE DU FORMULAIRE */}
         <div className="bg-slate-50/80 p-8 lg:p-12 border-b border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
-              <Send size={28} />
+            <div className={`w-14 h-14 ${isEditing ? 'bg-blue-600' : 'bg-red-600'} rounded-2xl flex items-center justify-center text-white shadow-xl transition-colors duration-500`}>
+              {isEditing ? <Edit3 size={28} /> : <Send size={28} />}
             </div>
             <div>
-              <h2 className="text-2xl lg:text-3xl font-black uppercase tracking-tighter text-slate-900">Saisie des Flux</h2>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1 italic">Module d'injection temps-réel</p>
+              <h2 className="text-2xl lg:text-3xl font-black uppercase tracking-tighter text-slate-900">
+                {isEditing ? "Modifier les Flux" : "Saisie des Flux"}
+              </h2>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1 italic">
+                {isEditing ? "Mise à jour d'un enregistrement existant" : "Module d'injection temps-réel"}
+              </p>
             </div>
           </div>
           
@@ -150,14 +202,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
             <div className="space-y-8">
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  <Building2 size={14} className="text-red-600" /> Structure (Libelle site)
+                  <Building2 size={14} className={isEditing ? 'text-blue-600' : 'text-red-600'} /> Structure (Libelle site)
                 </label>
                 <div className="relative">
                   <select 
                     required
                     value={formData.siteIndex}
                     onChange={(e) => setFormData({...formData, siteIndex: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 focus:ring-4 ring-red-50 outline-none appearance-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 focus:ring-4 ring-slate-100 outline-none appearance-none transition-all"
                   >
                     <option value="">Sélectionner un site...</option>
                     {SITES_DATA.map((s, idx) => (
@@ -176,14 +228,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  <Calendar size={14} className="text-red-600" /> Date de Collecte
+                  <Calendar size={14} className={isEditing ? 'text-blue-600' : 'text-red-600'} /> Date de Collecte
                 </label>
                 <input 
                   type="date"
                   required
                   value={formData.date}
                   onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none focus:ring-4 ring-red-50 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none focus:ring-4 ring-slate-100 transition-all"
                 />
                 {formData.date && (
                   <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-300">
@@ -202,19 +254,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
             {/* COLONNE DROITE : CHIFFRES */}
             <div className="space-y-8">
-              <div className="bg-blue-50/30 p-8 rounded-[2.5rem] border border-blue-100 space-y-4">
+              <div className="bg-emerald-50/30 p-8 rounded-[2.5rem] border border-emerald-100 space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="flex items-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                  <label className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
                     <Hash size={14} /> Activité Fixe
                   </label>
-                  <span className="text-[8px] font-black px-2 py-0.5 bg-blue-600 text-white rounded-full">FIGÉ</span>
+                  <span className="text-[8px] font-black px-2 py-0.5 bg-emerald-600 text-white rounded-full">FIGÉ</span>
                 </div>
                 <input 
                   type="number"
                   min="0"
                   value={formData.fixe}
                   onChange={(e) => setFormData({...formData, fixe: parseInt(e.target.value) || 0})}
-                  className="w-full bg-white border border-blue-200 rounded-2xl px-6 py-6 text-4xl font-black text-blue-700 outline-none text-center shadow-inner focus:ring-4 ring-blue-500/10 transition-all"
+                  className="w-full bg-white border border-emerald-200 rounded-2xl px-6 py-6 text-4xl font-black text-emerald-700 outline-none text-center shadow-inner focus:ring-4 ring-emerald-500/10 transition-all"
                 />
               </div>
 
@@ -238,7 +290,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
 
           {/* RÉCAPITULATIF AVANT ENVOI */}
           <div className="p-6 bg-slate-900 rounded-[2rem] text-white/80 text-[10px] font-black uppercase tracking-widest flex flex-wrap items-center justify-center gap-x-8 gap-y-2 border border-white/5 shadow-2xl">
-             <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div> Injection directe active</div>
+             <div className="flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 ${isEditing ? 'bg-blue-400' : 'bg-red-500'} rounded-full animate-pulse`}></div> 
+                {isEditing ? "Mode Mise à jour actif" : "Injection directe active"}
+             </div>
              <div className="flex items-center gap-2">Total : {totalPoches} poches</div>
              <div className="flex items-center gap-2 text-white">Mois : {calculatedFields.monthName}</div>
           </div>
@@ -253,10 +308,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
           <button 
             type="submit"
             disabled={!selectedSite || status === 'submitting'}
-            className="w-full bg-red-600 text-white py-8 rounded-[2.5rem] font-black text-lg uppercase tracking-widest hover:bg-red-700 shadow-2xl shadow-red-200 transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95"
+            className={`w-full ${isEditing ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' : 'bg-red-600 hover:bg-red-700 shadow-red-200'} text-white py-8 rounded-[2.5rem] font-black text-lg uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95`}
           >
-            {status === 'submitting' ? <RefreshCw className="animate-spin" size={28} /> : <Save size={28} />}
-            {status === 'submitting' ? "Transmission en cours..." : "Valider et Injecter"}
+            {status === 'submitting' ? <RefreshCw className="animate-spin" size={28} /> : (isEditing ? <Edit3 size={28} /> : <Plus size={28} />)}
+            {status === 'submitting' ? "Transmission en cours..." : (isEditing ? "Mettre à jour l'entrée" : "Valider et Injecter")}
           </button>
         </form>
       </div>
@@ -266,8 +321,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl }) => {
         <div>
           <h4 className="text-[11px] font-black text-blue-900 uppercase mb-1">Aide au calcul</h4>
           <p className="text-[10px] font-bold text-blue-700/70 leading-relaxed uppercase">
-            Tous les champs techniques (Code site, Date fin mois, Total, Nom du mois) sont calculés automatiquement par l'application pour éviter les erreurs de saisie. 
-            Il vous suffit de choisir le site, la date, et d'entrer les chiffres Fixe/Mobile.
+            L'application détecte automatiquement si une saisie existe déjà pour la date et le site choisis. Dans ce cas, elle passe en mode modification pour vous permettre d'ajuster les chiffres sans créer de doublon dans le Sheet.
           </p>
         </div>
       </div>
