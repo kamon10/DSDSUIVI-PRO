@@ -9,7 +9,7 @@ export const SITES_DATA = [
   { code: "9000", name: "CDTS BINGERVILLE", region: "PRES ABIDJAN", annualObjective: 4000, manager: "Dr. ABE Nicole", email: "abedkn@yahoo.fr", phone: "01 01 05 07 35" },
   { code: "6000", name: "SP PORT BOUET", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. ASSOUKPOU Francine", email: "francineass@yahoo.fr", phone: "07 07 70 14 41" },
   { code: "4000", name: "SP ABOBO", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. AMON épouse BOUKALO Renaude Jani", email: "brenaudeamon@gmail.com", phone: "01 60 57 53 93" },
-  { code: "7000", name: "SP ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99" },
+  { code: "7000", name: "SP ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. ANAUD NÉE YAO Akissi Marie Chantal", email: "akissimariechantaly@gmail.com", phone: "01 02 62 13 43" },
   { code: "5000", name: "SP CHU COCODY", region: "PRES ABIDJAN", annualObjective: 11000, manager: "M. AKELE Antoine", email: "antoineakele72@gmail.com", phone: "07 47 43 93 39" },
   { code: "2000", name: "SP YOPOUGON CHU", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. SARAPAHI Zadi Antonin", email: "zadisarapahi83@gmail.com", phone: "05 96 67 56 39" },
   { code: "11000", name: "CDTS ABOISSO", region: "PRES ABIDJAN", annualObjective: 9000, manager: "Dr. N'GUESSAN Koffi Antoine", email: "antoine_nguessan@yahoo.fr", phone: "07 48 10 08 34" },
@@ -55,7 +55,7 @@ export const SITES_DATA = [
   { code: "27000", name: "CDTS DUEKOUE", region: "PRES TONPKI", annualObjective: 7000, manager: "Dr. DIOMANDE", email: "dr,manthin@gmail.com", phone: "07 49 95 79 37" },
   
   // PRES KABADOUGOU
-  { code: "24000", name: "CRTS ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95" }
+  { code: "24000", name: "CRTS ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. KOUMAN Kouadio Fidèle", email: "koumanfidele@gmail.com", phone: "07 12 07 10 10" }
 ];
 
 const normalizeStr = (s: string) => 
