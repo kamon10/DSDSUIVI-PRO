@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DashboardData, AppTab } from '../types';
+import { DashboardData, AppTab, User } from '../types';
 import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight } from 'lucide-react';
 import { COLORS, SITES_DATA } from '../constants';
 
@@ -9,7 +9,11 @@ const getPerfColor = (perc: number) => {
   return 'text-red-500';
 };
 
-export const VisualDashboard: React.FC<{ data: DashboardData; setActiveTab?: (tab: AppTab) => void }> = ({ data, setActiveTab }) => {
+export const VisualDashboard: React.FC<{ 
+  data: DashboardData; 
+  setActiveTab?: (tab: AppTab) => void;
+  user?: User | null;
+}> = ({ data, setActiveTab, user }) => {
   const [selectedDate, setSelectedDate] = useState<string>(data.date);
 
   useEffect(() => {
@@ -32,11 +36,30 @@ export const VisualDashboard: React.FC<{ data: DashboardData; setActiveTab?: (ta
     return currentDailyRecord.sites.filter(site => site.total > 0);
   }, [currentDailyRecord]);
 
+  // Détermination de la région de gestion de l'utilisateur
+  const userRegion = useMemo(() => {
+    if (!user) return null;
+    if (user.role === 'ADMIN' || user.role === 'SUPERADMIN' || user.region === 'TOUS LES PRES') return null;
+    if (user.role === 'PRES') return user.region;
+    if (user.role === 'AGENT' && user.site) {
+      const siteInfo = SITES_DATA.find(s => s.name.toUpperCase() === user.site.toUpperCase());
+      return siteInfo?.region || null;
+    }
+    return null;
+  }, [user]);
+
   const missingSites = useMemo(() => {
     if (!currentDailyRecord) return [];
     const activeNames = new Set(activeSites.map(s => s.name.trim().toUpperCase()));
-    return SITES_DATA.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
-  }, [activeSites, currentDailyRecord]);
+    
+    // Si l'utilisateur est restreint à une région, on filtre le référentiel SITES_DATA
+    let scopeSites = SITES_DATA;
+    if (userRegion) {
+      scopeSites = SITES_DATA.filter(s => s.region?.toUpperCase() === userRegion.toUpperCase());
+    }
+
+    return scopeSites.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
+  }, [activeSites, currentDailyRecord, userRegion]);
 
   const dailyTotals = useMemo(() => {
     if (!currentDailyRecord) return { total: 0, objective: 1137, fixed: 0, mobile: 0 };
@@ -142,7 +165,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData; setActiveTab?: (ta
           <div className="p-8 border-b border-slate-50 bg-red-50/30 flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-red-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-red-100"><Clock size={20} /></div>
-              <div><h3 className="font-black text-lg uppercase tracking-tight text-slate-800">Attente de Saisie</h3><p className="text-[9px] font-black text-red-400 uppercase tracking-widest">{missingSites.length} structures manquantes</p></div>
+              <div><h3 className="font-black text-lg uppercase tracking-tight text-slate-800">Attente de Saisie</h3><p className="text-[9px] font-black text-red-400 uppercase tracking-widest">{missingSites.length} structures manquantes {userRegion ? `(${userRegion.replace('PRES ', '')})` : '(National)'}</p></div>
             </div>
             {missingSites.length > 0 && <div className="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>}
           </div>
@@ -198,7 +221,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData; setActiveTab?: (ta
               <div><h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Vision Stratégique {data.month}</h3><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Projection de clôture & Objectif</p></div>
            </div>
            <div className="grid grid-cols-2 gap-6 w-full lg:w-auto">
-              <div className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 text-center"><p className="text-[10px] font-black text-slate-400 uppercase mb-2">Objectif National</p><p className="text-3xl font-black text-slate-900">{data.monthly.objective.toLocaleString()}</p></div>
+              <div className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 text-center"><p className="text-[10px] font-black text-slate-400 uppercase mb-2">Objectif {userRegion ? `Régional` : `National`}</p><p className="text-3xl font-black text-slate-900">{data.monthly.objective.toLocaleString()}</p></div>
               <div className="p-6 bg-gradient-to-br from-orange-600 to-red-600 rounded-[2.5rem] text-white shadow-xl text-center"><p className="text-[10px] font-black text-white/50 uppercase mb-2">Projection IA</p><p className="text-3xl font-black">{stats.pfm.toLocaleString()}</p></div>
            </div>
         </div>
@@ -215,7 +238,7 @@ export const VisualDashboard: React.FC<{ data: DashboardData; setActiveTab?: (ta
                 >
                    <div className="flex justify-between items-start mb-4"><h4 className="text-[11px] font-black text-slate-800 uppercase truncate pr-2">{region.name.replace('PRES ', '')}</h4><span className={`text-[10px] font-black px-2 py-1 rounded-full ${getPerfColor(achievement)} bg-white/50 border border-slate-100`}>{achievement.toFixed(1)}%</span></div>
                    <p className="text-3xl font-black text-slate-900 leading-none mb-4">{totalRegion.toLocaleString()}</p>
-                   <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden"><div className={`h-full ${achievement >= 100 ? 'bg-emerald-500' : achievement >= 75 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${Math.min(achievement, 100)}%` }}></div></div>
+                   <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden"><div className={`h-full ${achievement >= 100 ? 'bg-emerald-500' : achievement >= 75 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${Math.min(achievement, 100)}%` }} /></div>
                 </div>
               );
            })}
