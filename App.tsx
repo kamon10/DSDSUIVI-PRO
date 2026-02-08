@@ -24,9 +24,11 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [scriptUrl, setScriptUrl] = useState(localStorage.getItem('gsheet_script_url') || DEFAULT_SCRIPT_URL);
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // URL Figée : On utilise directement la constante au lieu d'un état modifiable
+  const scriptUrl = DEFAULT_SCRIPT_URL;
 
   const isSyncingRef = useRef(false);
   const sheetInputRef = useRef(sheetInput);
@@ -71,7 +73,7 @@ const App: React.FC = () => {
 
   const saveSettings = () => {
     localStorage.setItem('gsheet_input_1', sheetInput);
-    localStorage.setItem('gsheet_script_url', scriptUrl);
+    // On ne sauvegarde plus scriptUrl car elle est figée dans le code
     handleSync(false, true);
   };
 
@@ -215,7 +217,7 @@ const App: React.FC = () => {
             {activeTab === 'summary' && <SummaryView data={data} setActiveTab={setActiveTab} />}
             {activeTab === 'pulse' && <PulsePerformance data={data} />}
             {activeTab === 'cockpit' && <VisualDashboard data={data} setActiveTab={setActiveTab} />}
-            {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} />}
+            {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={data} />}
             {activeTab === 'site-focus' && <SiteSynthesisView data={data} />}
             {activeTab === 'weekly' && <WeeklyView data={data} />}
             {activeTab === 'evolution' && <EvolutionView data={data} />}
@@ -267,7 +269,7 @@ const App: React.FC = () => {
                      <Lock size={16} />
                   </div>
                 </div>
-                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase">L'URL d'injection a été fixée par l'administrateur.</p>
+                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase">L'URL d'injection a été fixée de manière permanente par l'administrateur.</p>
               </div>
             </div>
             {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3"><AlertCircle size={18}/> {error}</div>}
