@@ -1,5 +1,5 @@
 
-import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole } from "../types.ts";
+import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
 const MONTHS_FR = [
@@ -42,8 +42,11 @@ const normalizeDate = (d: string): string => {
 const parseCSV = (text: string): string[][] => {
   if (!text) return [];
   const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+  if (lines.length === 0) return [];
+  
   const firstLine = lines[0] || "";
   const sep = firstLine.includes(';') ? ';' : ',';
+  
   return lines.map(line => {
     const result = [];
     let cur = "";
@@ -64,14 +67,12 @@ const parseCSV = (text: string): string[][] => {
 };
 
 const cleanNum = (val: any): number => {
+  if (!val) return 0;
   const s = cleanStr(val).replace(/[^\d,.-]/g, '').replace(',', '.');
   const n = parseFloat(s);
   return isNaN(n) ? 0 : Math.round(n);
 };
 
-/**
- * Récupère les utilisateurs via le Web App Apps Script
- */
 export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
   if (!scriptUrl) return [];
   try {
@@ -93,7 +94,80 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
   }
 };
 
-export const fetchSheetData = async (url: string, force = false): Promise<DashboardData | null> => {
+export const fetchDistributions = async (url: string): Promise<{records: DistributionRecord[], stats: DistributionStats} | null> => {
+  if (!url || !url.startsWith('http')) return null;
+  try {
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const text = await response.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) return null;
+
+    const records: DistributionRecord[] = [];
+    let total = 0;
+    let totalRendu = 0;
+    
+    // Mapping Structure Fournie :
+    // 0:SI_CODE, 1:DATE_distri, 2:SI_NOM COMPLET, 3:NOMBRE, 4:NA_CODE, 5:NA_LIBELLE, 6:SA_GROUPE, 7:FS_CODE, 8:FS_NOM, 9:Bd_rendu, 10:MOIS
+    rows.slice(1).forEach(row => {
+      if (row.length < 10 || row[1].toLowerCase().includes('date')) return;
+
+      const date = normalizeDate(row[1]);
+      const siCode = cleanStr(row[0]);
+      const qty = cleanNum(row[3]);
+      const product = cleanStr(row[5]);
+      const group = cleanStr(row[6]);
+      const facility = cleanStr(row[8]);
+      const rendu = cleanNum(row[9]);
+      
+      if (date && (qty > 0 || rendu > 0)) {
+        // Normalisation SI_CODE (ex: 11 -> 11000)
+        let searchCode = siCode;
+        if (siCode.length <= 2) {
+          searchCode = siCode.padEnd(5, '0');
+        }
+        
+        const siteInfo = getSiteByInput(searchCode) || getSiteByInput(cleanStr(row[2]));
+        
+        total += qty;
+        totalRendu += rendu;
+        
+        records.push({
+          date,
+          codeSite: siCode,
+          site: siteInfo?.name || cleanStr(row[2]) || "SITE INCONNU",
+          region: siteInfo?.region || "AUTRES",
+          etablissement: facility || "ÉTABLISSEMENT INCONNU",
+          typeProduit: product || "AUTRES",
+          groupeSanguin: group || "N/A",
+          quantite: qty,
+          rendu: rendu
+        });
+      }
+    });
+
+    records.sort((a, b) => {
+        const [da, ma, ya] = a.date.split('/').map(Number);
+        const [db, mb, yb] = b.date.split('/').map(Number);
+        return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
+    });
+
+    return {
+      records,
+      stats: {
+        total,
+        totalRendu,
+        average: records.length > 0 ? (total - totalRendu) / records.length : 0,
+        lastUpdate: records[0]?.date || "---"
+      }
+    };
+  } catch (e) {
+    console.error("fetchDistributions failure:", e);
+    return null;
+  }
+};
+
+export const fetchSheetData = async (url: string, force = false, distributionUrl?: string): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
@@ -209,7 +283,7 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
     const objMens = Math.round(objAnn / 12);
     const objDay = Math.round(objAnn / WORKING_DAYS_YEAR);
 
-    return {
+    const baseResult: DashboardData = {
       date: latestDateStr,
       month: `${MONTHS_FR[targetMonth]} ${targetYear}`,
       year: targetYear,
@@ -219,19 +293,22 @@ export const fetchSheetData = async (url: string, force = false): Promise<Dashbo
       dailyHistory: history,
       regions: regionsList
     };
+
+    if (distributionUrl) {
+      const distData = await fetchDistributions(distributionUrl);
+      if (distData) baseResult.distributions = distData;
+    }
+
+    return baseResult;
   } catch (err) {
     console.error("fetchSheetData error:", err);
     throw err;
   }
 };
 
-/**
- * Envoie un enregistrement vers Google Apps Script
- */
 export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
   if (!url) throw new Error("URL du script non configurée.");
   try {
-    // Utilisation du mode 'no-cors' pour envoyer vers Apps Script sans preflight OPTIONS
     await fetch(url, {
       method: 'POST',
       mode: 'no-cors',
@@ -239,7 +316,6 @@ export const saveRecordToSheet = async (url: string, payload: any): Promise<void
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
-    // Attente pour synchronisation serveur
     await new Promise(resolve => setTimeout(resolve, 1000));
     return;
   } catch (error) {
