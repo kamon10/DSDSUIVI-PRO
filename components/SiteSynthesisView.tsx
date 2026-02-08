@@ -1,9 +1,8 @@
-
-import React, { useState, useMemo } from 'react';
-import { DashboardData } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { DashboardData, User } from '../types';
 import { SITES_DATA, COLORS, getSiteObjectives } from '../constants';
 import { 
-  Building2, User, Phone, Mail, MapPin, Search, 
+  Building2, User as UserIcon, Phone, Mail, MapPin, Search, 
   ChevronRight, Target, Zap, Activity, Award, 
   History, Calendar, PieChart, TrendingUp, MessageSquare
 } from 'lucide-react';
@@ -14,6 +13,7 @@ import {
 
 interface SiteSynthesisViewProps {
   data: DashboardData;
+  user?: User | null;
 }
 
 const getStatusColor = (percentage: number) => {
@@ -22,9 +22,19 @@ const getStatusColor = (percentage: number) => {
   return COLORS.red;
 };
 
-export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data }) => {
+export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSiteCode, setSelectedSiteCode] = useState(SITES_DATA[0].code);
+
+  // Initialisation automatique basée sur le centre de la session connectée
+  useEffect(() => {
+    if (user && user.role === 'AGENT' && user.site) {
+      const site = SITES_DATA.find(s => s.name.toUpperCase() === user.site.toUpperCase());
+      if (site) {
+        setSelectedSiteCode(site.code);
+      }
+    }
+  }, [user]);
 
   const filteredSites = useMemo(() => {
     if (!searchTerm) return SITES_DATA.slice(0, 10);
@@ -165,7 +175,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data }) =>
           <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col items-center text-center relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform"></div>
             <div className="w-24 h-24 bg-slate-900 text-white rounded-[2.5rem] flex items-center justify-center mb-6 shadow-2xl relative z-10">
-              <User size={40} />
+              <UserIcon size={40} />
             </div>
             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-tight mb-2 relative z-10">{selectedSiteInfo.name}</h3>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 relative z-10">CODE : {selectedSiteInfo.code} • {selectedSiteInfo.region}</p>
