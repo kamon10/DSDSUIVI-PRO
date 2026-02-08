@@ -16,20 +16,21 @@ const MONTHS_FR_UPPER = [
 ];
 
 export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data }) => {
+  // Utilisation de chaînes vides au lieu de 0 pour éviter l'affichage du 0 par défaut
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
-    fixe: 0,
-    mobile1: 0,
-    mobile2: 0,
-    mobile3: 0
+    fixe: "" as string | number,
+    mobile1: "" as string | number,
+    mobile2: "" as string | number,
+    mobile3: "" as string | number
   });
 
   const [status, setStatus] = useState<'idle' | 'success' | 'submitting' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Somme des activités mobiles
+  // Somme des activités mobiles (gestion des entrées vides via Number() || 0)
   const totalMobile = (Number(formData.mobile1) || 0) + (Number(formData.mobile2) || 0) + (Number(formData.mobile3) || 0);
   
   // Total général des poches
@@ -52,20 +53,21 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
       
       if (existingSiteData) {
         setIsEditing(true);
-        // Si une donnée existe, on met le total mobile dans le premier champ mobile
         setFormData(prev => ({
           ...prev,
           fixe: existingSiteData.fixe,
           mobile1: existingSiteData.mobile,
-          mobile2: 0,
-          mobile3: 0
+          mobile2: "",
+          mobile3: ""
         }));
-      } else if (isEditing) {
-        // Si on change de site/date et qu'on n'est plus en mode édition
-        setIsEditing(false);
+      } else {
+        if (isEditing) {
+          setIsEditing(false);
+          setFormData(prev => ({ ...prev, fixe: "", mobile1: "", mobile2: "", mobile3: "" }));
+        }
       }
     }
-  }, [selectedSite, formData.date]); // Détection lors du changement de site ou date
+  }, [selectedSite, formData.date, data.dailyHistory]);
 
   const calculatedFields = useMemo(() => {
     if (!formData.date) return { endOfMonth: "", monthName: "" };
@@ -99,16 +101,15 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
     try {
       const [y, m, d] = formData.date.split('-');
       
-      // PAYLOAD CONFORME À LA STRUCTURE DU GOOGLE SHEET NATIONAL
       const payload = {
         "Date Collecte": `${d}/${m}/${y}`,
         "Code site": selectedSite.code,
         "Libelle site": selectedSite.name,
         "Date fin mois": calculatedFields.endOfMonth,
         "Activité Fixe": "FIXE",
-        "NombreFixe": Number(formData.fixe),
+        "NombreFixe": Number(formData.fixe) || 0,
         "Activité Mobile": "MOBILE",
-        "NombreMobile": totalMobile, // Somme des 3 saisies mobiles
+        "NombreMobile": totalMobile,
         "Total poches": totalPoches,
         "Mois": calculatedFields.monthName,
         "Mode": isEditing ? "UPDATE" : "APPEND"
@@ -126,10 +127,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
     setFormData({
       siteIndex: "",
       date: new Date().toISOString().split('T')[0],
-      fixe: 0,
-      mobile1: 0,
-      mobile2: 0,
-      mobile3: 0
+      fixe: "",
+      mobile1: "",
+      mobile2: "",
+      mobile3: ""
     });
     setIsEditing(false);
     setStatus('idle');
@@ -172,7 +173,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
               <p className="text-[10px] font-black uppercase tracking-widest">Saisie existante détectée • Mode Mise à jour actif</p>
            </div>
            <button 
-            onClick={() => { setFormData({...formData, fixe: 0, mobile1: 0, mobile2: 0, mobile3: 0}); setIsEditing(false); }}
+            onClick={() => { setFormData({...formData, fixe: "", mobile1: "", mobile2: "", mobile3: ""}); setIsEditing(false); }}
             className="text-[9px] font-black uppercase bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition-all"
            >
             Annuler modification
@@ -181,7 +182,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
       )}
 
       <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-        {/* EN-TETE DU FORMULAIRE */}
         <div className="bg-slate-50/80 p-8 lg:p-12 border-b border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-6">
             <div className={`w-14 h-14 ${isEditing ? 'bg-blue-600' : 'bg-red-600'} rounded-2xl flex items-center justify-center text-white shadow-xl transition-colors duration-500`}>
@@ -208,7 +208,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
         <form onSubmit={handleSubmit} className="p-8 lg:p-12 space-y-10">
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* COLONNE GAUCHE : SÉLECTION SITE ET DATE */}
             <div className="space-y-8">
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
@@ -261,7 +260,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                 )}
               </div>
 
-              {/* SECTION ACTIVITÉ FIXE */}
               <div className="bg-emerald-50/30 p-8 rounded-[2.5rem] border border-emerald-100 space-y-4">
                 <div className="flex justify-between items-center">
                   <label className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
@@ -272,14 +270,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                 <input 
                   type="number"
                   min="0"
+                  placeholder="0"
                   value={formData.fixe}
-                  onChange={(e) => setFormData({...formData, fixe: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setFormData({...formData, fixe: e.target.value})}
                   className="w-full bg-white border border-emerald-200 rounded-2xl px-6 py-6 text-4xl font-black text-emerald-700 outline-none text-center shadow-inner focus:ring-4 ring-emerald-500/10 transition-all"
                 />
               </div>
             </div>
 
-            {/* COLONNE DROITE : ACTIVITÉS MOBILES (3 SAISIES) */}
             <div className="space-y-6">
               <div className="bg-orange-50/40 p-8 rounded-[3rem] border border-orange-100 space-y-6">
                 <div className="flex justify-between items-center">
@@ -297,8 +295,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                     <input 
                       type="number"
                       min="0"
+                      placeholder="0"
                       value={formData.mobile1}
-                      onChange={(e) => setFormData({...formData, mobile1: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setFormData({...formData, mobile1: e.target.value})}
                       className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-4 text-2xl font-black text-orange-700 outline-none text-center shadow-sm focus:ring-4 ring-orange-500/10 transition-all"
                     />
                   </div>
@@ -307,8 +306,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                     <input 
                       type="number"
                       min="0"
+                      placeholder="0"
                       value={formData.mobile2}
-                      onChange={(e) => setFormData({...formData, mobile2: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setFormData({...formData, mobile2: e.target.value})}
                       className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-4 text-2xl font-black text-orange-700 outline-none text-center shadow-sm focus:ring-4 ring-orange-500/10 transition-all"
                     />
                   </div>
@@ -317,8 +317,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                     <input 
                       type="number"
                       min="0"
+                      placeholder="0"
                       value={formData.mobile3}
-                      onChange={(e) => setFormData({...formData, mobile3: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setFormData({...formData, mobile3: e.target.value})}
                       className="w-full bg-white border border-orange-200 rounded-2xl px-6 py-4 text-2xl font-black text-orange-700 outline-none text-center shadow-sm focus:ring-4 ring-orange-500/10 transition-all"
                     />
                   </div>
@@ -361,7 +362,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
         <div>
           <h4 className="text-[11px] font-black text-blue-900 uppercase mb-1">Aide au calcul mobile</h4>
           <p className="text-[10px] font-bold text-blue-700/70 leading-relaxed uppercase">
-            Vous pouvez désormais saisir jusqu'à 3 collectes mobiles différentes pour un même site. L'application fait automatiquement la somme et l'enregistre dans la colonne "NombreMobile" de votre fichier central.
+            Saisissez vos chiffres. Les champs sont vides par défaut pour faciliter votre saisie. L'application fait automatiquement la somme et l'enregistre dans la colonne "NombreMobile" de votre fichier central.
           </p>
         </div>
       </div>
