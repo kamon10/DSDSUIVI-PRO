@@ -1,6 +1,7 @@
+
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { DashboardData } from '../types';
-import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2 } from 'lucide-react';
+import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -10,15 +11,21 @@ const MONTHS_FR = [
 ];
 
 const getDynamicColor = (perf: number) => {
-  if (perf > 100) return '#10b981'; // Vert (Objectif dépassé)
-  if (perf === 100) return '#f59e0b'; // Orange (Objectif atteint)
-  if (perf >= 90) return '#fb923c';  // Orange corail
-  if (perf >= 75) return '#f97316';  // Orange vif
-  if (perf >= 50) return '#ea580c';  // Rouge-Orange
-  return '#ef4444';                  // Rouge alerte
+  if (perf > 100) return '#10b981';
+  if (perf === 100) return '#f59e0b';
+  if (perf >= 90) return '#fb923c';
+  if (perf >= 75) return '#f97316';
+  if (perf >= 50) return '#ea580c';
+  return '#ef4444';
 };
 
-export const PulsePerformance: React.FC<{ data: DashboardData }> = ({ data }) => {
+interface PulsePerformanceProps {
+  data: DashboardData;
+  onLoginClick?: () => void;
+  isConnected?: boolean;
+}
+
+export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLoginClick, isConnected }) => {
   const [pulsePhase, setPulsePhase] = useState(0);
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const pulseRef = useRef<HTMLDivElement>(null);
@@ -72,34 +79,21 @@ export const PulsePerformance: React.FC<{ data: DashboardData }> = ({ data }) =>
 
   const { perfDaily, bestSite, top5Sites } = useMemo(() => {
     if (!dayRecord) return { perfDaily: 0, bestSite: null, top5Sites: [] };
-    
     const realized = dayRecord.stats.realized;
     const objective = 1137; 
-    
     const sitesWithPerf = dayRecord.sites.map(s => ({
       ...s,
       perf: s.objective > 0 ? (s.total / s.objective) * 100 : 0
     }));
-
     const best = [...sitesWithPerf].sort((a, b) => b.total - a.total)[0] || null;
     const top5 = [...sitesWithPerf].sort((a, b) => b.perf - a.perf).slice(0, 5);
-
-    return { 
-      perfDaily: (realized / objective) * 100, 
-      bestSite: best,
-      top5Sites: top5
-    };
+    return { perfDaily: (realized / objective) * 100, bestSite: best, top5Sites: top5 };
   }, [dayRecord]);
 
   const nationalPulseColor = useMemo(() => getDynamicColor(perfDaily), [perfDaily]);
-  const championPulseColor = useMemo(() => bestSite ? getDynamicColor(bestSite.perf) : '#f59e0b', [bestSite]);
-
-  const isHealthy = perfDaily >= 100;
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPulsePhase(p => (p + 1) % 100);
-    }, 40);
+    const interval = setInterval(() => { setPulsePhase(p => (p + 1) % 100); }, 40);
     return () => clearInterval(interval);
   }, []);
 
@@ -123,12 +117,20 @@ export const PulsePerformance: React.FC<{ data: DashboardData }> = ({ data }) =>
         pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
         pdf.save(`PULSE_CNTS_${selectedDay.replace(/\//g, '-')}.pdf`);
       }
-    } catch (err) { console.error("Export Pulse Error:", err); } finally { setExporting(null); }
+    } catch (err) { console.error(err); } finally { setExporting(null); }
   };
 
   return (
     <div className="space-y-16 lg:space-y-20 pb-10">
-      <div className="glass-card p-4 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-6 shadow-xl">
+      <div className="glass-card p-4 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        {!isConnected && (
+          <div className="absolute inset-0 bg-red-600/10 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
+            <div className="bg-red-600 text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse pointer-events-auto cursor-pointer" onClick={onLoginClick}>
+              Connectez-vous pour déverrouiller le cockpit complet
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center gap-5 px-4">
            <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
              <Filter size={20} />
@@ -164,6 +166,11 @@ export const PulsePerformance: React.FC<{ data: DashboardData }> = ({ data }) =>
              <button onClick={() => handleExport('pdf')} disabled={!!exporting} className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-100">
                {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
              </button>
+             {!isConnected && (
+               <button onClick={onLoginClick} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-xl">
+                 <User size={14} /> Accéder au Cockpit
+               </button>
+             )}
            </div>
         </div>
       </div>
@@ -219,98 +226,6 @@ export const PulsePerformance: React.FC<{ data: DashboardData }> = ({ data }) =>
                       <span className="text-5xl font-black text-white">{(dayRecord?.stats.realized || 0).toLocaleString()}</span>
                     </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="glass-card rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full -mr-32 -mt-32"></div>
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-2xl">
-                  <Trophy size={28} />
-                </div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Cibles de Vitalité</h3>
-              </div>
-              <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Top 5 Performance %</div>
-            </div>
-            <div className="space-y-8">
-              {top5Sites.map((site, i) => {
-                const sColor = getDynamicColor(site.perf);
-                return (
-                  <div key={i} className="relative group">
-                    <div className="flex justify-between items-end mb-3 px-2">
-                      <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-black text-slate-300">{i+1}</span>
-                          <span className="text-sm font-black" style={{ color: sColor }}>{site.perf.toFixed(1)}%</span>
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{site.name}</span>
-                      </div>
-                    </div>
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-50 shadow-inner">
-                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(site.perf, 100)}%`, backgroundColor: sColor }}></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-slate-900 rounded-[3.5rem] p-12 shadow-3xl text-white relative overflow-hidden border border-white/5">
-            <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-[100px]" style={{ backgroundColor: `${championPulseColor}11` }}></div>
-            <div className="flex items-center gap-5 mb-10">
-                <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-red-900/50">
-                  <Activity size={28} />
-                </div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter">CHAMPION DU JOUR</h3>
-            </div>
-            {bestSite && (
-              <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/10 shadow-inner overflow-hidden">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 text-slate-900 rounded-2xl flex items-center justify-center shadow-2xl transition-colors duration-1000 shrink-0" style={{ backgroundColor: championPulseColor }}>
-                      <Star size={32} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-4">
-                         <span className="text-4xl font-black transition-colors duration-1000" style={{ color: championPulseColor }}>{bestSite.perf.toFixed(1)}%</span>
-                         <h4 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">{bestSite.name}</h4>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="relative w-full h-4 bg-white/5 rounded-full mb-14 mt-10">
-                  <div className={`h-full transition-all duration-1000 rounded-full relative ${bestSite.perf >= 100 ? 'animate-pulse' : ''}`} style={{ width: `${Math.min((bestSite.perf / 125) * 100, 100)}%`, backgroundColor: championPulseColor, boxShadow: `0 0 20px ${championPulseColor}66` }}>
-                     <div className="absolute top-0 right-0 translate-x-1/2 -translate-y-[130%] flex flex-col items-center">
-                        <div className="px-2 py-1 rounded-xl bg-emerald-600 border shadow-xl flex items-center" style={{ borderColor: 'white' }}>
-                           <span className="text-xs font-black text-white">{bestSite.total}</span>
-                        </div>
-                        <div className="w-px h-3 bg-white/40 mt-1"></div>
-                     </div>
-                  </div>
-                  <div className="absolute top-0 left-[80%] h-full w-0.5 bg-white/60 z-10 shadow-[0_0_8px_white]">
-                     <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                       <div className="w-px h-10 bg-white/30 mb-1"></div>
-                       <span className="text-[10px] font-black text-white bg-orange-500 px-2 py-0.5 rounded border border-white/10">{bestSite.objective}</span>
-                     </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4 pt-4">
-                    <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Fixe</p><p className="text-xl font-black text-emerald-400">{bestSite.fixe}</p></div>
-                    <div className="bg-white/5 p-4 rounded-2xl text-center border border-white/5"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Mobile</p><p className="text-xl font-black text-orange-400">{bestSite.mobile}</p></div>
-                    <div className="bg-white/10 p-4 rounded-2xl text-center border border-white/10"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Total</p><p className="text-xl font-black text-white">{bestSite.total}</p></div>
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-6 mt-8">
-              <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-2">TENSION</p>
-                  <p className={`text-xl font-black transition-colors duration-1000 ${isHealthy ? 'text-emerald-400' : 'text-orange-400 uppercase'}`}>{isHealthy ? 'STABLE' : 'VARIABLE'}</p>
-              </div>
-              <div className="p-6 bg-white/5 rounded-3xl border border-white/10 text-center">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-2">VITALITÉ IA</p>
-                  <p className="text-xl font-black transition-colors duration-1000" style={{ color: nationalPulseColor }}>{perfDaily.toFixed(1)}%</p>
               </div>
             </div>
           </div>
