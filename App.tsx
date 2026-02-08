@@ -85,7 +85,6 @@ const App: React.FC = () => {
 
     if (currentUser.role === 'PRES') {
       const regionName = currentUser.region || "";
-      // Si regionName est 'TOUS LES PRES', on ne filtre rien (vision nationale)
       if (regionName.toUpperCase() !== "TOUS LES PRES") {
         filtered.regions = fullData.regions.filter(r => r.name.toUpperCase() === regionName.toUpperCase());
         filtered.dailyHistory = fullData.dailyHistory.map(h => ({
@@ -131,17 +130,17 @@ const App: React.FC = () => {
   }, [fullData, currentUser]);
 
   const navItems = [
-    { id: 'pulse', icon: <HeartPulse size={16} />, label: 'Pulse', public: true },
-    { id: 'cockpit', icon: <LayoutDashboard size={16} />, label: 'Cockpit', public: false },
-    { id: 'entry', icon: <PlusSquare size={16} />, label: 'Saisie', public: false },
-    { id: 'site-focus', icon: <UserCheck size={16} />, label: 'Focus', public: false },
-    { id: 'weekly', icon: <Layers size={16} />, label: 'Semaine', public: false },
-    { id: 'evolution', icon: <LineChart size={16} />, label: 'Évol.', public: false },
-    { id: 'comparison', icon: <ArrowLeftRight size={16} />, label: 'Compare', public: false },
-    { id: 'recap', icon: <FileText size={16} />, label: 'Récap', public: false },
-    { id: 'performance', icon: <BarChart3 size={16} />, label: 'Rang', public: false },
-    { id: 'summary', icon: <Layout size={16} />, label: 'Résumé', public: false },
-    { id: 'administration', icon: <ShieldCheck size={16} />, label: 'Admin', public: false, superOnly: true }
+    { id: 'pulse', icon: <HeartPulse size={14} />, label: 'Pulse', public: true },
+    { id: 'summary', icon: <Layout size={14} />, label: 'Résumé', public: false },
+    { id: 'cockpit', icon: <LayoutDashboard size={14} />, label: 'Cockpit', public: false },
+    { id: 'entry', icon: <PlusSquare size={14} />, label: 'Saisie', public: false },
+    { id: 'site-focus', icon: <UserCheck size={14} />, label: 'Focus', public: false },
+    { id: 'weekly', icon: <Layers size={14} />, label: 'Semaine', public: false },
+    { id: 'evolution', icon: <LineChart size={14} />, label: 'Évol.', public: false },
+    { id: 'comparison', icon: <ArrowLeftRight size={14} />, label: 'Compare', public: false },
+    { id: 'recap', icon: <FileText size={14} />, label: 'Récap', public: false },
+    { id: 'performance', icon: <BarChart3 size={14} />, label: 'Rang', public: false },
+    { id: 'administration', icon: <ShieldCheck size={14} />, label: 'Admin', public: false, superOnly: true }
   ];
 
   const visibleNavItems = navItems.filter(item => {
@@ -160,15 +159,15 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen pb-24 lg:pb-0 selection:bg-red-200">
       <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-8 lg:py-4">
-        <div className="max-w-7xl mx-auto glass-nav rounded-[2rem] px-6 h-16 lg:h-20 flex items-center justify-between shadow-2xl border border-white/10">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl border border-white/10 min-h-[5rem]">
+          <div className="flex items-center gap-4 shrink-0">
              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center text-white shadow-lg pulse-glow cursor-pointer" onClick={() => setActiveTab('pulse')}>
                <Activity size={22}/>
              </div>
              <div className="flex flex-col">
                <span className="font-black text-xl tracking-tighter leading-none uppercase text-white">DSDSUIVI</span>
                <div className="flex items-center gap-2 mt-1">
-                 <span className="text-[8px] text-orange-400 font-black uppercase tracking-[0.3em] leading-none">Cockpit National CI</span>
+                 <span className="text-[8px] text-orange-400 font-black uppercase tracking-[0.3em] leading-none">Cockpit National</span>
                  {currentUser && (
                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
                       <span className="text-[6px] font-black uppercase text-blue-400">{currentUser.role}</span>
@@ -178,12 +177,12 @@ const App: React.FC = () => {
              </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[60%] py-2">
+          <nav className="hidden lg:flex flex-wrap items-center justify-center gap-1.5 mx-8 flex-1">
             {visibleNavItems.map((tab) => (
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as AppTab)} 
-                className={`group flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden whitespace-nowrap ${
+                className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all relative overflow-hidden whitespace-nowrap ${
                   activeTab === tab.id ? 'text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -196,24 +195,24 @@ const App: React.FC = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {currentUser ? (
               <div className="flex items-center gap-3">
                 <div className="hidden xl:flex flex-col items-end">
                    <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{currentUser.nom}</span>
                    <span className="text-[7px] font-bold text-white/30 uppercase">{currentUser.site || currentUser.region || 'National'}</span>
                 </div>
-                <button onClick={handleLogout} className="p-3 bg-white/10 rounded-xl text-white hover:bg-red-500/20 transition-all border border-white/10" title="Déconnexion">
-                  <LogOut size={18} />
+                <button onClick={handleLogout} className="p-2.5 bg-white/10 rounded-xl text-white hover:bg-red-500/20 transition-all border border-white/10" title="Déconnexion">
+                  <LogOut size={16} />
                 </button>
               </div>
             ) : (
-              <button onClick={() => setShowLogin(true)} className="px-6 py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg flex items-center gap-2">
-                <UserIcon size={14} /> Connexion
+              <button onClick={() => setShowLogin(true)} className="px-5 py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg flex items-center gap-2">
+                <UserIcon size={12} /> Connexion
               </button>
             )}
-            <button onClick={() => setShowSettings(true)} className="p-3 bg-white/10 rounded-xl border border-white/10 text-white hover:bg-white/20 transition-all">
-              <Settings size={18} />
+            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-white/10 rounded-xl border border-white/10 text-white hover:bg-white/20 transition-all">
+              <Settings size={16} />
             </button>
           </div>
         </div>
@@ -236,7 +235,7 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 lg:px-6 pt-28 lg:pt-36 pb-24">
+      <main className="max-w-7xl mx-auto px-4 lg:px-6 pt-36 lg:pt-48 pb-24">
         {loading && !fullData.dailyHistory.length ? (
           <div className="flex flex-col items-center justify-center py-40 gap-8">
              <div className="relative">
@@ -260,7 +259,6 @@ const App: React.FC = () => {
                 {activeTab === 'comparison' && <ComparisonView data={filteredData} />}
                 {activeTab === 'recap' && <RecapView data={filteredData} />}
                 {activeTab === 'performance' && <PerformanceView data={filteredData} />}
-                {activeTab === 'history' && <DetailedHistoryView data={filteredData} />}
                 {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} />}
               </>
             )}
