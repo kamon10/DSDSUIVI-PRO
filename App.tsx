@@ -253,7 +253,7 @@ const App: React.FC = () => {
                 {activeTab === 'summary' && <SummaryView data={filteredData} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} />}
-                {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} />}
+                {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
                 {activeTab === 'comparison' && <ComparisonView data={filteredData} />}
