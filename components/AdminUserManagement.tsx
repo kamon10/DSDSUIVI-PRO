@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical } from 'lucide-react';
 import { fetchUsers, saveRecordToSheet } from '../services/googleSheetService';
@@ -19,6 +18,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   const roles: UserRole[] = ['AGENT', 'PRES', 'ADMIN', 'SUPERADMIN'];
+  // Ajout de TOUS LES PRES dans la liste des régions disponibles
   const regions = useMemo(() => ["TOUS LES PRES", ...Array.from(new Set(SITES_DATA.map(s => s.region))).sort()], []);
 
   const loadUsers = async () => {
