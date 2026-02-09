@@ -83,15 +83,50 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     }
   };
 
-  const handleSaveBranding = () => {
-    onBrandingChange({ logo: tempLogo, hashtag: tempHashtag });
-    setStatus({ type: 'success', msg: "Identité visuelle mise à jour." });
+  const handleSaveBranding = async () => {
+    setSubmitting(true);
+    try {
+      const payload = {
+        type: 'UPDATE_BRANDING',
+        logo: tempLogo,
+        hashtag: tempHashtag
+      };
+      // Sauvegarde centralisée sur le Sheet (accessible à tous les futurs chargements)
+      await saveRecordToSheet(scriptUrl, payload);
+      
+      // Mise à jour locale immédiate
+      onBrandingChange({ logo: tempLogo, hashtag: tempHashtag });
+      setStatus({ type: 'success', msg: "Identité visuelle synchronisée pour tous les utilisateurs." });
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Erreur lors de la synchronisation globale." });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const resetBranding = () => {
-    setTempLogo('./assets/logo.svg');
-    setTempHashtag('#DONSANG_CI');
-    onBrandingChange({ logo: './assets/logo.svg', hashtag: '#DONSANG_CI' });
+  const resetBranding = async () => {
+    setSubmitting(true);
+    try {
+      const defaultLogo = './assets/logo.svg';
+      const defaultHashtag = '#DONSANG_CI';
+      
+      const payload = {
+        type: 'UPDATE_BRANDING',
+        logo: defaultLogo,
+        hashtag: defaultHashtag
+      };
+      
+      await saveRecordToSheet(scriptUrl, payload);
+      
+      setTempLogo(defaultLogo);
+      setTempHashtag(defaultHashtag);
+      onBrandingChange({ logo: defaultLogo, hashtag: defaultHashtag });
+      setStatus({ type: 'success', msg: "Identité par défaut restaurée globalement." });
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Erreur lors de la restauration." });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getRoleBadge = (role: UserRole) => {
@@ -231,7 +266,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
               {/* Hashtag Manager */}
               <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col justify-between">
                  <div>
-                    <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-8"><Type size={32}/></div>
+                    <div className="w-16 h-16 bg-red-600 text-white rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-red-900/20"><Type size={32}/></div>
                     <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-2">Slogan & Hashtag</h3>
                     <p className="text-xs text-slate-400 mb-10 font-medium italic">Sera affiché sur 2 lignes avec une police ultra-réduite.</p>
                     
@@ -256,11 +291,12 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                  </div>
 
                  <div className="pt-10 flex gap-4">
-                    <button onClick={resetBranding} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 hover:text-slate-600 transition-all">
+                    <button onClick={resetBranding} disabled={submitting} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 hover:text-slate-600 transition-all">
                        <RotateCcw size={14} /> Réinitialiser
                     </button>
-                    <button onClick={handleSaveBranding} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95">
-                       <Save size={14} /> Appliquer
+                    <button onClick={handleSaveBranding} disabled={submitting} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95">
+                       {submitting ? <RefreshCw className="animate-spin" /> : <Save size={14} />} 
+                       Synchroniser Globalement
                     </button>
                  </div>
               </div>
@@ -269,9 +305,9 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
            <div className="bg-blue-50 border border-blue-100 rounded-[2.5rem] p-10 flex items-start gap-8">
               <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shrink-0"><Sparkles size={28}/></div>
               <div>
-                 <h4 className="text-lg font-black uppercase tracking-tighter text-blue-900 mb-2">Conseil de Design</h4>
+                 <h4 className="text-lg font-black uppercase tracking-tighter text-blue-900 mb-2">Contrôle de l'Identité</h4>
                  <p className="text-sm font-medium text-blue-800 leading-relaxed">
-                   La police est désormais réglée sur 7px pour un minimalisme absolu. Le texte sera automatiquement coupé s'il dépasse une certaine largeur, créant un effet d'empilement sur deux lignes.
+                   En cliquant sur "Synchroniser Globalement", vous mettez à jour l'identité visuelle pour l'ensemble des agents du CNTS. Les modifications seront appliquées lors de leur prochaine synchronisation de données.
                  </p>
               </div>
            </div>
