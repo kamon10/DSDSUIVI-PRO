@@ -16,7 +16,7 @@ import { ContactsView } from './components/ContactsView';
 import { DistributionView } from './components/DistributionView';
 import { LoginView } from './components/LoginView';
 import { AdminUserManagement } from './components/AdminUserManagement';
-import { fetchSheetData, fetchUsers } from './services/googleSheetService';
+import { fetchSheetData, fetchUsers, fetchBrandingConfig } from './services/googleSheetService';
 import { AppTab, DashboardData, User } from './types';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck } from 'lucide-react';
 
@@ -30,10 +30,12 @@ const App: React.FC = () => {
   // --- BRANDING DYNAMIQUE ---
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
-    return saved ? JSON.parse(saved) : {
+    const defaultBranding = {
       logo: './assets/logo.svg',
       hashtag: '#DONSANG_CI'
     };
+    if (!saved) return defaultBranding;
+    return JSON.parse(saved);
   });
 
   const updateBranding = (newBranding: {logo: string, hashtag: string}) => {
@@ -62,22 +64,31 @@ const App: React.FC = () => {
     if (isSyncingRef.current) return;
     const currentInput = sheetInputRef.current;
     const currentDistInput = distInputRef.current;
+    const currentScript = DEFAULT_SCRIPT_URL;
     
     isSyncingRef.current = true;
     if (!isSilent) setLoading(true);
     setSyncStatus('syncing');
 
     try {
-      const result = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim());
-      if (result) {
-        setFullData(result);
-        setLastSync(new Date());
-        setSyncStatus('synced');
+      // Synchronisation parallèle des données et du branding centralisé
+      const [dataResult, brandingResult] = await Promise.all([
+        fetchSheetData(currentInput.trim(), force, currentDistInput.trim()),
+        fetchBrandingConfig(currentScript)
+      ]);
+
+      if (dataResult) {
+        setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
-      } else {
-        setLastSync(new Date());
-        setSyncStatus('synced');
       }
+      
+      if (brandingResult) {
+        setBranding(brandingResult);
+        localStorage.setItem('hemo_branding', JSON.stringify(brandingResult));
+      }
+
+      setLastSync(new Date());
+      setSyncStatus('synced');
       setError(null);
     } catch (err: any) {
       setSyncStatus('error');
