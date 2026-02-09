@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
     const defaultBranding = {
-      logo: './assets/logo.png', // Chemin mis à jour suite au renommage
+      logo: './assets/logo.svg', 
       hashtag: '#DONSANG_CI'
     };
     if (!saved) return defaultBranding;
@@ -70,17 +70,15 @@ const App: React.FC = () => {
     if (isSyncingRef.current) return;
     const currentInput = sheetInputRef.current;
     const currentDistInput = distInputRef.current;
-    const currentScript = DEFAULT_SCRIPT_URL;
     
     isSyncingRef.current = true;
     if (!isSilent) setLoading(true);
     setSyncStatus('syncing');
 
     try {
-      // Synchronisation parallèle des données et du branding centralisé
       const [dataResult, brandingResult] = await Promise.all([
         fetchSheetData(currentInput.trim(), force, currentDistInput.trim()),
-        fetchBrandingConfig(currentScript)
+        fetchBrandingConfig(DEFAULT_SCRIPT_URL)
       ]);
 
       if (dataResult) {
@@ -113,7 +111,7 @@ const App: React.FC = () => {
   // RAFFRAICHISSEMENT AUTOMATIQUE (Toutes les 10 secondes)
   useEffect(() => {
     const autoRefreshInterval = setInterval(() => {
-      handleSync(true, false); // Mode silencieux (isSilent = true)
+      handleSync(true, false); 
     }, 10000);
 
     return () => clearInterval(autoRefreshInterval);
@@ -217,12 +215,14 @@ const App: React.FC = () => {
              </div>
              <div className="flex flex-col justify-center">
                <span className="font-black text-2xl tracking-tighter leading-none uppercase text-slate-900">HEMO-STATS</span>
-               <div className="flex items-start gap-2 mt-1">
-                 <div className="flex flex-col max-w-[45px] leading-[1.1] pt-0.5">
-                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest break-words leading-[1.2]">
-                      {branding.hashtag.replace('_', ' ')}
-                    </span>
-                 </div>
+               <div className="flex items-center gap-2 mt-1">
+                 {branding.hashtag === '#DONSANG_CI' ? (
+                   <img src="./assets/hashtag.svg" alt="#DONSANG_CI" className="h-4 object-contain opacity-80" />
+                 ) : (
+                   <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest break-words leading-[1.2]">
+                     {branding.hashtag.replace('_', ' ')}
+                   </span>
+                 )}
                  {currentUser && (
                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 ml-1">
                       <span className="text-[6px] font-black uppercase text-white tracking-tighter">{currentUser.role}</span>
@@ -251,7 +251,6 @@ const App: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-4 shrink-0">
-            {/* HORLOGE ET STATUS */}
             <div className="hidden md:flex flex-col items-end px-4 border-r border-slate-100">
                <span className="text-[11px] font-black text-slate-900 tabular-nums tracking-tighter">
                  {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -323,7 +322,6 @@ const App: React.FC = () => {
             
             {currentUser && (
               <>
-                {/* Pour le Résumé, on passe fullData pour afficher tous les PRES sans filtre utilisateur */}
                 {activeTab === 'summary' && <SummaryView data={fullData} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} />}
