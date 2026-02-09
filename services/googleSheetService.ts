@@ -107,8 +107,6 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
     let total = 0;
     let totalRendu = 0;
     
-    // Mapping Structure Fournie :
-    // 0:SI_CODE, 1:DATE_distri, 2:SI_NOM COMPLET, 3:NOMBRE, 4:NA_CODE, 5:NA_LIBELLE, 6:SA_GROUPE, 7:FS_CODE, 8:FS_NOM, 9:Bd_rendu, 10:MOIS
     rows.slice(1).forEach(row => {
       if (row.length < 10 || row[1].toLowerCase().includes('date')) return;
 
@@ -121,10 +119,12 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
       const rendu = cleanNum(row[9]);
       
       if (date && (qty > 0 || rendu > 0)) {
-        // Normalisation SI_CODE (ex: 11 -> 11000)
+        // --- HARMONISATION DES CODES (REGLE : SI_CODE * 1000) ---
+        // 01 -> 1000 (Treichville), 10 -> 10000 (Bonoua), 11 -> 11000 (Aboisso)
         let searchCode = siCode;
-        if (siCode.length <= 2) {
-          searchCode = siCode.padEnd(5, '0');
+        const codeNum = parseInt(siCode);
+        if (!isNaN(codeNum) && siCode.length <= 2) {
+          searchCode = (codeNum * 1000).toString();
         }
         
         const siteInfo = getSiteByInput(searchCode) || getSiteByInput(cleanStr(row[2]));
