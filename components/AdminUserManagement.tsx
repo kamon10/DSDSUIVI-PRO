@@ -1,14 +1,18 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical } from 'lucide-react';
+import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw } from 'lucide-react';
 import { fetchUsers, saveRecordToSheet } from '../services/googleSheetService';
 import { User as UserType, UserRole } from '../types';
 import { SITES_DATA } from '../constants';
 
 interface AdminUserManagementProps {
   scriptUrl: string;
+  onBrandingChange: (branding: {logo: string, hashtag: string}) => void;
+  currentBranding: {logo: string, hashtag: string};
 }
 
-export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ scriptUrl }) => {
+export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ scriptUrl, onBrandingChange, currentBranding }) => {
+  const [activeTab, setActiveTab] = useState<'users' | 'branding'>('users');
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,8 +21,11 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
+  // --- Branding State ---
+  const [tempHashtag, setTempHashtag] = useState(currentBranding.hashtag);
+  const [tempLogo, setTempLogo] = useState(currentBranding.logo);
+
   const roles: UserRole[] = ['AGENT', 'PRES', 'ADMIN', 'SUPERADMIN'];
-  // Ajout de TOUS LES PRES dans la liste des régions disponibles
   const regions = useMemo(() => ["TOUS LES PRES", ...Array.from(new Set(SITES_DATA.map(s => s.region))).sort()], []);
 
   const loadUsers = async () => {
@@ -65,6 +72,28 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     }
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveBranding = () => {
+    onBrandingChange({ logo: tempLogo, hashtag: tempHashtag });
+    setStatus({ type: 'success', msg: "Identité visuelle mise à jour." });
+  };
+
+  const resetBranding = () => {
+    setTempLogo('./assets/logo.svg');
+    setTempHashtag('#DONSANG_CI');
+    onBrandingChange({ logo: './assets/logo.svg', hashtag: '#DONSANG_CI' });
+  };
+
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'SUPERADMIN': return 'bg-red-600 text-white shadow-red-100';
@@ -86,95 +115,170 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
             </div>
             <div>
               <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tighter leading-none mb-3">Centre de Commandement</h2>
-              <p className="text-white/40 font-black uppercase tracking-[0.4em] text-[9px]">Gestion des privilèges et des accès utilisateurs</p>
+              <p className="text-white/40 font-black uppercase tracking-[0.4em] text-[9px]">Gestion des privilèges et de l'identité système</p>
             </div>
           </div>
-          <button onClick={loadUsers} className="p-5 bg-white/10 rounded-2xl hover:bg-white/20 transition-all">
-            <RefreshCw size={24} className={loading ? 'animate-spin' : ''} />
-          </button>
+          
+          <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl">
+             <button onClick={() => setActiveTab('users')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Agents</button>
+             <button onClick={() => setActiveTab('branding')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'branding' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Branding</button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 items-center justify-between">
-         <div className="relative flex-1 w-full lg:w-auto">
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
-            <input 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher un agent par nom ou email..."
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-4 ring-red-50"
-            />
-         </div>
-         <div className="flex items-center gap-4 w-full lg:w-auto">
-            <div className="flex items-center gap-2 px-5 py-2 bg-slate-100 rounded-full">
-               <Filter size={14} className="text-slate-400" />
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filtrer par rôle :</span>
-            </div>
-            <select 
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer"
-            >
-              <option value="ALL">Tous les rôles</option>
-              {roles.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-         </div>
-      </div>
+      {activeTab === 'users' ? (
+        <>
+          <div className="flex flex-col lg:flex-row gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 items-center justify-between">
+             <div className="relative flex-1 w-full lg:w-auto">
+                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Rechercher un agent par nom ou email..."
+                  className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-4 ring-red-50"
+                />
+             </div>
+             <div className="flex items-center gap-4 w-full lg:w-auto">
+                <div className="flex items-center gap-2 px-5 py-2 bg-slate-100 rounded-full">
+                   <Filter size={14} className="text-slate-400" />
+                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filtrer par rôle :</span>
+                </div>
+                <select 
+                  value={filterRole}
+                  onChange={(e) => setFilterRole(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer"
+                >
+                  <option value="ALL">Tous les rôles</option>
+                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <button onClick={loadUsers} className="p-3 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-black transition-all">
+                  <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                </button>
+             </div>
+          </div>
 
-      <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-100">
-               <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Identité</th>
-               <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Rôle Actuel</th>
-               <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Rattachement</th>
-               <th className="px-8 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {loading ? (
-              <tr><td colSpan={4} className="py-20 text-center text-slate-400 italic">Chargement des comptes...</td></tr>
-            ) : filteredUsers.length === 0 ? (
-              <tr><td colSpan={4} className="py-20 text-center text-slate-400 italic">Aucun utilisateur trouvé.</td></tr>
-            ) : filteredUsers.map((u, idx) => (
-              <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-8 py-6">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-red-50 group-hover:text-red-600 transition-all">
-                         <User size={20} />
-                      </div>
-                      <div>
-                         <p className="text-[12px] font-black text-slate-800 uppercase tracking-tight">{u.nom} {u.prenoms}</p>
-                         <p className="text-[10px] font-bold text-slate-400">{u.email}</p>
-                      </div>
-                   </div>
-                </td>
-                <td className="px-8 py-6 text-center">
-                   <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${getRoleBadge(u.role)}`}>
-                      {u.role}
-                   </span>
-                </td>
-                <td className="px-8 py-6 text-center">
-                   <div className="flex flex-col items-center">
-                      <span className="text-[10px] font-black text-slate-700 uppercase">{u.site || u.region || 'NATIONAL'}</span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{u.fonction}</span>
-                   </div>
-                </td>
-                <td className="px-8 py-6 text-right">
-                   <button 
-                    onClick={() => setEditingUser(u)}
-                    className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all shadow-sm"
-                   >
-                      <UserCog size={18} />
-                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                   <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Identité</th>
+                   <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Rôle Actuel</th>
+                   <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Rattachement</th>
+                   <th className="px-8 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {loading ? (
+                  <tr><td colSpan={4} className="py-20 text-center text-slate-400 italic">Chargement des comptes...</td></tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr><td colSpan={4} className="py-20 text-center text-slate-400 italic">Aucun utilisateur trouvé.</td></tr>
+                ) : filteredUsers.map((u, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-8 py-6">
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-red-50 group-hover:text-red-600 transition-all">
+                             <User size={20} />
+                          </div>
+                          <div>
+                             <p className="text-[12px] font-black text-slate-800 uppercase tracking-tight">{u.nom} {u.prenoms}</p>
+                             <p className="text-[10px] font-bold text-slate-400">{u.email}</p>
+                          </div>
+                       </div>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                       <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${getRoleBadge(u.role)}`}>
+                          {u.role}
+                       </span>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                       <div className="flex flex-col items-center">
+                          <span className="text-[10px] font-black text-slate-700 uppercase">{u.site || u.region || 'NATIONAL'}</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{u.fonction}</span>
+                       </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                       <button 
+                        onClick={() => setEditingUser(u)}
+                        className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all shadow-sm"
+                       >
+                          <UserCog size={18} />
+                       </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-bottom-4 duration-500">
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* Logo Manager */}
+              <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col items-center text-center">
+                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8"><ImageIcon size={32}/></div>
+                 <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-2">Logo de l'Application</h3>
+                 <p className="text-xs text-slate-400 mb-10 font-medium">Recommandé : Format Carré (PNG/SVG) sur fond transparent.</p>
+                 
+                 <div className="w-40 h-40 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex items-center justify-center overflow-hidden mb-8 group relative">
+                    <img src={tempLogo} alt="Logo Preview" className="w-full h-full object-contain p-4 transition-transform group-hover:scale-110" />
+                    <label className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm">
+                       <span className="text-white text-[10px] font-black uppercase tracking-widest">Remplacer</span>
+                       <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                    </label>
+                 </div>
+              </div>
 
-      {/* Modal d'édition */}
+              {/* Hashtag Manager */}
+              <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col justify-between">
+                 <div>
+                    <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-8"><Type size={32}/></div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-2">Slogan & Hashtag</h3>
+                    <p className="text-xs text-slate-400 mb-10 font-medium italic">Sera affiché sur 2 lignes avec une police ultra-réduite.</p>
+                    
+                    <div className="space-y-4">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Texte du slogan</label>
+                       <input 
+                         value={tempHashtag}
+                         onChange={(e) => setTempHashtag(e.target.value.toUpperCase())}
+                         placeholder="#DONSANG_CI"
+                         className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] text-sm font-black text-slate-800 outline-none focus:ring-4 ring-red-50 transition-all"
+                       />
+                       
+                       <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Prévisualisation Header (7px / 2 lignes)</p>
+                          <div className="flex flex-col max-w-[45px] leading-tight">
+                             <span className="text-[7px] font-black text-slate-800 uppercase tracking-widest break-words">
+                                {tempHashtag.replace('_', ' ')}
+                             </span>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="pt-10 flex gap-4">
+                    <button onClick={resetBranding} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 hover:text-slate-600 transition-all">
+                       <RotateCcw size={14} /> Réinitialiser
+                    </button>
+                    <button onClick={handleSaveBranding} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95">
+                       <Save size={14} /> Appliquer
+                    </button>
+                 </div>
+              </div>
+           </div>
+
+           <div className="bg-blue-50 border border-blue-100 rounded-[2.5rem] p-10 flex items-start gap-8">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shrink-0"><Sparkles size={28}/></div>
+              <div>
+                 <h4 className="text-lg font-black uppercase tracking-tighter text-blue-900 mb-2">Conseil de Design</h4>
+                 <p className="text-sm font-medium text-blue-800 leading-relaxed">
+                   La police est désormais réglée sur 7px pour un minimalisme absolu. Le texte sera automatiquement coupé s'il dépasse une certaine largeur, créant un effet d'empilement sur deux lignes.
+                 </p>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Modal d'édition utilisateur */}
       {editingUser && (
         <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
            <div className="bg-white rounded-[3.5rem] max-w-lg w-full shadow-3xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300">
