@@ -109,7 +109,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 150000) {
-        setStatus({ type: 'error', msg: "Image trop lourde. Veuillez utiliser un PNG compressé (< 150ko)." });
+        setStatus({ type: 'error', msg: "Image trop lourde. Veuillez utiliser un SVG ou PNG compressé (< 150ko)." });
         return;
       }
       const reader = new FileReader();
@@ -130,7 +130,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       };
       await saveRecordToSheet(scriptUrl, payload);
       onBrandingChange({ logo: tempLogo, hashtag: tempHashtag });
-      setStatus({ type: 'success', msg: "Identité visuelle (PNG) synchronisée globalement." });
+      setStatus({ type: 'success', msg: "Identité visuelle synchronisée globalement." });
     } catch (err) {
       setStatus({ type: 'error', msg: "Erreur lors de la synchronisation globale." });
     } finally {
@@ -141,7 +141,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const resetBranding = async () => {
     setSubmitting(true);
     try {
-      const defaultLogo = './assets/logo.png';
+      const defaultLogo = './assets/logo.svg';
       const defaultHashtag = '#DONSANG_CI';
       const payload = { type: 'UPDATE_BRANDING', logo: defaultLogo, hashtag: defaultHashtag };
       await saveRecordToSheet(scriptUrl, payload);
@@ -162,7 +162,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       case 'ADMIN': return 'bg-slate-900 text-white shadow-slate-200';
       case 'PRES': return 'bg-blue-600 text-white shadow-blue-100';
       case 'AGENT': return 'bg-emerald-500 text-white shadow-emerald-100';
-      default: return 'bg-slate-100 text-slate-500';
+      default: return 'bg-slate-100 text-slate-50';
     }
   };
 
@@ -323,13 +323,13 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
               <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col items-center text-center">
                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8"><ImageIcon size={32}/></div>
                  <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-2">Logo de l'Application</h3>
-                 <p className="text-xs text-slate-400 mb-10 font-medium">Format recommandé : <span className="text-blue-600 font-bold">PNG transparent</span> ou SVG.</p>
+                 <p className="text-xs text-slate-400 mb-10 font-medium">Format recommandé : <span className="text-blue-600 font-bold">SVG ou PNG transparent</span>.</p>
                  <div className="w-48 h-48 rounded-[2.5rem] border-2 border-dashed border-slate-200 overflow-hidden mb-8 group relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
                     <div className="absolute inset-0 bg-white opacity-40"></div>
                     <img src={tempLogo} alt="Logo Preview" className="w-full h-full object-contain p-6 transition-transform group-hover:scale-110 relative z-10" />
                     <label className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm z-20">
                        <Upload size={24} className="text-white mb-2" />
-                       <span className="text-white text-[10px] font-black uppercase tracking-widest">Choisir un PNG</span>
+                       <span className="text-white text-[10px] font-black uppercase tracking-widest">Choisir un fichier</span>
                        <input type="file" accept="image/png, image/svg+xml, image/jpeg" onChange={handleLogoUpload} className="hidden" />
                     </label>
                  </div>
