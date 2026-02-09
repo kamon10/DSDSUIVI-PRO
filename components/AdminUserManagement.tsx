@@ -109,7 +109,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const resetBranding = async () => {
     setSubmitting(true);
     try {
-      const defaultLogo = './assets/logo.svg';
+      const defaultLogo = './assets/logo.png';
       const defaultHashtag = '#DONSANG_CI';
       const payload = { type: 'UPDATE_BRANDING', logo: defaultLogo, hashtag: defaultHashtag };
       await saveRecordToSheet(scriptUrl, payload);
