@@ -1,4 +1,3 @@
-
 import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
@@ -109,6 +108,12 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
     const response = await fetch(`${scriptUrl}?action=getBranding&_t=${Date.now()}`);
     if (!response.ok) return null;
     const text = await response.text();
+    
+    // Protection contre les réponses non-JSON
+    if (text.startsWith("Action inconnue") || text.startsWith("<!DOCTYPE")) {
+        return null;
+    }
+
     try {
       const config = JSON.parse(text);
       return {
@@ -116,12 +121,6 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
         hashtag: config.hashtag || '#DONSANG_CI'
       };
     } catch (e) {
-      // Gère le cas où le script retourne "Action inconnue" ou autre texte brut
-      if (text.includes("Action inconnue") || text.includes("invalide")) {
-        console.warn("L'action 'getBranding' n'est pas encore implémentée dans le Google Apps Script.");
-      } else {
-        console.error("fetchBrandingConfig parse error:", text);
-      }
       return null;
     }
   } catch (err) {
@@ -201,7 +200,6 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
   }
 };
 
-// Fix the fetchSheetData function that was truncated and caused errors
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
