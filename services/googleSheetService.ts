@@ -1,3 +1,4 @@
+
 import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
@@ -77,16 +78,22 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
   try {
     const response = await fetch(`${scriptUrl}?action=getUsers&_t=${Date.now()}`);
     if (!response.ok) throw new Error("Erreur script utilisateurs");
-    const users = await response.json();
-    return users.map((u: any) => ({
-      nom: cleanStr(u.nom),
-      prenoms: cleanStr(u.prenoms),
-      email: cleanStr(u.email),
-      fonction: cleanStr(u.fonction),
-      site: cleanStr(u.site),
-      role: (cleanStr(u.role) as UserRole) || 'AGENT',
-      region: cleanStr(u.region)
-    }));
+    const text = await response.text();
+    try {
+      const users = JSON.parse(text);
+      return users.map((u: any) => ({
+        nom: cleanStr(u.nom),
+        prenoms: cleanStr(u.prenoms),
+        email: cleanStr(u.email),
+        fonction: cleanStr(u.fonction),
+        site: cleanStr(u.site),
+        role: (cleanStr(u.role) as UserRole) || 'AGENT',
+        region: cleanStr(u.region)
+      }));
+    } catch (e) {
+      console.error("fetchUsers parse error:", text);
+      return [];
+    }
   } catch (err) {
     console.error("fetchUsers error:", err);
     return [];
@@ -101,11 +108,22 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
   try {
     const response = await fetch(`${scriptUrl}?action=getBranding&_t=${Date.now()}`);
     if (!response.ok) return null;
-    const config = await response.json();
-    return {
-      logo: config.logo || './assets/logo.png',
-      hashtag: config.hashtag || '#DONSANG_CI'
-    };
+    const text = await response.text();
+    try {
+      const config = JSON.parse(text);
+      return {
+        logo: config.logo || './assets/logo.png',
+        hashtag: config.hashtag || '#DONSANG_CI'
+      };
+    } catch (e) {
+      // Gère le cas où le script retourne "Action inconnue" ou autre texte brut
+      if (text.includes("Action inconnue") || text.includes("invalide")) {
+        console.warn("L'action 'getBranding' n'est pas encore implémentée dans le Google Apps Script.");
+      } else {
+        console.error("fetchBrandingConfig parse error:", text);
+      }
+      return null;
+    }
   } catch (err) {
     console.error("fetchBrandingConfig error:", err);
     return null;
@@ -183,6 +201,7 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
   }
 };
 
+// Fix the fetchSheetData function that was truncated and caused errors
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
@@ -216,126 +235,139 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const latestDateStr = `${latestDateObj.getDate().toString().padStart(2, '0')}/${(latestDateObj.getMonth() + 1).toString().padStart(2, '0')}/${latestDateObj.getFullYear()}`;
 
     const historyMap = new Map<string, DailyHistoryRecord>();
-    const siteAgg = new Map<string, { f: number, m: number, t: number, lastT: number, lastF: number, lastM: number }>();
+    const siteAgg = new Map<string, { f: number, m: number, t: number, mf: number, mm: number }>();
 
-    validRows.forEach(({ row, dateObj, dateStr }) => {
-      const codeRaw = cleanStr(row[col.code]);
-      const siteRaw = cleanStr(row[col.site]);
-      const siteInfo = getSiteByInput(codeRaw) || getSiteByInput(siteRaw);
-      if (!siteInfo) return;
+    validRows.forEach(({ row, dateStr }) => {
+      const parts = dateStr.split('/');
+      const [d, m, y] = parts.map(Number);
+      const code = cleanStr(row[col.code]);
+      const siteName = cleanStr(row[col.site]);
+      const fixe = cleanNum(row[col.fixe]);
+      const mobile = cleanNum(row[col.mobile]);
+      const total = cleanNum(row[col.total]);
 
-      const finalSiteName = siteInfo.name;
-      const finalRegion = siteInfo.region;
-      const f = cleanNum(row[col.fixe]);
-      const m = cleanNum(row[col.mobile]);
-      const t = cleanNum(row[col.total]) || (f + m);
+      const siteInfo = getSiteByInput(code) || getSiteByInput(siteName);
+      const objs = getSiteObjectives(siteName);
 
-      if (!siteAgg.has(finalSiteName)) {
-        siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
-      }
-      const agg = siteAgg.get(finalSiteName)!;
-      if (dateObj.getFullYear() === targetYear && dateObj.getMonth() === targetMonth) {
-        agg.f += f; agg.m += m; agg.t += t;
-      }
-      if (dateStr === latestDateStr) {
-        agg.lastT = t; agg.lastF = f; agg.lastM = m;
+      if (y === targetYear && (m - 1) === targetMonth) {
+        const key = siteName.toUpperCase();
+        const existing = siteAgg.get(key) || { f: 0, m: 0, t: 0, mf: 0, mm: 0 };
+        siteAgg.set(key, {
+          f: dateStr === latestDateStr ? fixe : existing.f,
+          m: dateStr === latestDateStr ? mobile : existing.m,
+          t: existing.t + total,
+          mf: existing.mf + fixe,
+          mm: existing.mm + mobile
+        });
       }
 
       if (!historyMap.has(dateStr)) {
-        historyMap.set(dateStr, { date: dateStr, stats: { realized: 0, fixed: 0, mobile: 0 }, sites: [] });
+        historyMap.set(dateStr, {
+          date: dateStr,
+          stats: { realized: 0, fixed: 0, mobile: 0 },
+          sites: []
+        });
       }
-      const day = historyMap.get(dateStr)!;
-      day.stats.realized += t;
-      day.stats.fixed += f;
-      day.stats.mobile += m;
-      
-      const siteObjs = getSiteObjectives(finalSiteName);
-      day.sites.push({ 
-        name: finalSiteName, fixe: f, mobile: m, total: t,
-        objective: siteObjs.daily, region: finalRegion,
-        manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
+      const dayRec = historyMap.get(dateStr)!;
+      dayRec.stats.realized += total;
+      dayRec.stats.fixed += fixe;
+      dayRec.stats.mobile += mobile;
+      dayRec.sites.push({
+        name: siteName,
+        fixe,
+        mobile,
+        total,
+        objective: objs.daily,
+        region: siteInfo?.region,
+        manager: siteInfo?.manager,
+        email: siteInfo?.email,
+        phone: siteInfo?.phone
       });
     });
 
-    const history = Array.from(historyMap.values()).sort((a, b) => {
+    const dailyHistory = Array.from(historyMap.values()).sort((a, b) => {
       const [da, ma, ya] = a.date.split('/').map(Number);
       const [db, mb, yb] = b.date.split('/').map(Number);
       return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
     });
 
     const regionsMap = new Map<string, RegionData>();
-    siteAgg.forEach((stats, name) => {
-      const siteInfo = getSiteByInput(name);
-      if (!siteInfo) return;
-      const regName = siteInfo.region;
-      if (!regionsMap.has(regName)) regionsMap.set(regName, { name: regName, sites: [] });
-      const siteObjs = getSiteObjectives(name);
-      regionsMap.get(regName)!.sites.push({
-        name, region: regName, fixe: stats.lastF, mobile: stats.lastM,
-        totalJour: stats.lastT, totalMois: stats.t, monthlyFixed: stats.f, monthlyMobile: stats.m,
-        objDate: 0, objMensuel: siteObjs.monthly,
-        manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
-      });
+    SITES_DATA.forEach(s => {
+      const regName = s.region || "AUTRES";
+      if (!regionsMap.has(regName)) {
+        regionsMap.set(regName, { name: regName, sites: [] });
+      }
+      const agg = siteAgg.get(s.name.toUpperCase());
+      const siteRec: SiteRecord = {
+        name: s.name,
+        region: s.region,
+        fixe: agg?.f || 0,
+        mobile: agg?.m || 0,
+        totalJour: (agg?.f || 0) + (agg?.m || 0),
+        totalMois: agg?.t || 0,
+        monthlyFixed: agg?.mf || 0,
+        monthlyMobile: agg?.mm || 0,
+        objDate: getSiteObjectives(s.name).daily,
+        objMensuel: getSiteObjectives(s.name).monthly,
+        manager: s.manager,
+        email: s.email,
+        phone: s.phone
+      };
+      regionsMap.get(regName)!.sites.push(siteRec);
     });
 
-    const regionsList = Array.from(regionsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
+    const regions = Array.from(regionsMap.values());
+    const mRealized = regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.totalMois, 0), 0);
+    const mObjective = regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.objMensuel, 0), 0);
+    const aObjective = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
 
-    let monthlyRealized = 0;
-    let monthlyFixed = 0;
-    let monthlyMobile = 0;
-    regionsList.forEach(reg => {
-      reg.sites.forEach(site => {
-        monthlyRealized += site.totalMois;
-        monthlyFixed += (site.monthlyFixed || 0);
-        monthlyMobile += (site.monthlyMobile || 0);
-      });
-    });
+    const distributions = distributionUrl ? await fetchDistributions(distributionUrl) : undefined;
 
-    const annualRealized = history
-      .filter(h => h.date.split('/')[2] === targetYear.toString())
-      .reduce((acc, h) => acc + h.stats.realized, 0);
-
-    const objAnn = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
-    const objMens = Math.round(objAnn / 12);
-    const objDay = Math.round(objAnn / WORKING_DAYS_YEAR);
-
-    const baseResult: DashboardData = {
+    return {
       date: latestDateStr,
-      month: `${MONTHS_FR[targetMonth]} ${targetYear}`,
+      month: MONTHS_FR[targetMonth],
       year: targetYear,
-      daily: { realized: history[0]?.stats.realized || 0, objective: objDay, percentage: objDay > 0 ? (history[0]?.stats.realized / objDay) * 100 : 0, fixed: history[0]?.stats.fixed || 0, mobile: history[0]?.stats.mobile || 0 },
-      monthly: { realized: monthlyRealized, objective: objMens, percentage: objMens > 0 ? (monthlyRealized / objMens) * 100 : 0, fixed: monthlyFixed, mobile: monthlyMobile },
-      annual: { realized: annualRealized, objective: objAnn, percentage: objAnn > 0 ? (annualRealized / objAnn) * 100 : 0, fixed: 0, mobile: 0 },
-      dailyHistory: history,
-      regions: regionsList
+      daily: dailyHistory[0] ? {
+        realized: dailyHistory[0].stats.realized,
+        fixed: dailyHistory[0].stats.fixed,
+        mobile: dailyHistory[0].stats.mobile,
+        objective: regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.objDate, 0), 0),
+        percentage: (dailyHistory[0].stats.realized / (regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.objDate, 0), 0) || 1)) * 100
+      } : { realized: 0, objective: 0, percentage: 0, fixed: 0, mobile: 0 },
+      monthly: {
+        realized: mRealized,
+        objective: mObjective,
+        percentage: mObjective > 0 ? (mRealized / mObjective) * 100 : 0,
+        fixed: regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + (s.monthlyFixed || 0), 0), 0),
+        mobile: regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + (s.monthlyMobile || 0), 0), 0)
+      },
+      annual: {
+        realized: mRealized,
+        objective: aObjective,
+        percentage: aObjective > 0 ? (mRealized / aObjective) * 100 : 0,
+        fixed: 0,
+        mobile: 0
+      },
+      dailyHistory,
+      regions,
+      distributions: distributions || undefined
     };
-
-    if (distributionUrl) {
-      const distData = await fetchDistributions(distributionUrl);
-      if (distData) baseResult.distributions = distData;
-    }
-
-    return baseResult;
   } catch (err) {
     console.error("fetchSheetData error:", err);
-    throw err;
+    return null;
   }
 };
 
-export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
-  if (!url) throw new Error("URL du script non configurée.");
-  try {
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      cache: 'no-cache',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-    });
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return;
-  } catch (error) {
-    console.error("Erreur d'enregistrement:", error);
-    throw new Error("Connexion au serveur d'injection impossible.");
-  }
+/**
+ * Envoie une requête POST au script Google Apps Script pour enregistrer une ligne.
+ */
+export const saveRecordToSheet = async (scriptUrl: string, payload: any): Promise<void> => {
+  if (!scriptUrl) throw new Error("URL du script manquante");
+  await fetch(scriptUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    cache: 'no-cache',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 };
