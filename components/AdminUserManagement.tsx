@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw } from 'lucide-react';
+import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw, Upload } from 'lucide-react';
 import { fetchUsers, saveRecordToSheet } from '../services/googleSheetService';
 import { User as UserType, UserRole } from '../types';
 import { SITES_DATA } from '../constants';
@@ -75,6 +75,11 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Vérification de la taille pour éviter de saturer Google Sheets (limite ~50kb conseillée en base64)
+      if (file.size > 150000) {
+        setStatus({ type: 'error', msg: "Image trop lourde. Veuillez utiliser un PNG compressé (< 150ko)." });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setTempLogo(reader.result as string);
@@ -91,12 +96,9 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
         logo: tempLogo,
         hashtag: tempHashtag
       };
-      // Sauvegarde centralisée sur le Sheet (accessible à tous les futurs chargements)
       await saveRecordToSheet(scriptUrl, payload);
-      
-      // Mise à jour locale immédiate
       onBrandingChange({ logo: tempLogo, hashtag: tempHashtag });
-      setStatus({ type: 'success', msg: "Identité visuelle synchronisée pour tous les utilisateurs." });
+      setStatus({ type: 'success', msg: "Identité visuelle (PNG) synchronisée globalement." });
     } catch (err) {
       setStatus({ type: 'error', msg: "Erreur lors de la synchronisation globale." });
     } finally {
@@ -109,19 +111,12 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     try {
       const defaultLogo = './assets/logo.svg';
       const defaultHashtag = '#DONSANG_CI';
-      
-      const payload = {
-        type: 'UPDATE_BRANDING',
-        logo: defaultLogo,
-        hashtag: defaultHashtag
-      };
-      
+      const payload = { type: 'UPDATE_BRANDING', logo: defaultLogo, hashtag: defaultHashtag };
       await saveRecordToSheet(scriptUrl, payload);
-      
       setTempLogo(defaultLogo);
       setTempHashtag(defaultHashtag);
       onBrandingChange({ logo: defaultLogo, hashtag: defaultHashtag });
-      setStatus({ type: 'success', msg: "Identité par défaut restaurée globalement." });
+      setStatus({ type: 'success', msg: "Identité par défaut restaurée." });
     } catch (err) {
       setStatus({ type: 'error', msg: "Erreur lors de la restauration." });
     } finally {
@@ -248,19 +243,23 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       ) : (
         <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-bottom-4 duration-500">
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              {/* Logo Manager */}
+              {/* Logo Manager - Amélioré pour PNG */}
               <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col items-center text-center">
                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8"><ImageIcon size={32}/></div>
                  <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-2">Logo de l'Application</h3>
-                 <p className="text-xs text-slate-400 mb-10 font-medium">Recommandé : Format Carré (PNG/SVG) sur fond transparent.</p>
+                 <p className="text-xs text-slate-400 mb-10 font-medium">Format recommandé : <span className="text-blue-600 font-bold">PNG transparent</span> ou SVG.</p>
                  
-                 <div className="w-40 h-40 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex items-center justify-center overflow-hidden mb-8 group relative">
-                    <img src={tempLogo} alt="Logo Preview" className="w-full h-full object-contain p-4 transition-transform group-hover:scale-110" />
-                    <label className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm">
-                       <span className="text-white text-[10px] font-black uppercase tracking-widest">Remplacer</span>
-                       <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                 {/* Zone de prévisualisation avec damier pour la transparence */}
+                 <div className="w-48 h-48 rounded-[2.5rem] border-2 border-dashed border-slate-200 overflow-hidden mb-8 group relative bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
+                    <div className="absolute inset-0 bg-white opacity-40"></div>
+                    <img src={tempLogo} alt="Logo Preview" className="w-full h-full object-contain p-6 transition-transform group-hover:scale-110 relative z-10" />
+                    <label className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm z-20">
+                       <Upload size={24} className="text-white mb-2" />
+                       <span className="text-white text-[10px] font-black uppercase tracking-widest">Choisir un PNG</span>
+                       <input type="file" accept="image/png, image/svg+xml, image/jpeg" onChange={handleLogoUpload} className="hidden" />
                     </label>
                  </div>
+                 <p className="text-[10px] font-bold text-slate-300 italic">L'image sera redimensionnée pour s'adapter au header.</p>
               </div>
 
               {/* Hashtag Manager */}
@@ -307,7 +306,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
               <div>
                  <h4 className="text-lg font-black uppercase tracking-tighter text-blue-900 mb-2">Contrôle de l'Identité</h4>
                  <p className="text-sm font-medium text-blue-800 leading-relaxed">
-                   En cliquant sur "Synchroniser Globalement", vous mettez à jour l'identité visuelle pour l'ensemble des agents du CNTS. Les modifications seront appliquées lors de leur prochaine synchronisation de données.
+                   En cliquant sur "Synchroniser Globalement", vous mettez à jour le logo (PNG/SVG) et le hashtag pour l'ensemble des agents. La mise à jour est immédiate pour tous les terminaux connectés.
                  </p>
               </div>
            </div>
