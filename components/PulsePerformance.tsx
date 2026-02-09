@@ -13,7 +13,7 @@ const MONTHS_FR = [
 
 const getDynamicColor = (perf: number) => {
   if (perf > 100) return '#10b981';
-  if (perf === 100) return '#10b981'; // Vert Harmonisé
+  if (perf === 100) return '#10b981';
   if (perf >= 90) return '#10b981';
   if (perf >= 75) return '#f59e0b';
   if (perf >= 50) return '#f97316';
@@ -22,7 +22,7 @@ const getDynamicColor = (perf: number) => {
 
 const getDistColor = (eff: number) => {
   if (eff >= 98) return '#10b981';
-  if (eff >= 95) return '#f59e0b'; // Orange Harmonisé
+  if (eff >= 95) return '#f59e0b';
   return '#f97316';
 };
 
@@ -85,7 +85,6 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
     data.dailyHistory.find(h => h.date === selectedDay) || data.dailyHistory[0]
   , [selectedDay, data.dailyHistory]);
 
-  // --- STATS DISTRIBUTION ---
   const distDayStats = useMemo(() => {
     if (!data.distributions?.records) return { qty: 0, efficiency: 0, rendu: 0 };
     const dayRecs = data.distributions.records.filter(r => r.date === selectedDay);
@@ -140,21 +139,10 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
   };
 
   return (
-    <div className="space-y-16 lg:space-y-20 pb-10">
+    <div className="space-y-12 pb-10">
       
-      {/* SELECTEUR DE MODE PULSE HARMONISÉ */}
-      <div className="flex justify-center -mb-8">
-        <div className="bg-white p-1.5 rounded-3xl shadow-2xl border border-slate-100 flex gap-2">
-           <button onClick={() => setViewMode('donations')} className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400'}`}>
-             <Activity size={16}/> Prélèvements
-           </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400'}`}>
-             <Truck size={16}/> Distribution
-           </button>
-        </div>
-      </div>
-
-      <div className="glass-card p-4 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-6 shadow-xl relative overflow-hidden mt-12">
+      {/* BANDE DES SÉLECTEURS DE FLUX UNIFIÉE */}
+      <div className="glass-card p-2 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-4 shadow-2xl relative overflow-hidden transition-all border-l-8" style={{ borderLeftColor: nationalPulseColor }}>
         {!isConnected && (
           <div className="absolute inset-0 bg-emerald-600/10 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
             <div className="bg-emerald-600 text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse pointer-events-auto cursor-pointer" onClick={onLoginClick}>
@@ -163,42 +151,46 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
           </div>
         )}
         
-        <div className="flex items-center gap-5 px-4">
-           <div className={`w-12 h-12 text-white rounded-2xl flex items-center justify-center shadow-lg ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}>
-             <Filter size={20} />
-           </div>
-           <div>
-             <h3 className="text-base font-black uppercase tracking-tighter text-slate-800">Sélecteur de Flux</h3>
-             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Voyage temporel CNTS</p>
-           </div>
+        {/* Palette de Mode Intégrée */}
+        <div className="flex bg-slate-100 p-1.5 rounded-3xl gap-1.5 ml-2">
+           <button onClick={() => setViewMode('donations')} className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+             <Activity size={14}/> Collecte
+           </button>
+           <button onClick={() => setViewMode('distribution')} className={`px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+             <Truck size={14}/> Sortie
+           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-           <div className="bg-white/5 border border-white/80 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center gap-3">
-             <Calendar size={14} className="text-emerald-500" />
-             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
+
+        {/* Filtres Temporels */}
+        <div className="flex flex-wrap items-center gap-2 flex-1 justify-center">
+           <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 flex items-center gap-2">
+             <Calendar size={12} className="text-slate-400" />
+             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
              </select>
            </div>
-           <div className="bg-white/5 border border-white/80 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center gap-3">
-             <Waves size={14} className="text-orange-500" />
-             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
+           <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2 flex items-center gap-2">
+             <Waves size={12} className="text-slate-400" />
+             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
                {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
              </select>
            </div>
-           <div className="bg-slate-900 border border-white/10 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-2xl mr-2">
-             <Activity size={14} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} />
-             <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-white">
-               {availableDays.map(d => <option key={d} value={d} className="text-slate-900">{d}</option>)}
+           <div className="bg-slate-900 border border-white/10 rounded-2xl px-5 py-2.5 flex items-center gap-3 shadow-xl">
+             <Activity size={12} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} />
+             <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-white">
+               {availableDays.map(d => <option key={d} value={d}>{d}</option>)}
              </select>
            </div>
-           <div className="flex gap-2">
-             <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-all shadow-sm">
-               {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
-             </button>
-             <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`p-3 text-white rounded-xl transition-all shadow-md ${viewMode === 'donations' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100' : 'bg-orange-600 hover:bg-orange-700 shadow-orange-100'}`}>
-               {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
-             </button>
-           </div>
+        </div>
+
+        {/* Exports */}
+        <div className="flex gap-2 mr-2">
+           <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
+             {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
+           </button>
+           <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`p-3 text-white rounded-xl transition-all shadow-md ${viewMode === 'donations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
+             {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+           </button>
         </div>
       </div>
 

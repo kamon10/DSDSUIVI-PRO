@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData, AppTab, User, DistributionRecord } from '../types';
-import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package } from 'lucide-react';
+import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package, ChevronDown } from 'lucide-react';
 import { COLORS, SITES_DATA, PRODUCT_COLORS } from '../constants';
 
 const getPerfColor = (perc: number) => {
@@ -33,7 +33,6 @@ export const VisualDashboard: React.FC<{
     data.dailyHistory.find(r => r.date === selectedDate) || data.dailyHistory[0]
   , [selectedDate, data.dailyHistory]);
 
-  // --- LOGIQUE DISTRIBUTION DU JOUR ---
   const dailyDistStats = useMemo(() => {
     if (!data.distributions?.records) return null;
     const records = data.distributions.records.filter(r => r.date === selectedDate);
@@ -52,7 +51,6 @@ export const VisualDashboard: React.FC<{
     };
   }, [data.distributions, selectedDate]);
 
-  // --- CLASSEMENT DES SITES VALIDEES (DYNAMIC) ---
   const validatedEntries = useMemo(() => {
     if (viewMode === 'donations') {
       if (!currentDailyRecord) return [];
@@ -94,27 +92,12 @@ export const VisualDashboard: React.FC<{
     }
   }, [viewMode, currentDailyRecord, data.distributions, selectedDate]);
 
-  const userRegion = useMemo(() => {
-    if (!user) return null;
-    if (user.role === 'ADMIN' || user.role === 'SUPERADMIN' || user.region === 'TOUS LES PRES') return null;
-    if (user.role === 'PRES') return user.region;
-    if (user.role === 'AGENT' && user.site) {
-      const siteInfo = SITES_DATA.find(s => s.name.toUpperCase() === user.site.toUpperCase());
-      return siteInfo?.region || null;
-    }
-    return null;
-  }, [user]);
-
   const missingSites = useMemo(() => {
     if (!currentDailyRecord) return [];
     const activeSites = currentDailyRecord.sites.filter(site => site.total > 0);
     const activeNames = new Set(activeSites.map(s => s.name.trim().toUpperCase()));
-    let scopeSites = SITES_DATA;
-    if (userRegion) {
-      scopeSites = SITES_DATA.filter(s => s.region?.toUpperCase() === userRegion.toUpperCase());
-    }
-    return scopeSites.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
-  }, [currentDailyRecord, userRegion]);
+    return SITES_DATA.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
+  }, [currentDailyRecord]);
 
   const dailyTotals = useMemo(() => {
     if (!currentDailyRecord) return { total: 0, objective: 1137, fixed: 0, mobile: 0 };
@@ -126,69 +109,60 @@ export const VisualDashboard: React.FC<{
     };
   }, [currentDailyRecord]);
 
-  const stats = useMemo(() => {
-    const todayStr = data.date.split('/')[0];
-    const daysElapsed = parseInt(todayStr) || 15;
-    const totalDaysInMonth = 30;
-    const dailyAvg = data.monthly.realized / daysElapsed;
-    const pfm = Math.round(dailyAvg * totalDaysInMonth);
-    const totalMois = data.monthly.realized || 1;
-    const fixePerc = (data.monthly.fixed / totalMois) * 100;
-    const mobilePerc = (data.monthly.mobile / totalMois) * 100;
-    
-    // LEADER PRÉLÈVEMENT (Donations)
+  const leaderStats = useMemo(() => {
     const donationLeader = [...allSites].sort((a, b) => b.totalMois - a.totalMois)[0];
-
-    // LEADER DISTRIBUTION (Sorties)
     let distLeader = null;
     if (data.distributions?.records) {
-      const currentMonthNum = parseInt(data.date.split('/')[1]);
-      const currentYearNum = parseInt(data.date.split('/')[2]);
       const distSiteMap = new Map<string, number>();
-      
       data.distributions.records.forEach(r => {
-        const [,, y] = r.date.split('/').map(Number);
-        const m = parseInt(r.date.split('/')[1]);
-        if (m === currentMonthNum && y === currentYearNum) {
+        if (r.date.includes(selectedDate.split('/')[1])) { // Approximatif pour le mois
           distSiteMap.set(r.site, (distSiteMap.get(r.site) || 0) + r.quantite);
         }
       });
-      
       const topDist = Array.from(distSiteMap.entries()).sort((a, b) => b[1] - a[1])[0];
-      if (topDist) {
-        distLeader = { name: topDist[0], total: topDist[1] };
-      }
+      if (topDist) distLeader = { name: topDist[0], total: topDist[1] };
     }
+    return { donationLeader, distLeader };
+  }, [data, allSites, selectedDate]);
 
-    return { dailyAvg, pfm, fixePerc, mobilePerc, donationLeader, distLeader };
-  }, [data, allSites]);
-
-  const activeLeader = viewMode === 'donations' ? stats.donationLeader : stats.distLeader;
+  const activeLeader = viewMode === 'donations' ? leaderStats.donationLeader : leaderStats.distLeader;
   const leaderName = activeLeader?.name.replace('CRTS ', '').replace('CDTS ', '') || "---";
-  const leaderValue = viewMode === 'donations' ? stats.donationLeader?.totalMois : stats.distLeader?.total;
-
-  const handleWhatsAppReminder = (site: any) => {
-    if (!site.phone) return;
-    let cleanPhone = site.phone.replace(/\D/g, '');
-    if (cleanPhone.length === 10) cleanPhone = '225' + cleanPhone.substring(1);
-    const message = `Bonjour ${site.manager || 'Responsable'}, les données de prélèvements du ${selectedDate} pour le site ${site.name} n'ont pas encore été reçues. Pourriez-vous procéder à la saisie ? Merci.`;
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-  };
+  const leaderValue = viewMode === 'donations' ? leaderStats.donationLeader?.totalMois : leaderStats.distLeader?.total;
 
   const dayAchievement = (dailyTotals.total / dailyTotals.objective) * 100;
 
   return (
     <div className="space-y-8 pb-24 animate-in fade-in duration-700">
       
-      {/* SELECTEUR DE MODE GLOBAL COCKPIT HARMONISÉ */}
-      <div className="flex justify-center mb-4">
-        <div className="bg-white p-1.5 rounded-2xl shadow-xl border border-slate-100 flex gap-2">
-           <button onClick={() => setViewMode('donations')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={14}/> Prélèvements
+      {/* BANDE DES SÉLECTEURS UNIFIÉE */}
+      <div className="glass-card p-2 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-6 shadow-2xl border-l-8 transition-all" style={{ borderLeftColor: viewMode === 'donations' ? '#10b981' : '#f59e0b' }}>
+        
+        {/* Palette de Mode */}
+        <div className="flex bg-slate-100 p-1.5 rounded-3xl gap-1.5 ml-2">
+           <button onClick={() => setViewMode('donations')} className={`px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+             <Activity size={14}/> Cockpit Prélèvements
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={14}/> Distribution
+           <button onClick={() => setViewMode('distribution')} className={`px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+             <Truck size={14}/> Cockpit Distribution
            </button>
+        </div>
+
+        {/* Filtre Date Unique */}
+        <div className="flex-1 flex justify-center">
+           <div className="bg-slate-900 px-8 py-3 rounded-2xl text-white shadow-xl flex items-center gap-4 group">
+              <Calendar size={16} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} />
+              <div className="flex flex-col">
+                 <span className="text-[7px] font-black uppercase tracking-widest text-white/30">Situation Journalière</span>
+                 <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-white">
+                   {data.dailyHistory.slice(0, 31).map(h => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
+                 </select>
+              </div>
+              <ChevronDown size={14} className="text-white/20 group-hover:text-white transition-colors" />
+           </div>
+        </div>
+
+        <div className="mr-4">
+           <p className="text-[10px] font-black uppercase text-slate-400">{data.month.toUpperCase()} {data.year}</p>
         </div>
       </div>
 
@@ -202,25 +176,20 @@ export const VisualDashboard: React.FC<{
                   {viewMode === 'donations' ? <Calendar size={24} /> : <Package size={24} />}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black uppercase tracking-tighter">{viewMode === 'donations' ? 'Cockpit du Jour' : 'Sorties du Jour'}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Filter size={14} className={viewMode === 'donations' ? "text-emerald-400" : "text-orange-400"} />
-                    <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-white/60 hover:text-white transition-colors">
-                      {data.dailyHistory.map(h => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
-                    </select>
-                  </div>
+                  <h2 className="text-2xl font-black uppercase tracking-tighter">{viewMode === 'donations' ? 'Situation du Jour' : 'Sorties du Jour'}</h2>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-white/30">{selectedDate}</p>
                 </div>
               </div>
               <div className="text-right">
                  {viewMode === 'donations' ? (
                    <>
                     <p className={`text-4xl font-black leading-none ${getPerfColor(dayAchievement)}`}>{dayAchievement.toFixed(1)}%</p>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Objectif atteint</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Atteinte</p>
                    </>
                  ) : (
                    <>
                     <p className="text-4xl font-black text-emerald-400 leading-none">{dailyDistStats?.efficiency.toFixed(1)}%</p>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Utilisation Nette</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Utilisation</p>
                    </>
                  )}
               </div>
@@ -234,15 +203,11 @@ export const VisualDashboard: React.FC<{
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-white/5 p-4 rounded-3xl border border-white/5 text-center"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Poches Exp.</p><p className="text-xl font-black text-white">{dailyDistStats?.qty || 0}</p></div>
+                <div className="bg-white/5 p-4 rounded-3xl border border-white/5 text-center"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Expédié</p><p className="text-xl font-black text-white">{dailyDistStats?.qty || 0}</p></div>
                 <div className="bg-white/5 p-4 rounded-3xl border border-white/5 text-center"><p className="text-[8px] font-black text-white/30 uppercase mb-1">Rendus</p><p className="text-xl font-black text-red-400">{dailyDistStats?.rendu || 0}</p></div>
                 <div className="bg-orange-600/20 p-4 rounded-3xl border border-orange-600/20 text-center"><p className="text-[8px] font-black text-orange-400 uppercase mb-1">Flux</p><p className="text-xl font-black text-white">{dailyDistStats?.recordsCount || 0}</p></div>
               </div>
             )}
-
-            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-               <div className={`h-full transition-all duration-1000 ${viewMode === 'donations' ? 'bg-emerald-500' : 'bg-orange-500'}`} style={{ width: `${Math.min(viewMode === 'donations' ? dayAchievement : (dailyDistStats?.efficiency || 0), 100)}%` }}/>
-            </div>
           </div>
         </div>
 
@@ -252,50 +217,40 @@ export const VisualDashboard: React.FC<{
                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${viewMode === 'donations' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
                    {viewMode === 'donations' ? <PieChart size={20} /> : <TrendingUp size={20} />}
                  </div>
-                 <h3 className="text-lg font-black uppercase tracking-tighter text-slate-800">{viewMode === 'donations' ? 'Mixité Mois' : 'Top Produits Jour'}</h3>
+                 <h3 className="text-lg font-black uppercase tracking-tighter text-slate-800">{viewMode === 'donations' ? 'Mixité Mois' : 'Top Produits'}</h3>
               </div>
               
               {viewMode === 'donations' ? (
                 <div className="space-y-4">
-                   <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                      <span className="text-emerald-600">Fixe ({stats.fixePerc.toFixed(1)}%)</span>
-                      <span className="text-orange-500">Mobile ({stats.mobilePerc.toFixed(1)}%)</span>
+                   <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                      <span className="text-emerald-600">Fixe ({(data.monthly.fixed / (data.monthly.realized || 1) * 100).toFixed(0)}%)</span>
+                      <span className="text-orange-500">Mobile ({(data.monthly.mobile / (data.monthly.realized || 1) * 100).toFixed(0)}%)</span>
                    </div>
                    <div className="h-3 bg-slate-100 rounded-full flex overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: `${stats.fixePerc}%` }}></div>
-                      <div className="h-full bg-orange-500" style={{ width: `${stats.mobilePerc}%` }}></div>
+                      <div className="h-full bg-emerald-500" style={{ width: `${(data.monthly.fixed / (data.monthly.realized || 1) * 100)}%` }}></div>
+                      <div className="h-full bg-orange-500" style={{ width: `${(data.monthly.mobile / (data.monthly.realized || 1) * 100)}%` }}></div>
                    </div>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {dailyDistStats?.topProducts.map(([name, val], i) => (
-                    <div key={i} className="flex items-center justify-between text-[10px] font-black uppercase">
-                      <span className="text-slate-500 truncate max-w-[120px]">{name}</span>
-                      <span className="text-orange-600">{val} poches</span>
+                    <div key={i} className="flex items-center justify-between text-[9px] font-black uppercase">
+                      <span className="text-slate-500 truncate max-w-[110px]">{name}</span>
+                      <span className="text-orange-600">{val}</span>
                     </div>
                   ))}
-                  {dailyDistStats?.topProducts.length === 0 && <p className="text-slate-300 italic text-[10px]">Aucune sortie ce jour</p>}
                 </div>
               )}
            </div>
 
-           <div 
-            onClick={() => setActiveTab?.('site-focus')}
-            className="bg-white rounded-[3rem] p-8 shadow-warm border border-slate-100 relative overflow-hidden group cursor-pointer hover:shadow-xl transition-all"
-           >
-              <div className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform ${viewMode === 'donations' ? 'bg-emerald-50' : 'bg-orange-50'}`}></div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 relative z-10">
-                <Award size={16} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} /> 
-                Leader {viewMode === 'donations' ? 'Collecte' : 'Sortie'} {data.month}
+           <div onClick={() => setActiveTab?.('site-focus')} className="bg-white rounded-[3rem] p-8 shadow-warm border border-slate-100 relative overflow-hidden group cursor-pointer hover:shadow-xl transition-all">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Award size={16} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} /> Leader Mois
               </p>
-              <div className="relative z-10">
-                 <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-tight mb-1">{leaderName}</h4>
-                 <p className={`text-xl font-black ${viewMode === 'donations' ? 'text-emerald-600' : 'text-orange-600'}`}>
-                   {leaderValue?.toLocaleString() || 0} 
-                   <span className="text-[9px] font-bold text-slate-300 uppercase ml-2">Poches</span>
-                 </p>
-                 <div className="mt-2 flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase">Voir détail <ArrowRight size={10}/></div>
-              </div>
+              <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter leading-tight mb-1">{leaderName}</h4>
+              <p className={`text-lg font-black ${viewMode === 'donations' ? 'text-emerald-600' : 'text-orange-600'}`}>
+                {leaderValue?.toLocaleString() || 0} <span className="text-[8px] font-bold text-slate-300 uppercase">Poches</span>
+              </p>
            </div>
         </div>
       </div>
@@ -304,89 +259,57 @@ export const VisualDashboard: React.FC<{
         <div className="bg-white rounded-[3.5rem] shadow-warm border border-slate-100 flex flex-col overflow-hidden h-[500px]">
           <div className={`p-8 border-b border-slate-50 flex justify-between items-center ${viewMode === 'donations' ? 'bg-emerald-50/30' : 'bg-orange-50/30'}`}>
             <div className="flex items-center gap-4">
-              <div className={`w-10 h-10 text-white rounded-xl flex items-center justify-center shadow-lg transition-colors ${viewMode === 'donations' ? 'bg-emerald-600 shadow-emerald-100' : 'bg-orange-600 shadow-orange-100'}`}><Clock size={20} /></div>
-              <div><h3 className="font-black text-lg uppercase tracking-tight text-slate-800">{viewMode === 'donations' ? 'Attente de Saisie' : 'Registre Distribution'}</h3><p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{viewMode === 'donations' ? `${missingSites.length} structures manquantes` : `${dailyDistStats?.recordsCount || 0} expéditions enregistrées`}</p></div>
+              <div className={`w-10 h-10 text-white rounded-xl flex items-center justify-center shadow-lg ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}><Clock size={20} /></div>
+              <div><h3 className="font-black text-lg uppercase tracking-tight text-slate-800">{viewMode === 'donations' ? 'Attente de Saisie' : 'Registre Distribution'}</h3><p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{viewMode === 'donations' ? `${missingSites.length} structures` : `${dailyDistStats?.recordsCount || 0} expéditions`}</p></div>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-3 no-scrollbar">
             {viewMode === 'donations' ? (
-              missingSites.length > 0 ? missingSites.map((site, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white hover:shadow-lg transition-all flex items-center justify-between group">
-                   <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-300 group-hover:text-emerald-500 transition-colors"><Building2 size={18} /></div>
-                      <div className="truncate"><p className="text-[11px] font-black text-slate-800 uppercase truncate">{site.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase truncate">{site.manager || "Non assigné"}</p></div>
-                   </div>
-                   <div className="flex gap-2">
-                      {site.phone ? <button onClick={() => handleWhatsAppReminder(site)} className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-md shadow-emerald-100 active:scale-95"><MessageSquare size={16} /></button> : <div className="w-10 h-10 bg-slate-200 text-slate-400 rounded-xl flex items-center justify-center"><Truck size={14} /></div>}
+              missingSites.length > 0 ? missingSites.slice(0, 15).map((site, idx) => (
+                <div key={idx} className="p-4 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between group">
+                   <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-300"><Building2 size={18} /></div>
+                      <div><p className="text-[11px] font-black text-slate-800 uppercase truncate max-w-[160px]">{site.name}</p></div>
                    </div>
                 </div>
-              )) : <div className="h-full flex flex-col items-center justify-center text-center py-20 gap-4 opacity-30"><CheckCircle2 size={48} className="text-emerald-500" /><p className="text-xs font-black uppercase tracking-[0.2em]">Saisies à jour</p></div>
+              )) : <div className="h-full flex flex-col items-center justify-center opacity-30"><CheckCircle2 size={48} className="text-emerald-500" /><p className="text-xs font-black uppercase">À jour</p></div>
             ) : (
-               data.distributions?.records.filter(r => r.date === selectedDate).slice(0, 20).map((r, idx) => (
+               data.distributions?.records.filter(r => r.date === selectedDate).slice(0, 15).map((r, idx) => (
                 <div key={idx} className="p-4 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between group">
-                   <div className="flex items-center gap-4 min-w-0">
+                   <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-400"><Truck size={18} /></div>
-                      <div className="truncate"><p className="text-[10px] font-black text-slate-800 uppercase truncate">{r.etablissement}</p><p className="text-[8px] font-bold text-slate-400 uppercase truncate">{r.typeProduit} ({r.groupeSanguin})</p></div>
+                      <div><p className="text-[10px] font-black text-slate-800 uppercase truncate max-w-[160px]">{r.etablissement}</p></div>
                    </div>
-                   <div className="text-right">
-                      <p className="text-sm font-black text-orange-600">{r.quantite}</p>
-                      <p className="text-[7px] font-black text-slate-300 uppercase">Poches</p>
-                   </div>
+                   <p className="text-sm font-black text-orange-600">{r.quantite}</p>
                 </div>
                ))
             )}
           </div>
         </div>
-        <div 
-          onClick={() => setActiveTab?.('recap')}
-          className={`bg-white rounded-[3.5rem] shadow-warm border border-slate-100 flex flex-col overflow-hidden h-[500px] cursor-pointer transition-all ${viewMode === 'donations' ? 'hover:border-emerald-200' : 'hover:border-orange-200'}`}
-        >
+        <div onClick={() => setActiveTab?.('recap')} className={`bg-white rounded-[3.5rem] shadow-warm border border-slate-100 flex flex-col overflow-hidden h-[500px] cursor-pointer transition-all ${viewMode === 'donations' ? 'hover:border-emerald-200' : 'hover:border-orange-200'}`}>
           <div className={`p-8 border-b border-slate-50 flex justify-between items-center ${viewMode === 'donations' ? 'bg-emerald-50/30' : 'bg-orange-50/30'}`}>
             <div className="flex items-center gap-4">
-              <div className={`w-10 h-10 text-white rounded-xl flex items-center justify-center shadow-lg ${viewMode === 'donations' ? 'bg-emerald-500 shadow-emerald-100' : 'bg-orange-600 shadow-orange-100'}`}>
+              <div className={`w-10 h-10 text-white rounded-xl flex items-center justify-center shadow-lg ${viewMode === 'donations' ? 'bg-emerald-500' : 'bg-orange-600'}`}>
                 {viewMode === 'donations' ? <CheckCircle2 size={20} /> : <Zap size={20} />}
               </div>
               <div>
-                <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">
-                  {viewMode === 'donations' ? 'Saisies Validées' : 'Top Serveurs CGR'}
-                </h3>
-                <p className={`text-[9px] font-black uppercase tracking-widest ${viewMode === 'donations' ? 'text-emerald-500' : 'text-orange-500'}`}>
-                  {viewMode === 'donations' ? 'Voir le rapport global →' : 'Classement par volume CGR'}
-                </p>
+                <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">{viewMode === 'donations' ? 'Saisies Validées' : 'Top Flux CGR'}</h3>
+                <p className={`text-[9px] font-black uppercase tracking-widest ${viewMode === 'donations' ? 'text-emerald-500' : 'text-orange-500'}`}>Rapport Global →</p>
               </div>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-3 no-scrollbar">
-            {validatedEntries.length > 0 ? validatedEntries.map((item, idx) => (
-              <div key={idx} className="p-4 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white hover:shadow-lg transition-all flex items-center justify-between group">
-                 <div className="flex items-center gap-4 min-w-0">
+            {validatedEntries.length > 0 ? validatedEntries.slice(0, 15).map((item, idx) => (
+              <div key={idx} className="p-4 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white transition-all flex items-center justify-between">
+                 <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm ${item.type === 'donation' ? 'text-emerald-500' : 'text-orange-500'}`}>
                       {item.type === 'donation' ? <Zap size={18} /> : <Package size={18} />}
                     </div>
-                    <div className="truncate">
-                       <p className="text-[11px] font-black text-slate-800 uppercase truncate">{item.name}</p>
-                       <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-[9px] font-black ${item.type === 'donation' ? getPerfColor(item.subValue) : 'text-orange-600'}`}>
-                            {item.subValue.toFixed(1)}% {item.label}
-                          </span>
-                       </div>
-                    </div>
+                    <p className="text-[11px] font-black text-slate-800 uppercase truncate max-w-[160px]">{item.name}</p>
                  </div>
-                 <div className="text-right">
-                   <p className={`text-lg font-black ${item.type === 'donation' ? 'text-slate-900' : 'text-orange-600'}`}>
-                    {item.value}
-                   </p>
-                   <p className="text-[8px] font-black text-slate-300 uppercase">
-                    {item.type === 'donation' ? 'Poches' : 'CGR Servis'}
-                   </p>
-                 </div>
+                 <p className={`text-lg font-black ${item.type === 'donation' ? 'text-slate-900' : 'text-orange-600'}`}>{item.value}</p>
               </div>
-            )) : (
-              <div className="h-full flex flex-col items-center justify-center text-center py-20 gap-4 opacity-30">
-                <Activity size={48} className="text-slate-200 animate-pulse" />
-                <p className="text-xs font-black uppercase tracking-[0.2em]">En attente de flux...</p>
-              </div>
-            )}
+            )) : <div className="h-full flex flex-col items-center justify-center opacity-30 font-black text-xs uppercase">En attente de flux...</div>}
           </div>
         </div>
       </div>

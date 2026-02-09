@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DashboardData, DistributionRecord } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Area } from 'recharts';
 import { Calendar, Layers, TrendingUp, Filter, Target, CheckCircle2, AlertTriangle, XCircle, Clock, MapPin, Zap, Activity, FileImage, FileText, Loader2, Truck, Package } from 'lucide-react';
 import { COLORS, PRODUCT_COLORS } from '../constants';
 import html2canvas from 'html2canvas';
@@ -23,13 +23,24 @@ const getWeekNumber = (d: Date): number => {
   return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 };
 
-// Couleurs locales pour garantir l'affichage harmonisé
+const getDynamicColor = (perf: number) => {
+  if (perf >= 90) return '#10b981';
+  if (perf >= 75) return '#f59e0b';
+  return '#ef4444';
+};
+
+const getDistColor = (eff: number) => {
+  if (eff >= 95) return '#10b981';
+  return '#f59e0b';
+};
+
 const THEME = {
-  fixed: '#10b981',      // Vert Émeraude Vibrant (Collecte)
-  mobile: '#fbbf24',     // Ambre Brillant (Collecte / Mobilité)
-  expedie: '#f59e0b',    // Orange Pro (Sortie)
-  rendu: '#f43f5e',      // Rose-Rouge Alerte
-  national: '#10b981'    // Vert National
+  fixed: '#10b981',      
+  mobile: '#fbbf24',     
+  expedie: '#f59e0b',    
+  rendu: '#f43f5e',      
+  national: '#10b981',
+  trend: '#3b82f6'
 };
 
 export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
@@ -43,14 +54,9 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
       const parts = h.date.split('/');
       if (parts.length === 3) years.add(parts[2]);
     });
-    data.distributions?.records.forEach(r => {
-      const parts = r.date.split('/');
-      if (parts.length === 3) years.add(parts[2]);
-    });
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data.dailyHistory, data.distributions]);
+  }, [data.dailyHistory]);
 
-  // Initialisation robuste
   const [selectedYear, setSelectedYear] = useState<string>(() => {
     if (data.dailyHistory.length > 0) return data.dailyHistory[0].date.split('/')[2];
     return availableYears[0] || new Date().getFullYear().toString();
@@ -69,15 +75,10 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
       const parts = h.date.split('/');
       if (parts[2] === selectedYear) months.add(parseInt(parts[1]) - 1);
     });
-    data.distributions?.records.forEach(r => {
-      const parts = r.date.split('/');
-      if (parts[2] === selectedYear) months.add(parseInt(parts[1]) - 1);
-    });
     return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, data.distributions, selectedYear]);
+  }, [data.dailyHistory, selectedYear]);
 
   const weeklyStats = useMemo(() => {
-    if (!selectedYear || selectedMonth === -1) return [];
     const weeksMap = new Map<number, any>();
     
     if (viewMode === 'donations') {
@@ -146,7 +147,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
         days: viewMode === 'donations' ? w.days : w.daysSet.size,
         objective: weeklyObjective,
         percentage: viewMode === 'donations' ? (w.total / weeklyObjective) * 100 : (w.qty > 0 ? ((w.qty - w.rendu) / w.qty) * 100 : 0),
-        formattedRange: `Semaine ${w.week} (du ${w.startDate.getDate().toString().padStart(2, '0')}/${(w.startDate.getMonth()+1).toString().padStart(2, '0')} au ${w.endDate.getDate().toString().padStart(2, '0')}/${(w.endDate.getMonth()+1).toString().padStart(2, '0')})`,
+        formattedRange: `Semaine ${w.week}`,
         sortedRegions: Array.from(w.regionalData.entries())
           .map(([name, total]) => ({ name, total }))
           .sort((a, b) => b.total - a.total)
@@ -157,20 +158,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
     if (weeklyStats.length === 0) return null;
     return selectedWeekNum ? (weeklyStats.find(w => w.week === selectedWeekNum) || weeklyStats[weeklyStats.length - 1]) : weeklyStats[weeklyStats.length - 1];
   }, [selectedWeekNum, weeklyStats]);
-
-  const intensityColor = useMemo(() => {
-    if (!activeWeekData) return THEME.national;
-    const p = activeWeekData.percentage;
-    if (viewMode === 'donations') {
-      if (p >= 100) return THEME.fixed;
-      if (p >= 75) return THEME.mobile;
-      return THEME.rendu;
-    } else {
-      if (p >= 95) return THEME.fixed;
-      if (p >= 90) return THEME.expedie;
-      return THEME.mobile;
-    }
-  }, [activeWeekData, viewMode]);
 
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!contentRef.current) return;
@@ -194,17 +181,37 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-24">
       
-      {/* SÉLECTEUR DE MODE HARMONISÉ */}
-      <div className="flex flex-wrap items-center justify-between gap-6 px-4">
-        <div className="bg-white p-1.5 rounded-3xl shadow-xl border border-slate-100 flex gap-2">
-           <button onClick={() => { setViewMode('donations'); setSelectedWeekNum(null); }} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={16}/> Collecte
+      {/* BANDE DES SÉLECTEURS UNIFIÉE */}
+      <div className="glass-card p-2 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-4 shadow-2xl transition-all border-l-8" style={{ borderLeftColor: viewMode === 'donations' ? '#10b981' : '#f59e0b' }}>
+        
+        {/* Palette de Mode */}
+        <div className="flex bg-slate-100 p-1.5 rounded-3xl gap-1.5 ml-2">
+           <button onClick={() => { setViewMode('donations'); setSelectedWeekNum(null); }} className={`px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+             <Activity size={14}/> Collecte
            </button>
-           <button onClick={() => { setViewMode('distribution'); setSelectedWeekNum(null); }} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={16}/> Sortie
+           <button onClick={() => { setViewMode('distribution'); setSelectedWeekNum(null); }} className={`px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+             <Truck size={14}/> Sortie
            </button>
         </div>
-        <div className="flex gap-3">
+
+        {/* Filtres Temporels */}
+        <div className="flex items-center gap-2 flex-1 justify-center">
+           <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-2">
+             <Calendar size={12} className="text-slate-400" />
+             <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
+               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+             </select>
+           </div>
+           <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-2">
+             <Layers size={12} className="text-slate-400" />
+             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-slate-800">
+               {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
+             </select>
+           </div>
+        </div>
+
+        {/* Exports */}
+        <div className="flex gap-2 mr-2">
           <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm">
             {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
           </button>
@@ -215,7 +222,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
-        {/* HEADER */}
         <div className="bg-[#0f172a] rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl overflow-hidden relative">
           <div className={`absolute top-0 right-0 w-[500px] h-[500px] blur-[120px] rounded-full -mr-40 -mt-40 opacity-20 ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}></div>
           <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
@@ -228,129 +234,116 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
                 <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px]">{MONTHS_FR[selectedMonth].toUpperCase()} {selectedYear}</p>
               </div>
             </div>
-            <div className="flex gap-4 bg-white/5 p-2 rounded-[2rem] backdrop-blur-xl">
-                <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none px-4">
-                  {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
-                </select>
-                <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none px-4 border-l border-white/10">
-                  {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
-                </select>
+            <div className="flex bg-white/5 p-5 rounded-[2rem] backdrop-blur-xl border border-white/10">
+               <div className="text-center px-6 border-r border-white/10">
+                 <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mb-1">Moyenne Hebdo</p>
+                 <p className="text-2xl font-black">{Math.round(weeklyStats.reduce((acc, w) => acc + (viewMode === 'donations' ? w.total : w.qty), 0) / (weeklyStats.length || 1))}</p>
+               </div>
+               <div className="text-center px-6">
+                 <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mb-1">Vitalité Moyenne</p>
+                 <p className="text-2xl font-black text-blue-400">{Math.round(weeklyStats.reduce((acc, w) => acc + w.percentage, 0) / (weeklyStats.length || 1))}%</p>
+               </div>
             </div>
           </div>
         </div>
 
-        {/* SECTION GRAPHIQUE CORRIGÉE */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col">
+          <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col min-h-[550px]">
              <div className="flex items-center justify-between mb-12">
-                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">{viewMode === 'donations' ? 'Analyse de Mixité' : 'Analyse des Volumes'}</h3>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.fixed : THEME.expedie }}></div><span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Fixe' : 'Expédié'}</span></div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.mobile : THEME.rendu }}></div><span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Mobile' : 'Rendu'}</span></div>
+                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">Évolution de la période</h3>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.fixed : THEME.expedie }}></div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Fixe' : 'Expédié'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.mobile : THEME.rendu }}></div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Mobile' : 'Rendu'}</span>
+                  </div>
                 </div>
              </div>
              
-             <div className="h-[450px] w-full min-h-[450px]">
+             <div className="flex-1 w-full min-h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   {weeklyStats.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center opacity-20 gap-4"><Activity size={80} className="animate-pulse"/><p className="font-black text-xs uppercase tracking-widest">Aucune donnée trouvée</p></div>
+                    <div className="h-full flex flex-col items-center justify-center opacity-20 gap-4">
+                      <Activity size={80} className="animate-pulse"/><p className="font-black text-xs uppercase tracking-widest">Aucune donnée</p>
+                    </div>
                   ) : (
-                    <BarChart 
+                    <ComposedChart 
                       key={`${viewMode}-${selectedMonth}-${selectedYear}`}
                       data={weeklyStats} 
                       margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
-                      onClick={(d) => d?.activePayload && setSelectedWeekNum(d.activePayload[0].payload.week)}
+                      onClick={(d: any) => d?.activePayload && setSelectedWeekNum(d.activePayload[0].payload.week)}
                     >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: 900, fill: '#94a3b8'}} tickFormatter={(v) => `SEM ${v}`} />
-                      <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: 900, fill: '#94a3b8'}} />
-                      <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1rem' }} />
+                      <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} tickFormatter={(v) => `S${v}`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
+                      <Tooltip 
+                        cursor={{fill: '#f8fafc'}} 
+                        contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1rem', fontWeight: '900' }} 
+                      />
                       {viewMode === 'donations' ? (
                         <>
                           <Bar dataKey="fixed" stackId="a" fill={THEME.fixed} radius={[0, 0, 0, 0]} name="Site Fixe" />
-                          <Bar dataKey="mobile" stackId="a" fill={THEME.mobile} radius={[10, 10, 0, 0]} name="Collecte Mobile" />
+                          <Bar dataKey="mobile" stackId="a" fill={THEME.mobile} radius={[10, 10, 0, 0]} name="Mobile" />
+                          <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Total Hebdo" />
                         </>
                       ) : (
                         <>
                           <Bar dataKey="qty" stackId="a" fill={THEME.expedie} radius={[0, 0, 0, 0]} name="Expédié" />
                           <Bar dataKey="rendu" stackId="a" fill={THEME.rendu} radius={[10, 10, 0, 0]} name="Rendu" />
+                          <Line type="monotone" dataKey="qty" stroke="#6366f1" strokeWidth={4} dot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} name="Sortie Brute" />
                         </>
                       )}
-                    </BarChart>
+                    </ComposedChart>
                   )}
                 </ResponsiveContainer>
              </div>
           </div>
 
-          <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col justify-between group overflow-hidden relative">
-             <div className="absolute top-0 right-0 w-32 h-32 opacity-10 blur-2xl rounded-full -mr-16 -mt-16" style={{ backgroundColor: intensityColor }}></div>
+          <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col justify-between group overflow-hidden relative min-h-[550px]">
              <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Séquence Active</p>
                 {activeWeekData ? (
                   <>
-                    <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter mb-10 leading-none">Semaine {activeWeekData.week}</h3>
-                    <div className="grid grid-cols-2 gap-4 mb-10">
-                       <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-center">
-                          <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Volume</p>
-                          <p className="text-3xl font-black text-slate-900">{viewMode === 'donations' ? activeWeekData.total : activeWeekData.qty}</p>
-                       </div>
-                       <div className="bg-slate-900 p-6 rounded-[2rem] text-center shadow-xl">
-                          <p className="text-[9px] font-black text-white/30 uppercase mb-2">Taux</p>
-                          <p className="text-3xl font-black" style={{ color: intensityColor }}>{activeWeekData.percentage.toFixed(0)}%</p>
+                    <h3 className="text-4xl font-black text-slate-800 uppercase tracking-tighter mb-10 leading-none">Semaine {activeWeekData.week}</h3>
+                    <div className="grid grid-cols-1 gap-4 mb-10">
+                       <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center justify-between">
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Volume Hebdo</p>
+                            <p className="text-4xl font-black text-slate-900">{viewMode === 'donations' ? activeWeekData.total : activeWeekData.qty}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Vitalité</p>
+                            <p className="text-4xl font-black" style={{ color: viewMode === 'donations' ? '#10b981' : '#f59e0b' }}>{activeWeekData.percentage.toFixed(0)}%</p>
+                          </div>
                        </div>
                     </div>
                     <div className="space-y-3">
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin size={14} style={{ color: intensityColor }}/> Top Régions</p>
-                       {activeWeekData.sortedRegions.slice(0, 4).map((r: any, i: number) => (
-                         <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                           <span className="text-[10px] font-black text-slate-600 uppercase truncate pr-4">{r.name}</span>
-                           <span className="text-[10px] font-black text-slate-900">{r.total}</span>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin size={14}/> Leader Régional</p>
+                       {activeWeekData.sortedRegions.slice(0, 5).map((r: any, i: number) => (
+                         <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all">
+                           <span className="text-[10px] font-black text-slate-700 uppercase truncate pr-4">{r.name}</span>
+                           <span className="text-sm font-black text-slate-900">{r.total}</span>
                          </div>
                        ))}
                     </div>
                   </>
                 ) : (
-                  <div className="py-20 text-center text-slate-300 uppercase font-black text-[10px]">Sélectionnez un segment</div>
+                  <div className="py-20 text-center text-slate-300 uppercase font-black text-[11px] tracking-[0.3em]">Choisissez un segment</div>
                 )}
              </div>
-             <div className="mt-10 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                   {viewMode === 'donations' ? <Zap size={24} style={{ color: intensityColor }} /> : <Truck size={24} style={{ color: intensityColor }} />}
+             <div className="mt-10 p-6 bg-slate-900 rounded-[2.5rem] flex items-center justify-between shadow-2xl">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
+                   {viewMode === 'donations' ? <Zap size={24} className="text-emerald-500" /> : <Truck size={24} className="text-orange-500" />}
                 </div>
                 <div className="text-right">
-                   <p className="text-[9px] font-black text-slate-400 uppercase">État de santé</p>
-                   <p className="text-lg font-black uppercase" style={{ color: intensityColor }}>{activeWeekData?.percentage >= 100 ? 'EXCELLENT' : 'STANDARD'}</p>
+                   <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Diagnostic Santé</p>
+                   <p className="text-lg font-black uppercase text-white">{activeWeekData?.percentage >= 90 ? 'RYTHME OPTIMAL' : 'EN PROGRESSION'}</p>
                 </div>
              </div>
           </div>
-        </div>
-
-        {/* JOURNAL */}
-        <div className="bg-white rounded-[4rem] shadow-2xl border border-slate-100 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="px-12 py-6 text-left">Semaine</th>
-                <th className="px-8 py-6 text-center">Jours Actifs</th>
-                <th className="px-8 py-6 text-center">{viewMode === 'donations' ? 'Poches' : 'Sorties Net'}</th>
-                <th className="px-12 py-6 text-right">Performance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {weeklyStats.map((w, i) => (
-                <tr key={i} onClick={() => setSelectedWeekNum(w.week)} className={`hover:bg-slate-50 cursor-pointer transition-all ${selectedWeekNum === w.week ? 'bg-slate-50' : ''}`}>
-                  <td className="px-12 py-7 font-black text-slate-800 uppercase">Séquence {w.week}</td>
-                  <td className="px-8 py-7 text-center font-bold text-slate-400 text-xs">{w.days} jrs</td>
-                  <td className="px-8 py-7 text-center font-black text-lg text-slate-900">{viewMode === 'donations' ? w.total : (w.qty - w.rendu)}</td>
-                  <td className="px-12 py-7 text-right">
-                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black" style={{ backgroundColor: `${intensityColor}15`, color: intensityColor }}>
-                      {w.percentage.toFixed(1)}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Building2, Briefcase, Send, X, ShieldCheck, AlertCircle, RefreshCw, UserCheck } from 'lucide-react';
 import { SITES_DATA } from '../constants';
@@ -133,7 +134,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                           <input 
                             name="lastname"
-                            autocomplete="family-name"
+                            // Fix: Renamed from autocomplete to autoComplete for React compatibility
+                            autoComplete="family-name"
                             required 
                             value={formData.nom} 
                             onChange={e => setFormData({...formData, nom: e.target.value})} 
@@ -147,7 +149,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                           <input 
                             name="firstname"
-                            autocomplete="given-name"
+                            // Fix: Renamed from autocomplete to autoComplete for React compatibility
+                            autoComplete="given-name"
                             required 
                             value={formData.prenoms} 
                             onChange={e => setFormData({...formData, prenoms: e.target.value})} 
@@ -164,7 +167,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                       <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                       <input 
                         name="email"
-                        autocomplete="email"
+                        // Fix: Renamed from autocomplete to autoComplete for React compatibility
+                        autoComplete="email"
                         type="email" 
                         required 
                         value={formData.email} 
@@ -182,7 +186,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           <Briefcase size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                           <input 
                             name="jobtitle"
-                            autocomplete="organization-title"
+                            // Fix: Renamed from autocomplete to autoComplete for React compatibility
+                            autoComplete="organization-title"
                             required 
                             value={formData.fonction} 
                             onChange={e => setFormData({...formData, fonction: e.target.value})} 
