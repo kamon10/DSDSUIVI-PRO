@@ -25,12 +25,13 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   // --- BRANDING DYNAMIQUE ---
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
     const defaultBranding = {
-      logo: './assets/logo.png',
+      logo: './assets/logo.png', // Chemin mis à jour suite au renommage
       hashtag: '#DONSANG_CI'
     };
     if (!saved) return defaultBranding;
@@ -58,6 +59,12 @@ const App: React.FC = () => {
     sheetInputRef.current = sheetInput;
     distInputRef.current = distSheetInput;
   }, [sheetInput, distSheetInput]);
+
+  // Horloge en temps réel
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSync = useCallback(async (isSilent = false, force = false) => {
     if (isSyncingRef.current) return;
@@ -98,15 +105,15 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Sync initiale au démarrage
+  // Sync initiale
   useEffect(() => { 
     handleSync(false, true); 
   }, [handleSync]);
 
-  // RAFFRAICHISSEMENT AUTOMATIQUE (Toutes les 10 secondes en arrière-plan)
+  // RAFFRAICHISSEMENT AUTOMATIQUE (Toutes les 10 secondes)
   useEffect(() => {
     const autoRefreshInterval = setInterval(() => {
-      handleSync(true, false); // Mode silencieux
+      handleSync(true, false); // Mode silencieux (isSilent = true)
     }, 10000);
 
     return () => clearInterval(autoRefreshInterval);
@@ -206,7 +213,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto glass-nav rounded-[3.5rem] px-8 py-6 flex flex-col lg:flex-row items-center justify-between shadow-2xl min-h-[7rem] gap-4">
           <div className="flex items-center gap-5 shrink-0">
              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-xl pulse-glow cursor-pointer transition-transform hover:scale-110 active:scale-95 border border-slate-100 overflow-hidden" onClick={() => setActiveTab('pulse')}>
-               <img src={branding.logo} alt="HEMO-STATS Logo" className="w-full h-full object-contain p-1" />
+               <img src={branding.logo} alt="HEMO-STATS Logo" className="w-full h-full object-contain p-0.5" />
              </div>
              <div className="flex flex-col justify-center">
                <span className="font-black text-2xl tracking-tighter leading-none uppercase text-slate-900">HEMO-STATS</span>
@@ -244,6 +251,17 @@ const App: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-4 shrink-0">
+            {/* HORLOGE ET STATUS */}
+            <div className="hidden md:flex flex-col items-end px-4 border-r border-slate-100">
+               <span className="text-[11px] font-black text-slate-900 tabular-nums tracking-tighter">
+                 {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+               </span>
+               <div className="flex items-center gap-1.5">
+                 <div className={`w-1 h-1 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`}></div>
+                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Temps Réel</span>
+               </div>
+            </div>
+
             {syncStatus === 'syncing' && (
               <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full animate-pulse border border-blue-100">
                 <RefreshCw size={10} className="animate-spin" />
@@ -305,7 +323,8 @@ const App: React.FC = () => {
             
             {currentUser && (
               <>
-                {activeTab === 'summary' && <SummaryView data={filteredData} setActiveTab={setActiveTab} />}
+                {/* Pour le Résumé, on passe fullData pour afficher tous les PRES sans filtre utilisateur */}
+                {activeTab === 'summary' && <SummaryView data={fullData} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} />}
                 {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
