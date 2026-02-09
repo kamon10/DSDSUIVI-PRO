@@ -94,6 +94,25 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
   }
 };
 
+/**
+ * Récupère la configuration globale (Logo, Hashtag) depuis le Sheet central
+ */
+export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: string, hashtag: string} | null> => {
+  if (!scriptUrl) return null;
+  try {
+    const response = await fetch(`${scriptUrl}?action=getBranding&_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const config = await response.json();
+    return {
+      logo: config.logo || './assets/logo.svg',
+      hashtag: config.hashtag || '#DONSANG_CI'
+    };
+  } catch (err) {
+    console.error("fetchBrandingConfig error:", err);
+    return null;
+  }
+};
+
 export const fetchDistributions = async (url: string): Promise<{records: DistributionRecord[], stats: DistributionStats} | null> => {
   if (!url || !url.startsWith('http')) return null;
   try {
@@ -119,8 +138,6 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
       const rendu = cleanNum(row[9]);
       
       if (date && (qty > 0 || rendu > 0)) {
-        // --- HARMONISATION DES CODES (REGLE : SI_CODE * 1000) ---
-        // 01 -> 1000 (Treichville), 10 -> 10000 (Bonoua), 11 -> 11000 (Aboisso)
         let searchCode = siCode;
         const codeNum = parseInt(siCode);
         if (!isNaN(codeNum) && siCode.length <= 2) {
