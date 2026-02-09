@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
     const defaultBranding = {
-      logo: './assets/logo.svg',
+      logo: './assets/logo.png',
       hashtag: '#DONSANG_CI'
     };
     if (!saved) return defaultBranding;
