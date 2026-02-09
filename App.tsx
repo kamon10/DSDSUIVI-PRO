@@ -98,7 +98,19 @@ const App: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { handleSync(false, true); }, [handleSync]);
+  // Sync initiale au démarrage
+  useEffect(() => { 
+    handleSync(false, true); 
+  }, [handleSync]);
+
+  // RAFFRAICHISSEMENT AUTOMATIQUE (Toutes les 10 secondes en arrière-plan)
+  useEffect(() => {
+    const autoRefreshInterval = setInterval(() => {
+      handleSync(true, false); // Mode silencieux
+    }, 10000);
+
+    return () => clearInterval(autoRefreshInterval);
+  }, [handleSync]);
 
   const saveSettings = () => {
     localStorage.setItem('gsheet_input_1', sheetInput.trim());
@@ -232,6 +244,12 @@ const App: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-4 shrink-0">
+            {syncStatus === 'syncing' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full animate-pulse border border-blue-100">
+                <RefreshCw size={10} className="animate-spin" />
+                <span className="text-[8px] font-black uppercase tracking-widest">Auto-Sync</span>
+              </div>
+            )}
             {currentUser ? (
               <div className="flex items-center gap-4">
                 <div className="hidden xl:flex flex-col items-end">
