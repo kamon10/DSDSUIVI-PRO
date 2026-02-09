@@ -104,7 +104,7 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
     if (!response.ok) return null;
     const config = await response.json();
     return {
-      logo: config.logo || './assets/logo.svg',
+      logo: config.logo || './assets/logo.png',
       hashtag: config.hashtag || '#DONSANG_CI'
     };
   } catch (err) {
