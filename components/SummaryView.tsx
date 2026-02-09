@@ -1,248 +1,341 @@
+import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats } from "../types.ts";
+import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
-import React, { useMemo, useState, useRef } from 'react';
-import { DashboardData, AppTab, DistributionRecord } from '../types';
-import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2, Truck, Package } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import { COLORS } from '../constants';
+const MONTHS_FR = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+];
 
-interface SummaryViewProps {
-  data: DashboardData;
-  setActiveTab: (tab: AppTab) => void;
-}
+let lastRawContent = "";
 
-export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) => {
-  const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
-  const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+const cleanStr = (s: any): string => {
+  if (s === null || s === undefined) return "";
+  const str = s.toString()
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const upper = str.toUpperCase();
+  if (upper === "#N/A" || upper === "N/A" || upper === "#REF!" || upper === "#VALEUR!" || upper === "#VALUE!") return "";
+  return str;
+};
 
-  const stats = useMemo(() => {
-    // --- STATS DONATIONS ---
-    const totalMois = data.monthly.realized || 1;
-    const objectiveMois = data.monthly.objective;
-    const pochesRestantes = Math.max(0, objectiveMois - data.monthly.realized);
-    const isReached = pochesRestantes === 0;
+const normalizeDate = (d: string): string => {
+  const s = cleanStr(d);
+  if (!s) return "";
+  if (s.includes('-') && s.length >= 10) {
+    const parts = s.split('-');
+    if (parts.length >= 3) return `${parts[2].substring(0,2).padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+  }
+  const parts = s.split('/');
+  if (parts.length === 3) {
+    let day = parts[0].padStart(2, '0');
+    let month = parts[1].padStart(2, '0');
+    let year = parts[2];
+    if (year.length === 2) year = "20" + year;
+    return `${day}/${month}/${year}`;
+  }
+  return s;
+};
+
+const parseCSV = (text: string): string[][] => {
+  if (!text) return [];
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+  if (lines.length === 0) return [];
+  
+  const firstLine = lines[0] || "";
+  const sep = firstLine.includes(';') ? ';' : ',';
+  
+  return lines.map(line => {
+    const result = [];
+    let cur = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') inQuotes = !inQuotes;
+      else if (c === sep && !inQuotes) {
+        result.push(cur);
+        cur = "";
+      } else {
+        cur += c;
+      }
+    }
+    result.push(cur);
+    return result;
+  });
+};
+
+const cleanNum = (val: any): number => {
+  if (!val) return 0;
+  const s = cleanStr(val).replace(/[^\d,.-]/g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : Math.round(n);
+};
+
+export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
+  if (!scriptUrl) return [];
+  try {
+    const response = await fetch(`${scriptUrl}?action=getUsers&_t=${Date.now()}`);
+    if (!response.ok) throw new Error("Erreur script utilisateurs");
+    const users = await response.json();
+    return users.map((u: any) => ({
+      nom: cleanStr(u.nom),
+      prenoms: cleanStr(u.prenoms),
+      email: cleanStr(u.email),
+      fonction: cleanStr(u.fonction),
+      site: cleanStr(u.site),
+      role: (cleanStr(u.role) as UserRole) || 'AGENT',
+      region: cleanStr(u.region)
+    }));
+  } catch (err) {
+    console.error("fetchUsers error:", err);
+    return [];
+  }
+};
+
+/**
+ * Récupère la configuration globale (Logo, Hashtag) depuis le Sheet central
+ */
+export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: string, hashtag: string} | null> => {
+  if (!scriptUrl) return null;
+  try {
+    const response = await fetch(`${scriptUrl}?action=getBranding&_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const config = await response.json();
+    return {
+      logo: config.logo || './assets/logo.png',
+      hashtag: config.hashtag || '#DONSANG_CI'
+    };
+  } catch (err) {
+    console.error("fetchBrandingConfig error:", err);
+    return null;
+  }
+};
+
+export const fetchDistributions = async (url: string): Promise<{records: DistributionRecord[], stats: DistributionStats} | null> => {
+  if (!url || !url.startsWith('http')) return null;
+  try {
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const text = await response.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) return null;
+
+    const records: DistributionRecord[] = [];
+    let total = 0;
+    let totalRendu = 0;
     
-    const fixePerc = (data.monthly.fixed / totalMois) * 100;
-    const mobilePerc = (data.monthly.mobile / totalMois) * 100;
-    
-    const regionsPerf = data.regions.map(r => {
-      const total = r.sites.reduce((acc, s) => acc + s.totalMois, 0);
-      const obj = r.sites.reduce((acc, s) => acc + s.objMensuel, 0);
-      return {
-        name: r.name.replace('PRES ', ''),
-        realized: total,
-        objective: obj,
-        percent: obj > 0 ? (total / obj) * 100 : 0
-      };
-    }).sort((a, b) => b.percent - a.percent);
+    rows.slice(1).forEach(row => {
+      if (row.length < 10 || row[1].toLowerCase().includes('date')) return;
 
-    // --- STATS DISTRIBUTION ---
-    let distTotal = 0;
-    let distRendu = 0;
-    const distRegionMap = new Map<string, { qty: number, rendu: number }>();
-
-    if (data.distributions?.records) {
-      const currentMonthNum = parseInt(data.date.split('/')[1]);
-      const currentYearNum = parseInt(data.date.split('/')[2]);
-
-      data.distributions.records.forEach(r => {
-        const [d, m, y] = r.date.split('/').map(Number);
-        if (m === currentMonthNum && y === currentYearNum) {
-          distTotal += r.quantite;
-          distRendu += r.rendu;
-          const reg = r.region || "AUTRES";
-          const curr = distRegionMap.get(reg) || { qty: 0, rendu: 0 };
-          distRegionMap.set(reg, { qty: curr.qty + r.quantite, rendu: curr.rendu + r.rendu });
+      const date = normalizeDate(row[1]);
+      const siCode = cleanStr(row[0]);
+      const qty = cleanNum(row[3]);
+      const product = cleanStr(row[5]);
+      const group = cleanStr(row[6]);
+      const facility = cleanStr(row[8]);
+      const rendu = cleanNum(row[9]);
+      
+      if (date && (qty > 0 || rendu > 0)) {
+        let searchCode = siCode;
+        const codeNum = parseInt(siCode);
+        if (!isNaN(codeNum) && siCode.length <= 2) {
+          searchCode = (codeNum * 1000).toString();
         }
+        
+        const siteInfo = getSiteByInput(searchCode) || getSiteByInput(cleanStr(row[2]));
+        
+        total += qty;
+        totalRendu += rendu;
+        
+        records.push({
+          date,
+          codeSite: siCode,
+          site: siteInfo?.name || cleanStr(row[2]) || "SITE INCONNU",
+          region: siteInfo?.region || "AUTRES",
+          etablissement: facility || "ÉTABLISSEMENT INCONNU",
+          typeProduit: product || "AUTRES",
+          groupeSanguin: group || "N/A",
+          quantite: qty,
+          rendu: rendu
+        });
+      }
+    });
+
+    records.sort((a, b) => {
+        const [da, ma, ya] = a.date.split('/').map(Number);
+        const [db, mb, yb] = b.date.split('/').map(Number);
+        return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
+    });
+
+    return {
+      records,
+      stats: {
+        total,
+        totalRendu,
+        average: records.length > 0 ? (total - totalRendu) / records.length : 0,
+        lastUpdate: records[0]?.date || "---"
+      }
+    };
+  } catch (e) {
+    console.error("fetchDistributions failure:", e);
+    return null;
+  }
+};
+
+export const fetchSheetData = async (url: string, force = false, distributionUrl?: string): Promise<DashboardData | null> => {
+  try {
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
+    const text = await response.text();
+    if (!force && text === lastRawContent) return null;
+    lastRawContent = text;
+
+    const rows = parseCSV(text);
+    if (rows.length < 2) throw new Error("Fichier source vide ou mal formaté.");
+
+    const col = { date: 0, code: 1, site: 2, fixe: 5, mobile: 7, total: 8 };
+    let latestDateObj = new Date(2000, 0, 1);
+    const validRows: any[] = [];
+
+    rows.slice(1).forEach(row => {
+      const dateStr = normalizeDate(row[col.date]);
+      if (!dateStr) return;
+      const [d, m, y] = dateStr.split('/').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      if (!isNaN(dateObj.getTime())) {
+        if (dateObj > latestDateObj) latestDateObj = dateObj;
+        validRows.push({ row, dateObj, dateStr });
+      }
+    });
+
+    if (validRows.length === 0) throw new Error("Aucune donnée de date valide trouvée.");
+
+    const targetMonth = latestDateObj.getMonth();
+    const targetYear = latestDateObj.getFullYear();
+    const latestDateStr = `${latestDateObj.getDate().toString().padStart(2, '0')}/${(latestDateObj.getMonth() + 1).toString().padStart(2, '0')}/${latestDateObj.getFullYear()}`;
+
+    const historyMap = new Map<string, DailyHistoryRecord>();
+    const siteAgg = new Map<string, { f: number, m: number, t: number, lastT: number, lastF: number, lastM: number }>();
+
+    validRows.forEach(({ row, dateObj, dateStr }) => {
+      const codeRaw = cleanStr(row[col.code]);
+      const siteRaw = cleanStr(row[col.site]);
+      const siteInfo = getSiteByInput(codeRaw) || getSiteByInput(siteRaw);
+      if (!siteInfo) return;
+
+      const finalSiteName = siteInfo.name;
+      const finalRegion = siteInfo.region;
+      const f = cleanNum(row[col.fixe]);
+      const m = cleanNum(row[col.mobile]);
+      const t = cleanNum(row[col.total]) || (f + m);
+
+      if (!siteAgg.has(finalSiteName)) {
+        siteAgg.set(finalSiteName, { f: 0, m: 0, t: 0, lastT: 0, lastF: 0, lastM: 0 });
+      }
+      const agg = siteAgg.get(finalSiteName)!;
+      if (dateObj.getFullYear() === targetYear && dateObj.getMonth() === targetMonth) {
+        agg.f += f; agg.m += m; agg.t += t;
+      }
+      if (dateStr === latestDateStr) {
+        agg.lastT = t; agg.lastF = f; agg.lastM = m;
+      }
+
+      if (!historyMap.has(dateStr)) {
+        historyMap.set(dateStr, { date: dateStr, stats: { realized: 0, fixed: 0, mobile: 0 }, sites: [] });
+      }
+      const day = historyMap.get(dateStr)!;
+      day.stats.realized += t;
+      day.stats.fixed += f;
+      day.stats.mobile += m;
+      
+      const siteObjs = getSiteObjectives(finalSiteName);
+      day.sites.push({ 
+        name: finalSiteName, fixe: f, mobile: m, total: t,
+        objective: siteObjs.daily, region: finalRegion,
+        manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
       });
+    });
+
+    const history = Array.from(historyMap.values()).sort((a, b) => {
+      const [da, ma, ya] = a.date.split('/').map(Number);
+      const [db, mb, yb] = b.date.split('/').map(Number);
+      return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
+    });
+
+    const regionsMap = new Map<string, RegionData>();
+    siteAgg.forEach((stats, name) => {
+      const siteInfo = getSiteByInput(name);
+      if (!siteInfo) return;
+      const regName = siteInfo.region;
+      if (!regionsMap.has(regName)) regionsMap.set(regName, { name: regName, sites: [] });
+      const siteObjs = getSiteObjectives(name);
+      regionsMap.get(regName)!.sites.push({
+        name, region: regName, fixe: stats.lastF, mobile: stats.lastM,
+        totalJour: stats.lastT, totalMois: stats.t, monthlyFixed: stats.f, monthlyMobile: stats.m,
+        objDate: 0, objMensuel: siteObjs.monthly,
+        manager: siteInfo?.manager, email: siteInfo?.email, phone: siteInfo?.phone
+      });
+    });
+
+    const regionsList = Array.from(regionsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
+
+    let monthlyRealized = 0;
+    let monthlyFixed = 0;
+    let monthlyMobile = 0;
+    regionsList.forEach(reg => {
+      reg.sites.forEach(site => {
+        monthlyRealized += site.totalMois;
+        monthlyFixed += (site.monthlyFixed || 0);
+        monthlyMobile += (site.monthlyMobile || 0);
+      });
+    });
+
+    const annualRealized = history
+      .filter(h => h.date.split('/')[2] === targetYear.toString())
+      .reduce((acc, h) => acc + h.stats.realized, 0);
+
+    const objAnn = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
+    const objMens = Math.round(objAnn / 12);
+    const objDay = Math.round(objAnn / WORKING_DAYS_YEAR);
+
+    const baseResult: DashboardData = {
+      date: latestDateStr,
+      month: `${MONTHS_FR[targetMonth]} ${targetYear}`,
+      year: targetYear,
+      daily: { realized: history[0]?.stats.realized || 0, objective: objDay, percentage: objDay > 0 ? (history[0]?.stats.realized / objDay) * 100 : 0, fixed: history[0]?.stats.fixed || 0, mobile: history[0]?.stats.mobile || 0 },
+      monthly: { realized: monthlyRealized, objective: objMens, percentage: objMens > 0 ? (monthlyRealized / objMens) * 100 : 0, fixed: monthlyFixed, mobile: monthlyMobile },
+      annual: { realized: annualRealized, objective: objAnn, percentage: objAnn > 0 ? (annualRealized / objAnn) * 100 : 0, fixed: 0, mobile: 0 },
+      dailyHistory: history,
+      regions: regionsList
+    };
+
+    if (distributionUrl) {
+      const distData = await fetchDistributions(distributionUrl);
+      if (distData) baseResult.distributions = distData;
     }
 
-    const distRegionsPerf = Array.from(distRegionMap.entries()).map(([name, val]) => ({
-      name: name.replace('PRES ', ''),
-      realized: val.qty,
-      percent: val.qty > 0 ? ((val.qty - val.rendu) / val.qty) * 100 : 0
-    })).sort((a,b) => b.realized - a.realized);
+    return baseResult;
+  } catch (err) {
+    console.error("fetchSheetData error:", err);
+    throw err;
+  }
+};
 
-    return { 
-      fixePerc, mobilePerc, regionsPerf, pochesRestantes, isReached,
-      distTotal, distRendu, distEfficiency: distTotal > 0 ? ((distTotal - distRendu) / distTotal) * 100 : 0,
-      distRegionsPerf
-    };
-  }, [data]);
-
-  const getVitalityClasses = (percent: number) => {
-    if (percent >= 110) return { text: 'text-emerald-600', bgTag: 'bg-emerald-50', bgProgress: 'bg-emerald-500' };
-    if (percent >= 100) return { text: 'text-emerald-600', bgTag: 'bg-emerald-50', bgProgress: 'bg-emerald-500' }; // Harmonisé Vert
-    if (percent >= 75) return { text: 'text-orange-500', bgTag: 'bg-orange-50', bgProgress: 'bg-orange-500' };
-    return { text: 'text-red-600', bgTag: 'bg-red-50', bgProgress: 'bg-red-500' };
-  };
-
-  const handleExport = async (type: 'image' | 'pdf') => {
-    if (!contentRef.current) return;
-    setExporting(type);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    try {
-      const element = contentRef.current;
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const filename = `RESUME_CNTS_${viewMode}_${data.month.replace(/\s/g, '_')}`;
-      if (type === 'image') {
-        const link = document.createElement('a');
-        link.download = `${filename}.png`; link.href = imgData; link.click();
-      } else {
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth(); 
-        const ratio = pageWidth / (canvas.width / 2);
-        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
-        pdf.save(`${filename}.pdf`);
-      }
-    } catch (err) { console.error(err); } finally { setExporting(null); }
-  };
-
-  return (
-    <div className="space-y-10 animate-in fade-in duration-1000">
-      
-      {/* SWITCH DE MODE RESUME HARMONISÉ */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
-        <div className="bg-white p-1.5 rounded-3xl shadow-xl border border-slate-100 flex gap-2">
-           <button onClick={() => setViewMode('donations')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={16}/> Prélèvements
-           </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={16}/> Distribution
-           </button>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => handleExport('image')} disabled={!!exporting} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />} PNG
-          </button>
-          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`flex items-center gap-2 px-6 py-3 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md ${viewMode === 'donations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} PDF
-          </button>
-        </div>
-      </div>
-
-      <div ref={contentRef} className="space-y-10 p-1">
-        {/* CARTE VEDETTE DYNAMIQUE HARMONISÉE */}
-        <div 
-          onClick={() => setActiveTab(viewMode === 'donations' ? 'pulse' : 'hemo-stats')}
-          className="relative group overflow-hidden cursor-pointer"
-        >
-          <div className={`absolute -inset-1 bg-gradient-to-r ${viewMode === 'donations' ? (stats.isReached ? 'from-emerald-600 to-teal-400' : 'from-emerald-600 to-green-500') : 'from-orange-600 to-orange-400'} rounded-[4rem] blur opacity-25 group-hover:opacity-40 transition duration-1000`}></div>
-          <div className="relative bg-white rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white flex flex-col lg:flex-row items-center justify-between gap-10">
-            <div className="flex items-center gap-8">
-              <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl ${viewMode === 'donations' ? (stats.isReached ? 'bg-emerald-500' : 'bg-emerald-600') : 'bg-orange-600'}`}>
-                {viewMode === 'donations' ? (stats.isReached ? <CheckCircle2 size={48} /> : <Target size={48} />) : <Package size={48} />}
-              </div>
-              <div>
-                <h2 className={`text-sm font-black uppercase tracking-[0.4em] mb-2 ${viewMode === 'donations' ? (stats.isReached ? 'text-emerald-500' : 'text-emerald-600') : 'text-orange-500'}`}>
-                  {viewMode === 'donations' ? (stats.isReached ? "Objectif Atteint !" : "Reste à collecter ce mois") : "Volume Distribué ce mois"}
-                </h2>
-                <div className="flex items-baseline gap-4">
-                  <span className="text-7xl lg:text-9xl font-black tracking-tighter text-slate-900 leading-none">
-                    {viewMode === 'donations' ? stats.pochesRestantes.toLocaleString() : stats.distTotal.toLocaleString()}
-                  </span>
-                  <span className="text-xl lg:text-3xl font-black text-slate-300 uppercase tracking-tighter">Poches</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-center lg:items-end text-center lg:text-right">
-              <div className={`px-6 py-3 rounded-2xl border mb-4 ${viewMode === 'donations' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-orange-50 border-orange-100 text-orange-600'}`}>
-                 <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                   {viewMode === 'donations' ? <Activity size={14}/> : <TrendingUp size={14}/>} {viewMode === 'donations' ? 'Flux National' : 'Flux Actif'}
-                 </p>
-              </div>
-              <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
-                {viewMode === 'donations' 
-                  ? `Il manque ${stats.pochesRestantes.toLocaleString()} prélèvements pour valider le contrat mensuel.`
-                  : `Efficacité nette de distribution enregistrée à ${stats.distEfficiency.toFixed(1)}% ce mois.`
-                }
-                <span className="text-slate-900 font-black block mt-1">Détails en temps réel →</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* RÉSUMÉ NATIONAL -> Contextuel HARMONISÉ */}
-        <div className={`relative overflow-hidden rounded-[4.5rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 transition-colors duration-700 ${viewMode === 'donations' ? 'bg-[#0f172a]' : 'bg-[#1e1b4b]'}`}>
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full -mr-40 -mt-40 animate-pulse"></div>
-          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
-            <div className="relative shrink-0">
-               <div className="w-56 h-56 lg:w-72 lg:h-72 rounded-full border-[10px] border-white/5 flex items-center justify-center relative">
-                 <div className="text-center">
-                    <span className="text-6xl lg:text-7xl font-black tracking-tighter block">{viewMode === 'donations' ? data.monthly.percentage.toFixed(0) : stats.distEfficiency.toFixed(0)}%</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 block mt-2">{viewMode === 'donations' ? 'Taux de Vitalité' : 'Taux d\'Utilisation'}</span>
-                 </div>
-                 <svg className="absolute inset-0 w-full h-full -rotate-90">
-                   <circle cx="50%" cy="50%" r="48%" fill="none" stroke={viewMode === 'donations' ? (data.monthly.percentage >= 100 ? COLORS.green : COLORS.green) : '#f59e0b'} strokeWidth="10" strokeDasharray="854" strokeDashoffset={(854 - (854 * Math.min(viewMode === 'donations' ? data.monthly.percentage : stats.distEfficiency, 100)) / 100).toString()} strokeLinecap="round" className="transition-all duration-1000"/>
-                 </svg>
-               </div>
-            </div>
-            <div className="flex-1 space-y-8 text-center lg:text-left">
-              <div>
-                <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter leading-none mb-4">{viewMode === 'donations' ? 'Résumé National' : 'Synthèse Flux'}</h1>
-                <p className="text-white/40 font-black uppercase tracking-[0.6em] text-[10px] flex items-center justify-center lg:justify-start gap-3">
-                   <Activity size={16} className={`${viewMode === 'donations' ? 'text-emerald-500' : 'text-orange-500'} animate-pulse`} /> PERFORMANCE {data.month}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10 text-center">
-                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">{viewMode === 'donations' ? 'Réalisé Mois' : 'Distribué'}</p>
-                  <p className="text-2xl font-black text-white">{viewMode === 'donations' ? data.monthly.realized.toLocaleString() : stats.distTotal.toLocaleString()}</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10 text-center">
-                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">{viewMode === 'donations' ? 'Fixe' : 'Rendus'}</p>
-                  <p className="text-2xl font-black text-emerald-400">{viewMode === 'donations' ? data.monthly.fixed.toLocaleString() : stats.distRendu.toLocaleString()}</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10 text-center">
-                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">{viewMode === 'donations' ? 'Mobile' : 'Sorties Net'}</p>
-                  <p className="text-2xl font-black text-orange-400">{viewMode === 'donations' ? data.monthly.mobile.toLocaleString() : (stats.distTotal - stats.distRendu).toLocaleString()}</p>
-                </div>
-                <div className={`p-5 rounded-3xl shadow-xl text-center ${viewMode === 'donations' ? 'bg-gradient-to-br from-emerald-600 to-emerald-800' : 'bg-gradient-to-br from-orange-600 to-orange-800'}`}>
-                  <p className="text-[8px] font-black text-white/60 uppercase tracking-widest mb-1">Précision</p>
-                  <p className="text-2xl font-black text-white">{viewMode === 'donations' ? data.monthly.percentage.toFixed(1) : stats.distEfficiency.toFixed(1)}%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* VITALITÉ DES RÉGIONS -> Mode Dynamique HARMONISÉ */}
-        <div className="space-y-8">
-           <div className="flex items-center gap-4 px-6">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${viewMode === 'donations' ? 'bg-emerald-900' : 'bg-orange-900'}`}>
-                 <MapPin size={24} />
-              </div>
-              <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">{viewMode === 'donations' ? 'Vitalité des Régions' : 'Flux par Région'}</h3>
-           </div>
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(viewMode === 'donations' ? stats.regionsPerf : stats.distRegionsPerf).slice(0, 8).map((reg, idx) => {
-                const colors = getVitalityClasses(reg.percent);
-                return (
-                  <div 
-                    key={idx} 
-                    className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 transition-all hover:shadow-xl hover:scale-105"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                       <h4 className="text-base font-black uppercase tracking-tighter text-slate-800 leading-none">{reg.name}</h4>
-                       <span className={`text-[10px] font-black px-3 py-1 rounded-full ${viewMode === 'donations' ? (colors.bgTag + ' ' + colors.text) : 'bg-orange-50 text-orange-600'}`}>
-                          {reg.percent.toFixed(0)}%
-                       </span>
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-4">
-                       <span className={`text-3xl font-black ${viewMode === 'donations' ? 'text-slate-900' : 'text-orange-900'}`}>{reg.realized.toLocaleString()}</span>
-                       <span className="text-[10px] font-bold text-slate-300 uppercase">Poches</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                       <div className={`h-full transition-all duration-1000 ${viewMode === 'donations' ? colors.bgProgress : 'bg-orange-500'}`} style={{ width: `${Math.min(reg.percent, 100)}%` }}/>
-                    </div>
-                  </div>
-                );
-              })}
-           </div>
-        </div>
-      </div>
-    </div>
-  );
+export const saveRecordToSheet = async (url: string, payload: any): Promise<void> => {
+  if (!url) throw new Error("URL du script non configurée.");
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      cache: 'no-cache',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return;
+  } catch (error) {
+    console.error("Erreur d'enregistrement:", error);
+    throw new Error("Connexion au serveur d'injection impossible.");
+  }
 };
