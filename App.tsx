@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants';
 import { VisualDashboard } from './components/VisualDashboard';
@@ -182,8 +183,8 @@ const App: React.FC = () => {
     { id: 'cockpit', icon: <LayoutDashboard size={14} />, label: 'Cockpit', public: false },
     { id: 'entry', icon: <PlusSquare size={14} />, label: 'Saisie', public: false },
     { id: 'hemo-stats', icon: <Truck size={14} />, label: 'HEMO-STATS', public: false },
+    { id: 'history', icon: <History size={14} />, label: 'Historique', public: false },
     { id: 'site-focus', icon: <UserCheck size={14} />, label: 'Focus', public: false },
-    { id: 'weekly', icon: <Layers size={14} />, label: 'Semaine', public: false },
     { id: 'evolution', icon: <LineChart size={14} />, label: 'Évol.', public: false },
     { id: 'comparison', icon: <ArrowLeftRight size={14} />, label: 'Compare', public: false },
     { id: 'recap', icon: <FileText size={14} />, label: 'Récap', public: false },
@@ -232,7 +233,7 @@ const App: React.FC = () => {
              </div>
           </div>
 
-          <nav className="hidden lg:grid grid-cols-7 gap-x-1 gap-y-2 mx-8 flex-1 justify-items-center">
+          <nav className="hidden lg:grid grid-cols-7 xl:grid-cols-10 gap-x-1 gap-y-2 mx-8 flex-1 justify-items-center">
             {visibleNavItems.map((tab) => (
               <button 
                 key={tab.id}
@@ -326,8 +327,8 @@ const App: React.FC = () => {
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} />}
                 {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
+                {activeTab === 'history' && <DetailedHistoryView data={filteredData} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} />}
-                {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
                 {activeTab === 'comparison' && <ComparisonView data={filteredData} />}
                 {activeTab === 'recap' && <RecapView data={filteredData} />}
