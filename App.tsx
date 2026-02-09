@@ -27,6 +27,20 @@ const App: React.FC = () => {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   
+  // --- BRANDING DYNAMIQUE ---
+  const [branding, setBranding] = useState(() => {
+    const saved = localStorage.getItem('hemo_branding');
+    return saved ? JSON.parse(saved) : {
+      logo: './assets/logo.svg',
+      hashtag: '#DONSANG_CI'
+    };
+  });
+
+  const updateBranding = (newBranding: {logo: string, hashtag: string}) => {
+    setBranding(newBranding);
+    localStorage.setItem('hemo_branding', JSON.stringify(newBranding));
+  };
+
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
   const [distSheetInput] = useState(DEFAULT_LINK_DISTRIBUTION); 
   const [showSettings, setShowSettings] = useState(false);
@@ -165,92 +179,96 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0 selection:bg-red-200">
-      <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-8 lg:py-4">
-        <div className="max-w-7xl mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl border border-white/10 min-h-[5rem]">
-          <div className="flex items-center gap-4 shrink-0">
-             <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center text-white shadow-lg pulse-glow cursor-pointer" onClick={() => setActiveTab('pulse')}>
-               <Activity size={22}/>
+    <div className="min-h-screen pb-24 lg:pb-0 selection:bg-blue-100">
+      <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-8 lg:py-6">
+        <div className="max-w-7xl mx-auto glass-nav rounded-[3.5rem] px-8 py-6 flex flex-col lg:flex-row items-center justify-between shadow-2xl min-h-[7rem] gap-4">
+          <div className="flex items-center gap-5 shrink-0">
+             <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-xl pulse-glow cursor-pointer transition-transform hover:scale-110 active:scale-95 border border-slate-100 overflow-hidden" onClick={() => setActiveTab('pulse')}>
+               <img src={branding.logo} alt="HEMO-STATS Logo" className="w-full h-full object-contain p-1" />
              </div>
-             <div className="flex flex-col">
-               <span className="font-black text-xl tracking-tighter leading-none uppercase text-white">DSDSUIVI</span>
-               <div className="flex items-center gap-2 mt-1">
-                 <span className="text-[8px] text-orange-400 font-black uppercase tracking-[0.3em] leading-none">Cockpit National</span>
+             <div className="flex flex-col justify-center">
+               <span className="font-black text-2xl tracking-tighter leading-none uppercase text-slate-900">HEMO-STATS</span>
+               <div className="flex items-start gap-2 mt-1">
+                 <div className="flex flex-col max-w-[45px] leading-[1.1] pt-0.5">
+                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest break-words leading-[1.2]">
+                      {branding.hashtag.replace('_', ' ')}
+                    </span>
+                 </div>
                  {currentUser && (
-                   <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
-                      <span className="text-[6px] font-black uppercase text-blue-400">{currentUser.role}</span>
+                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 ml-1">
+                      <span className="text-[6px] font-black uppercase text-white tracking-tighter">{currentUser.role}</span>
                    </div>
                  )}
                </div>
              </div>
           </div>
 
-          <nav className="hidden lg:flex flex-wrap items-center justify-center gap-1.5 mx-8 flex-1">
+          <nav className="hidden lg:grid grid-cols-7 gap-x-1 gap-y-2 mx-8 flex-1 justify-items-center">
             {visibleNavItems.map((tab) => (
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as AppTab)} 
-                className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all relative overflow-hidden whitespace-nowrap ${
-                  activeTab === tab.id ? 'text-white' : 'text-slate-400 hover:text-white'
+                className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all relative overflow-hidden whitespace-nowrap w-full justify-center ${
+                  activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-50/50'
                 }`}
               >
                 {activeTab === tab.id && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-500 opacity-90 -z-10 animate-in fade-in zoom-in duration-300"></div>
+                  <div className="absolute inset-0 bg-slate-900 -z-10 animate-in fade-in zoom-in duration-500"></div>
                 )}
-                <span className={`${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110'} transition-transform`}>{tab.icon}</span>
+                <span className={`${activeTab === tab.id ? 'scale-110 text-white' : 'group-hover:scale-110'} transition-transform`}>{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
           </nav>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-4 shrink-0">
             {currentUser ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div className="hidden xl:flex flex-col items-end">
-                   <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">{currentUser.nom}</span>
-                   <span className="text-[7px] font-bold text-white/30 uppercase">{currentUser.site || currentUser.region || 'National'}</span>
+                   <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest leading-none mb-1">{currentUser.nom}</span>
+                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{currentUser.site || currentUser.region || 'National'}</span>
                 </div>
-                <button onClick={handleLogout} className="p-2.5 bg-white/10 rounded-xl text-white hover:bg-red-500/20 transition-all border border-white/10" title="Déconnexion">
-                  <LogOut size={16} />
+                <button onClick={handleLogout} className="p-3 bg-slate-100 rounded-2xl text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all border border-slate-200" title="Déconnexion">
+                  <LogOut size={18} />
                 </button>
               </div>
             ) : (
-              <button onClick={() => setShowLogin(true)} className="px-5 py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg flex items-center gap-2">
-                <UserIcon size={12} /> Connexion
+              <button onClick={() => setShowLogin(true)} className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl flex items-center gap-2.5">
+                <UserIcon size={14} /> Connexion
               </button>
             )}
-            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-white/10 rounded-xl border border-white/10 text-white hover:bg-white/20 transition-all">
-              <Settings size={16} />
+            <button onClick={() => setShowSettings(true)} className="p-3 bg-slate-100 rounded-2xl border border-slate-200 text-slate-600 hover:bg-white transition-all shadow-sm">
+              <Settings size={18} />
             </button>
           </div>
         </div>
       </header>
 
       <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100]">
-        <div className="glass-nav rounded-[2.5rem] px-4 py-3 flex justify-between items-center shadow-2xl border border-white/10 overflow-x-auto no-scrollbar">
+        <div className="glass-nav rounded-[2.5rem] px-5 py-4 flex justify-between items-center shadow-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2">
            {visibleNavItems.map((tab) => (
              <button 
                key={tab.id}
                onClick={() => setActiveTab(tab.id as AppTab)}
-               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all shrink-0 ${
-                 activeTab === tab.id ? 'bg-gradient-to-br from-red-600 to-orange-500 text-white shadow-lg' : 'text-slate-400'
+               className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-[1.5rem] transition-all shrink-0 ${
+                 activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400'
                }`}
              >
                {tab.icon}
-               <span className="text-[7px] font-black uppercase tracking-tighter">{tab.label}</span>
+               <span className="text-[8px] font-black uppercase tracking-tighter">{tab.label}</span>
              </button>
            ))}
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 lg:px-6 pt-36 lg:pt-48 pb-24">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-48 lg:pt-64 pb-24">
         {loading && !fullData.dailyHistory.length ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-8">
+          <div className="flex flex-col items-center justify-center py-48 gap-10">
              <div className="relative">
-                <div className="absolute inset-0 bg-red-500 blur-[40px] opacity-40 animate-pulse"></div>
-                <Activity size={64} className="text-red-600 animate-bounce relative z-10" />
+                <div className="absolute inset-0 bg-blue-500 blur-[50px] opacity-20 animate-pulse"></div>
+                <Activity size={72} className="text-blue-600 animate-bounce relative z-10" />
              </div>
-             <p className="text-xs font-black text-slate-800 uppercase tracking-[0.5em] animate-pulse">Chargement...</p>
+             <p className="text-[11px] font-black text-slate-900 uppercase tracking-[0.6em] animate-pulse">Synchronisation Vitale...</p>
           </div>
         ) : (
           <div className="page-transition">
@@ -261,7 +279,7 @@ const App: React.FC = () => {
               <>
                 {activeTab === 'summary' && <SummaryView data={filteredData} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
-                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} />}
+                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} />}
                 {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
@@ -269,16 +287,20 @@ const App: React.FC = () => {
                 {activeTab === 'comparison' && <ComparisonView data={filteredData} />}
                 {activeTab === 'recap' && <RecapView data={filteredData} />}
                 {activeTab === 'performance' && <PerformanceView data={filteredData} />}
-                {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} />}
+                {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} />}
               </>
             )}
 
             {!currentUser && activeTab !== 'pulse' && activeTab !== 'contact' && (
-              <div className="py-40 flex flex-col items-center gap-6 text-center">
-                <Lock size={64} className="text-slate-200" />
-                <h2 className="text-2xl font-black uppercase text-slate-800">Accès Restreint</h2>
-                <p className="text-slate-500 text-sm max-w-sm font-medium">Cette section est réservée aux agents habilités du CNTS CI. Veuillez vous connecter pour accéder au cockpit.</p>
-                <button onClick={() => setShowLogin(true)} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Se connecter</button>
+              <div className="py-48 flex flex-col items-center gap-8 text-center glass-card rounded-[4rem] max-w-2xl mx-auto">
+                <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-400">
+                  <Lock size={40} />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black uppercase text-slate-900 tracking-tighter mb-3">Accès Restreint</h2>
+                  <p className="text-slate-500 text-sm max-w-sm font-medium leading-relaxed">Cette section est réservée aux agents habilités du CNTS CI. Veuillez vous connecter pour accéder au cockpit complet.</p>
+                </div>
+                <button onClick={() => setShowLogin(true)} className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:bg-black transition-all active:scale-95">Se connecter maintenant</button>
               </div>
             )}
           </div>
@@ -286,30 +308,30 @@ const App: React.FC = () => {
       </main>
 
       {showSettings && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3.5rem] p-10 lg:p-14 max-w-lg w-full shadow-3xl border border-slate-100 animate-in zoom-in-95 duration-300">
-             <div className="flex items-center gap-6 mb-10">
-               <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl"><Settings size={28} /></div>
-               <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Configuration</h3>
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-2xl flex items-center justify-center p-4">
+          <div className="bg-white rounded-[4rem] p-12 lg:p-16 max-w-xl w-full shadow-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
+             <div className="flex items-center gap-6 mb-12">
+               <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-800 shadow-inner"><Settings size={32} /></div>
+               <h3 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Architecture</h3>
              </div>
-             <div className="space-y-8">
-               <div className="space-y-3">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Source de données (DATABASE 1)</label>
+             <div className="space-y-10">
+               <div className="space-y-4">
+                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Source Core-Database</label>
                  <input 
                    value={sheetInput} 
                    onChange={(e) => setSheetInput(e.target.value)}
-                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-xs font-bold text-slate-600 outline-none focus:ring-4 ring-slate-100"
+                   className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-8 py-5 text-sm font-bold text-slate-600 outline-none focus:ring-4 ring-blue-50 transition-all"
                  />
                </div>
-               <div className="p-6 bg-blue-50 border border-blue-100 rounded-3xl flex items-start gap-4">
-                  <Database size={20} className="text-blue-600 shrink-0 mt-1" />
-                  <p className="text-[10px] font-bold text-blue-800 leading-relaxed uppercase tracking-tight">
-                    Le flux de distribution (HEMO-STATS) est actuellement figé sur la base de données officielle pour garantir l'intégrité des rapports nationaux.
+               <div className="p-8 bg-blue-50 border border-blue-100 rounded-[2.5rem] flex items-start gap-6">
+                  <Database size={24} className="text-blue-600 shrink-0 mt-1" />
+                  <p className="text-[11px] font-bold text-blue-800 leading-relaxed uppercase tracking-tight">
+                    Le flux de distribution (HEMO-STATS) est synchronisé sur le canal national prioritaire pour préserver l'intégrité de la supply chain sanguine.
                   </p>
                </div>
                <div className="flex gap-4 pt-4">
-                 <button onClick={() => setShowSettings(false)} className="flex-1 px-8 py-5 border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all">Annuler</button>
-                 <button onClick={saveSettings} className="flex-1 px-8 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-2xl active:scale-95">Appliquer</button>
+                 <button onClick={() => setShowSettings(false)} className="flex-1 px-8 py-6 border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all">Annuler</button>
+                 <button onClick={saveSettings} className="flex-1 px-8 py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-2xl active:scale-95">Valider</button>
                </div>
              </div>
           </div>
@@ -319,10 +341,10 @@ const App: React.FC = () => {
       {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} />}
 
       {error && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 bg-red-600 text-white rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10">
-           <AlertCircle size={20} />
-           <p className="text-[11px] font-black uppercase tracking-widest">{error}</p>
-           <button onClick={() => setError(null)} className="ml-4 opacity-50 hover:opacity-100">×</button>
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[200] px-10 py-5 bg-rose-600 text-white rounded-3xl shadow-3xl flex items-center gap-5 animate-in slide-in-from-bottom-12 transition-all">
+           <AlertCircle size={24} />
+           <p className="text-xs font-black uppercase tracking-widest leading-none">{error}</p>
+           <button onClick={() => setError(null)} className="ml-6 opacity-60 hover:opacity-100 text-xl font-bold">×</button>
         </div>
       )}
     </div>

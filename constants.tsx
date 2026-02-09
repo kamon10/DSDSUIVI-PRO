@@ -103,38 +103,39 @@ export const INITIAL_DATA: DashboardData = {
 };
 
 export const COLORS = {
-  blue: '#2563eb',
-  green: '#10b981',
-  orange: '#f59e0b',
+  blue: '#3b82f6', 
+  green: '#10b981', 
+  orange: '#f59e0b', 
   red: '#ef4444',
   yellow: '#facc15',
   slate: '#1e293b',
-  warmBg: '#fffcf5',
-  fixed: '#10b981',
-  mobile: '#f59e0b',
-  total: '#ef4444',
-  distribution: '#6366f1'
+  warmBg: '#fff7ed',
+  fixed: '#10b981', // Harmonisé Prélèvements
+  mobile: '#f59e0b', // Note: On garde l'orange pour mobile mais on harmonisera les fonds
+  total: '#10b981', // Harmonisé Prélèvements
+  distribution: '#f59e0b' // Harmonisé Distribution
 };
 
 // COULEURS MÉDICALES PRODUITS
 export const PRODUCT_COLORS: Record<string, string> = {
-  "CGR ADULTE": "#ef4444", // Rouge
-  "CGR NOURRISON": "#f97316", // Orange
-  "CGR PEDIATRIQUE": "#22c55e", // Vert
-  "CONCENTRE DE PLAQUETTES": "#3b82f6", // Bleu
-  "PLASMA A USAGE THERAPEUTIQUE": "#eab308" // Jaune
+  "CGR": "#ef4444", 
+  "CGR ADULTE": "#ef4444",
+  "CGR NOURRISON": "#f97316",
+  "CGR PEDIATRIQUE": "#22c55e",
+  "CONCENTRE DE PLAQUETTES": "#3b82f6", 
+  "PLASMA A USAGE THERAPEUTIQUE": "#eab308" 
 };
 
 // COULEURS MÉDICALES GROUPES
 export const GROUP_COLORS: Record<string, string> = {
-  "O+": "#ef4444", // Rouge
-  "B+": "#8b5cf6", // Violet
-  "A+": "#3b82f6", // Bleu
-  "AB+": "#22c55e", // Vert
-  "AB-": "#eab308", // Jaune
-  "O-": "#94a3b8", // Gris
-  "A-": "#06b6d4", // Turquoise
-  "B-": "#4f46e5"  // Indigo
+  "O+": "#ef4444", 
+  "B+": "#8b5cf6", 
+  "A+": "#3b82f6", 
+  "AB+": "#22c55e", 
+  "AB-": "#eab308", 
+  "O-": "#94a3b8", 
+  "A-": "#06b6d4", 
+  "B-": "#4f46e5"  
 };
 
 export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
