@@ -1,3 +1,4 @@
+
 import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
@@ -100,8 +101,24 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
 };
 
 /**
- * Récupère la configuration globale (Logo, Hashtag) depuis le Sheet central
+ * Récupère les informations des sites (Managers) pour écraser les constantes si besoin
  */
+export const fetchDynamicSites = async (scriptUrl: string): Promise<any[]> => {
+  if (!scriptUrl) return [];
+  try {
+    const response = await fetch(`${scriptUrl}?action=getSites&_t=${Date.now()}`);
+    if (!response.ok) return [];
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return [];
+    }
+  } catch (err) {
+    return [];
+  }
+};
+
 export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: string, hashtag: string} | null> => {
   if (!scriptUrl) return null;
   try {
@@ -109,7 +126,6 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
     if (!response.ok) return null;
     const text = await response.text();
     
-    // Protection contre les réponses non-JSON
     if (text.startsWith("Action inconnue") || text.startsWith("<!DOCTYPE")) {
         return null;
     }
@@ -356,9 +372,6 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
   }
 };
 
-/**
- * Envoie une requête POST au script Google Apps Script pour enregistrer une ligne.
- */
 export const saveRecordToSheet = async (scriptUrl: string, payload: any): Promise<void> => {
   if (!scriptUrl) throw new Error("URL du script manquante");
   await fetch(scriptUrl, {
