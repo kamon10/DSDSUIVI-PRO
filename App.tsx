@@ -336,7 +336,7 @@ const App: React.FC = () => {
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
-                {activeTab === 'recap' && <RecapView data={filteredData} />}
+                {activeTab === 'recap' && <RecapView data={filteredData} sites={effectiveSitesList} />}
                 {activeTab === 'performance' && <PerformanceView data={filteredData} sites={effectiveSitesList} />}
                 {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
               </>
