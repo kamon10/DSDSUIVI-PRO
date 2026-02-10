@@ -9,7 +9,7 @@ export const SITES_DATA = [
   { code: "9", name: "CDTS DE BINGERVILLE", region: "PRES ABIDJAN", annualObjective: 4000, manager: "Dr. ABE Nicole", email: "abedkn@yahoo.fr", phone: "01 01 05 07 35" },
   { code: "6", name: "SP HG PORT BOUET", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. ASSOUKPOU Francine", email: "francineass@yahoo.fr", phone: "07 07 70 14 41" },
   { code: "4", name: "SP FSU ABOBO BAOULE", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. AMON épouse BOUKALO Renaude Jani", email: "brenaudeamon@gmail.com", phone: "01 60 57 53 93" },
-  { code: "7", name: "SP HG ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. ANAUD Née YAO Akissi Marie Chantal", email: "akissimariechantaly@gmail.com", phone: "01 02 62 13 43" },
+  { code: "7", name: "SP HG ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99" },
   { code: "5", name: "SP CHU DE COCODY", region: "PRES ABIDJAN", annualObjective: 11000, manager: "M. AKELE Antoine", email: "antoineakele72@gmail.com", phone: "07 47 43 93 39" },
   { code: "2", name: "SP CHU DE YOPOUGON", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. SARAPAHI Zadi Antonin", email: "zadisarapahi83@gmail.com", phone: "05 96 67 56 39" },
   { code: "11", name: "CDTS D'ABOISSO", region: "PRES ABIDJAN", annualObjective: 9000, manager: "Dr. N'GUESSAN Koffi Antoine", email: "antoine_nguessan@yahoo.fr", phone: "07 48 10 08 34" },
@@ -55,8 +55,21 @@ export const SITES_DATA = [
   { code: "27", name: "CDTS DE DUEKOUE", region: "PRES TONPKI", annualObjective: 7000, manager: "Dr. DIOMANDE", email: "dr,manthin@gmail.com", phone: "07 49 95 79 37" },
   
   // PRES KABADOUGOU
-  { code: "24", name: "CRTS DE ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "M. KOUMAN Kouadio Fidèle", email: "koumanfidele@gmail.com", phone: "07 12 07 10 10" }
+  { code: "24", name: "CRTS DE ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95" }
 ];
+
+export const PRES_COORDINATES: Record<string, [number, number]> = {
+  "PRES ABIDJAN": [5.3600, -4.0083],
+  "PRES BELIER": [6.8276, -5.2893],
+  "PRES GBEKE": [7.6897, -5.0315],
+  "PRES PORO": [9.4580, -5.6295],
+  "PRES INDENIE DJUABLIN": [6.7297, -3.4964],
+  "PRES GONTOUGO": [8.0402, -2.8000],
+  "PRES HAUT SASSANDRA": [6.8774, -6.4502],
+  "PRES SAN PEDRO": [4.7485, -6.6363],
+  "PRES TONPKI": [7.4125, -7.5538],
+  "PRES KABADOUGOU": [9.5051, -7.5643]
+};
 
 const normalizeStr = (s: string) => 
   s.normalize("NFD")
@@ -110,13 +123,12 @@ export const COLORS = {
   yellow: '#facc15',
   slate: '#1e293b',
   warmBg: '#fff7ed',
-  fixed: '#10b981', // Harmonisé Prélèvements
-  mobile: '#f59e0b', // Note: On garde l'orange pour mobile mais on harmonisera les fonds
-  total: '#10b981', // Harmonisé Prélèvements
-  distribution: '#f59e0b' // Harmonisé Distribution
+  fixed: '#10b981', 
+  mobile: '#f59e0b', 
+  total: '#10b981', 
+  distribution: '#f59e0b'
 };
 
-// COULEURS MÉDICALES PRODUITS
 export const PRODUCT_COLORS: Record<string, string> = {
   "CGR": "#ef4444", 
   "CGR ADULTE": "#ef4444",
@@ -126,7 +138,6 @@ export const PRODUCT_COLORS: Record<string, string> = {
   "PLASMA A USAGE THERAPEUTIQUE": "#eab308" 
 };
 
-// COULEURS MÉDICALES GROUPES
 export const GROUP_COLORS: Record<string, string> = {
   "O+": "#ef4444", 
   "B+": "#8b5cf6", 

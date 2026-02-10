@@ -14,11 +14,12 @@ import { SiteSynthesisView } from './components/SiteSynthesisView';
 import { DataEntryForm } from './components/DataEntryForm';
 import { ContactsView } from './components/ContactsView';
 import { DistributionView } from './components/DistributionView';
+import { DistributionMapView } from './components/DistributionMapView';
 import { LoginView } from './components/LoginView';
 import { AdminUserManagement } from './components/AdminUserManagement';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig } from './services/googleSheetService';
 import { AppTab, DashboardData, User } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -28,11 +29,10 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // --- BRANDING DYNAMIQUE ---
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
     const defaultBranding = {
-      logo: './assets/logo.svg', 
+      logo: './assets/logo.png',
       hashtag: '#DONSANG_CI'
     };
     if (!saved) return defaultBranding;
@@ -61,7 +61,6 @@ const App: React.FC = () => {
     distInputRef.current = distSheetInput;
   }, [sheetInput, distSheetInput]);
 
-  // Horloge en temps réel
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -71,6 +70,7 @@ const App: React.FC = () => {
     if (isSyncingRef.current) return;
     const currentInput = sheetInputRef.current;
     const currentDistInput = distInputRef.current;
+    const currentScript = DEFAULT_SCRIPT_URL;
     
     isSyncingRef.current = true;
     if (!isSilent) setLoading(true);
@@ -79,7 +79,7 @@ const App: React.FC = () => {
     try {
       const [dataResult, brandingResult] = await Promise.all([
         fetchSheetData(currentInput.trim(), force, currentDistInput.trim()),
-        fetchBrandingConfig(DEFAULT_SCRIPT_URL)
+        fetchBrandingConfig(currentScript)
       ]);
 
       if (dataResult) {
@@ -104,17 +104,14 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Sync initiale
   useEffect(() => { 
     handleSync(false, true); 
   }, [handleSync]);
 
-  // RAFFRAICHISSEMENT AUTOMATIQUE (Toutes les 10 secondes)
   useEffect(() => {
     const autoRefreshInterval = setInterval(() => {
-      handleSync(true, false); 
+      handleSync(true, false);
     }, 10000);
-
     return () => clearInterval(autoRefreshInterval);
   }, [handleSync]);
 
@@ -128,9 +125,7 @@ const App: React.FC = () => {
     if (!currentUser || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') {
       return fullData;
     }
-
     const filtered = { ...fullData };
-
     if (currentUser.role === 'PRES') {
       const regionName = currentUser.region || "";
       if (regionName.toUpperCase() !== "TOUS LES PRES") {
@@ -151,7 +146,6 @@ const App: React.FC = () => {
         ...r,
         sites: r.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase())
       })).filter(r => r.sites.length > 0);
-      
       filtered.dailyHistory = fullData.dailyHistory.map(h => ({
         ...h,
         sites: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()),
@@ -162,10 +156,8 @@ const App: React.FC = () => {
         }
       }));
     }
-
     const mRealized = filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + s.totalMois, 0), 0);
     const mObj = filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + s.objMensuel, 0), 0);
-    
     filtered.monthly = {
       realized: mRealized,
       objective: mObj || 1,
@@ -173,24 +165,23 @@ const App: React.FC = () => {
       fixed: filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + (s.monthlyFixed || 0), 0), 0),
       mobile: filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + (s.monthlyMobile || 0), 0), 0),
     };
-
     return filtered;
   }, [fullData, currentUser]);
 
   const navItems = [
-    { id: 'pulse', icon: <HeartPulse size={14} />, label: 'Pulse', public: true },
-    { id: 'summary', icon: <Layout size={14} />, label: 'Résumé', public: false },
-    { id: 'cockpit', icon: <LayoutDashboard size={14} />, label: 'Cockpit', public: false },
-    { id: 'entry', icon: <PlusSquare size={14} />, label: 'Saisie', public: false },
-    { id: 'hemo-stats', icon: <Truck size={14} />, label: 'HEMO-STATS', public: false },
-    { id: 'history', icon: <History size={14} />, label: 'Historique', public: false },
-    { id: 'site-focus', icon: <UserCheck size={14} />, label: 'Focus', public: false },
-    { id: 'evolution', icon: <LineChart size={14} />, label: 'Évol.', public: false },
-    { id: 'comparison', icon: <ArrowLeftRight size={14} />, label: 'Compare', public: false },
-    { id: 'recap', icon: <FileText size={14} />, label: 'Récap', public: false },
-    { id: 'performance', icon: <BarChart3 size={14} />, label: 'Rang', public: false },
-    { id: 'contact', icon: <BookOpen size={14} />, label: 'Contact', public: true },
-    { id: 'administration', icon: <ShieldCheck size={14} />, label: 'Admin', public: false, superOnly: true }
+    { id: 'pulse', icon: <HeartPulse size={18} />, label: 'Pulse', public: true },
+    { id: 'summary', icon: <Layout size={18} />, label: 'Résumé', public: false },
+    { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Cockpit', public: false },
+    { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
+    { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
+    { id: 'hemo-stats', icon: <Truck size={18} />, label: 'Hemo-Stats', public: false },
+    { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
+    { id: 'weekly', icon: <Layers size={18} />, label: 'Semaine', public: false },
+    { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
+    { id: 'recap', icon: <FileText size={18} />, label: 'Récap', public: false },
+    { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
+    { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
+    { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
   ];
 
   const visibleNavItems = navItems.filter(item => {
@@ -208,22 +199,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0 selection:bg-blue-100">
-      <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-8 lg:py-6">
-        <div className="max-w-7xl mx-auto glass-nav rounded-[3.5rem] px-8 py-6 flex flex-col lg:flex-row items-center justify-between shadow-2xl min-h-[7rem] gap-4">
-          <div className="flex items-center gap-5 shrink-0">
-             <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-xl pulse-glow cursor-pointer transition-transform hover:scale-110 active:scale-95 border border-slate-100 overflow-hidden" onClick={() => setActiveTab('pulse')}>
+      <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-6 lg:py-4">
+        <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex flex-col lg:flex-row items-center justify-between shadow-2xl min-h-[7.5rem] gap-4">
+          <div className="flex items-center gap-4 shrink-0">
+             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl pulse-glow cursor-pointer transition-transform hover:scale-110 active:scale-95 border border-slate-100 overflow-hidden" onClick={() => setActiveTab('pulse')}>
                <img src={branding.logo} alt="HEMO-STATS Logo" className="w-full h-full object-contain p-0.5" />
              </div>
              <div className="flex flex-col justify-center">
-               <span className="font-black text-2xl tracking-tighter leading-none uppercase text-slate-900">HEMO-STATS</span>
-               <div className="flex items-center gap-2 mt-1">
-                 {branding.hashtag === '#DONSANG_CI' ? (
-                   <img src="./assets/hashtag.svg" alt="#DONSANG_CI" className="h-4 object-contain opacity-80" />
-                 ) : (
-                   <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest break-words leading-[1.2]">
-                     {branding.hashtag.replace('_', ' ')}
-                   </span>
-                 )}
+               <span className="font-black text-xl tracking-tighter leading-none uppercase text-slate-900">HEMO-STATS</span>
+               <div className="flex items-start gap-2 mt-1">
+                 <div className="flex flex-col max-w-[45px] leading-[1.1] pt-0.5">
+                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest break-words leading-[1.2]">
+                      {branding.hashtag.replace('_', ' ')}
+                    </span>
+                 </div>
                  {currentUser && (
                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 ml-1">
                       <span className="text-[6px] font-black uppercase text-white tracking-tighter">{currentUser.role}</span>
@@ -233,70 +222,74 @@ const App: React.FC = () => {
              </div>
           </div>
 
-          <nav className="hidden lg:grid grid-cols-7 xl:grid-cols-10 gap-x-1 gap-y-2 mx-8 flex-1 justify-items-center">
+          <nav className="hidden lg:flex items-center gap-1 flex-1 px-4 overflow-x-auto no-scrollbar">
             {visibleNavItems.map((tab) => (
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as AppTab)} 
-                className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all relative overflow-hidden whitespace-nowrap w-full justify-center ${
+                className={`group flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-xl transition-all relative overflow-hidden flex-1 min-w-[70px] ${
                   activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-50/50'
                 }`}
               >
                 {activeTab === tab.id && (
                   <div className="absolute inset-0 bg-slate-900 -z-10 animate-in fade-in zoom-in duration-500"></div>
                 )}
-                <span className={`${activeTab === tab.id ? 'scale-110 text-white' : 'group-hover:scale-110'} transition-transform`}>{tab.icon}</span>
-                {tab.label}
+                <span className={`${activeTab === tab.id ? 'scale-110 text-white' : 'group-hover:scale-110 text-slate-400 group-hover:text-slate-900'} transition-transform`}>
+                  {tab.icon}
+                </span>
+                <span className="text-[8px] font-black uppercase tracking-tighter text-center leading-none">
+                  {tab.label}
+                </span>
               </button>
             ))}
           </nav>
 
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="hidden md:flex flex-col items-end px-4 border-r border-slate-100">
-               <span className="text-[11px] font-black text-slate-900 tabular-nums tracking-tighter">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden md:flex flex-col items-end px-3 border-r border-slate-100">
+               <span className="text-[10px] font-black text-slate-900 tabular-nums tracking-tighter">
                  {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                </span>
-               <div className="flex items-center gap-1.5">
+               <div className="flex items-center gap-1">
                  <div className={`w-1 h-1 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`}></div>
-                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Temps Réel</span>
+                 <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Live</span>
                </div>
             </div>
 
             {syncStatus === 'syncing' && (
               <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full animate-pulse border border-blue-100">
                 <RefreshCw size={10} className="animate-spin" />
-                <span className="text-[8px] font-black uppercase tracking-widest">Auto-Sync</span>
+                <span className="text-[8px] font-black uppercase tracking-widest">Sync</span>
               </div>
             )}
             {currentUser ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div className="hidden xl:flex flex-col items-end">
                    <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest leading-none mb-1">{currentUser.nom}</span>
                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{currentUser.site || currentUser.region || 'National'}</span>
                 </div>
-                <button onClick={handleLogout} className="p-3 bg-slate-100 rounded-2xl text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all border border-slate-200" title="Déconnexion">
-                  <LogOut size={18} />
+                <button onClick={handleLogout} className="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all border border-slate-200" title="Déconnexion">
+                  <LogOut size={16} />
                 </button>
               </div>
             ) : (
-              <button onClick={() => setShowLogin(true)} className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl flex items-center gap-2.5">
+              <button onClick={() => setShowLogin(true)} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl flex flex-col items-center gap-1">
                 <UserIcon size={14} /> Connexion
               </button>
             )}
-            <button onClick={() => setShowSettings(true)} className="p-3 bg-slate-100 rounded-2xl border border-slate-200 text-slate-600 hover:bg-white transition-all shadow-sm">
-              <Settings size={18} />
+            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 hover:bg-white transition-all shadow-sm">
+              <Settings size={16} />
             </button>
           </div>
         </div>
       </header>
 
       <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100]">
-        <div className="glass-nav rounded-[2.5rem] px-5 py-4 flex justify-between items-center shadow-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2">
+        <div className="glass-nav rounded-[2.5rem] px-4 py-3 flex justify-between items-center shadow-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2">
            {visibleNavItems.map((tab) => (
              <button 
                key={tab.id}
                onClick={() => setActiveTab(tab.id as AppTab)}
-               className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-[1.5rem] transition-all shrink-0 ${
+               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all shrink-0 min-w-[60px] ${
                  activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400'
                }`}
              >
@@ -307,7 +300,7 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-48 lg:pt-64 pb-24">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-44 lg:pt-48 pb-24">
         {loading && !fullData.dailyHistory.length ? (
           <div className="flex flex-col items-center justify-center py-48 gap-10">
              <div className="relative">
@@ -325,12 +318,12 @@ const App: React.FC = () => {
               <>
                 {activeTab === 'summary' && <SummaryView data={fullData} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
+                {activeTab === 'map' && <DistributionMapView data={filteredData} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} />}
                 {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
-                {activeTab === 'history' && <DetailedHistoryView data={filteredData} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} />}
+                {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
-                {activeTab === 'comparison' && <ComparisonView data={filteredData} />}
                 {activeTab === 'recap' && <RecapView data={filteredData} />}
                 {activeTab === 'performance' && <PerformanceView data={filteredData} />}
                 {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} />}

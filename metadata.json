@@ -1,6 +1,5 @@
-
 {
   "name": "HEMO-STATS",
-  "description": "Application professionnelle de suivi des prélèvements et distribution de poches de sang du CNTSCI.",
+  "description": "Application professionnelle de suivi des prélèvements de sang du CNTS Côte d'Ivoire.",
   "requestFramePermissions": []
 }
