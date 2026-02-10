@@ -17,7 +17,7 @@ import { DistributionView } from './components/DistributionView';
 import { DistributionMapView } from './components/DistributionMapView';
 import { LoginView } from './components/LoginView';
 import { AdminUserManagement } from './components/AdminUserManagement';
-import { fetchSheetData, fetchUsers, fetchBrandingConfig } from './services/googleSheetService';
+import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService';
 import { AppTab, DashboardData, User } from './types';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon } from 'lucide-react';
 
@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
@@ -77,10 +78,14 @@ const App: React.FC = () => {
     setSyncStatus('syncing');
 
     try {
-      const [dataResult, brandingResult] = await Promise.all([
-        fetchSheetData(currentInput.trim(), force, currentDistInput.trim()),
+      const [dynSitesResult, brandingResult] = await Promise.all([
+        fetchDynamicSites(currentScript),
         fetchBrandingConfig(currentScript)
       ]);
+
+      if (dynSitesResult) setDynamicSites(dynSitesResult);
+
+      const dataResult = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim(), dynSitesResult || []);
 
       if (dataResult) {
         setFullData(dataResult);
@@ -111,7 +116,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const autoRefreshInterval = setInterval(() => {
       handleSync(true, false);
-    }, 10000);
+    }, 15000);
     return () => clearInterval(autoRefreshInterval);
   }, [handleSync]);
 
@@ -196,6 +201,13 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setActiveTab('pulse');
   };
+
+  const effectiveSitesList = useMemo(() => {
+    return SITES_DATA.map(s => {
+      const dyn = dynamicSites.find(ds => ds.code === s.code);
+      return dyn ? { ...s, manager: dyn.manager, email: dyn.email, phone: dyn.phone } : s;
+    });
+  }, [dynamicSites]);
 
   return (
     <div className="min-h-screen pb-24 lg:pb-0 selection:bg-blue-100">
@@ -312,21 +324,21 @@ const App: React.FC = () => {
         ) : (
           <div className="page-transition">
             {activeTab === 'pulse' && <PulsePerformance data={filteredData} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
-            {activeTab === 'contact' && <ContactsView />}
+            {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
             
             {currentUser && (
               <>
                 {activeTab === 'summary' && <SummaryView data={fullData} setActiveTab={setActiveTab} />}
-                {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} />}
-                {activeTab === 'map' && <DistributionMapView data={filteredData} />}
-                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} />}
+                {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'map' && <DistributionMapView data={filteredData} sites={effectiveSitesList} />}
+                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} sites={effectiveSitesList} />}
                 {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
-                {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} />}
+                {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
                 {activeTab === 'recap' && <RecapView data={filteredData} />}
-                {activeTab === 'performance' && <PerformanceView data={filteredData} />}
-                {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} />}
+                {activeTab === 'performance' && <PerformanceView data={filteredData} sites={effectiveSitesList} />}
+                {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
               </>
             )}
 
@@ -377,7 +389,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} />}
+      {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} sites={effectiveSitesList} />}
 
       {error && (
         <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[200] px-10 py-5 bg-rose-600 text-white rounded-3xl shadow-3xl flex items-center gap-5 animate-in slide-in-from-bottom-12 transition-all">
