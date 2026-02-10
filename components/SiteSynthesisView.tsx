@@ -195,8 +195,21 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
 
   const handleWhatsAppRelance = () => {
     if (!selectedSiteInfo.phone) return;
-    const msg = `Bonjour ${selectedSiteInfo.manager}, je reviens vers vous concernant la situation du site ${selectedSiteInfo.name}. Données actuelles : ${siteStats.realized} poches prélèvées sur la période.`;
-    window.open(`https://wa.me/225${selectedSiteInfo.phone.replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    const perc = siteStats.percentage;
+    const cleanPhone = selectedSiteInfo.phone.replace(/\s/g, '');
+    
+    let intro = "";
+    if (perc >= 100) {
+      intro = `🌟 Félicitations ! Le site a atteint ses objectifs. Bravo à vous et à toute l'équipe pour ce résultat exceptionnel.`;
+    } else if (perc >= 75) {
+      intro = `👍 Bonne progression. Vous êtes sur la bonne voie, continuez vos efforts pour franchir la barre des 100% d'ici la fin de la période.`;
+    } else {
+      intro = `⚠️ Alerte Performance. Le niveau actuel de collecte est préoccupant. Merci de prendre les dispositions nécessaires pour redynamiser l'activité.`;
+    }
+
+    const message = `Bonjour ${selectedSiteInfo.manager},\n\n${intro}\n\n📍 Situation du site *${selectedSiteInfo.name}* :\n- Collecte Fixe : ${siteStats.fixed}\n- Collecte Mobile : ${siteStats.mobile}\n- Total Réalisé : ${siteStats.realized} poches\n- Taux d'atteinte : *${perc.toFixed(1)}%*\n\nRestons mobilisés pour sauver des vies.\nCordialement, DSD HEMO-STATS.`;
+    
+    window.open(`https://wa.me/225${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   if (!sites.length) return null;
