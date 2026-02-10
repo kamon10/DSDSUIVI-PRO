@@ -100,9 +100,6 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
   }
 };
 
-/**
- * Récupère les informations des sites (Managers) pour écraser les constantes si besoin
- */
 export const fetchDynamicSites = async (scriptUrl: string): Promise<any[]> => {
   if (!scriptUrl) return [];
   try {
@@ -216,7 +213,7 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
   }
 };
 
-export const fetchSheetData = async (url: string, force = false, distributionUrl?: string): Promise<DashboardData | null> => {
+export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = []): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
@@ -261,6 +258,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       const total = cleanNum(row[col.total]);
 
       const siteInfo = getSiteByInput(code) || getSiteByInput(siteName);
+      const dynSite = dynamicSites.find(ds => ds.code === code || ds.name === siteName);
+      
       const objs = getSiteObjectives(siteName);
 
       if (y === targetYear && (m - 1) === targetMonth) {
@@ -293,9 +292,9 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
         total,
         objective: objs.daily,
         region: siteInfo?.region,
-        manager: siteInfo?.manager,
-        email: siteInfo?.email,
-        phone: siteInfo?.phone
+        manager: dynSite?.manager || siteInfo?.manager,
+        email: dynSite?.email || siteInfo?.email,
+        phone: dynSite?.phone || siteInfo?.phone
       });
     });
 
@@ -312,6 +311,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
         regionsMap.set(regName, { name: regName, sites: [] });
       }
       const agg = siteAgg.get(s.name.toUpperCase());
+      const dynS = dynamicSites.find(ds => ds.code === s.code);
+
       const siteRec: SiteRecord = {
         name: s.name,
         region: s.region,
@@ -323,9 +324,9 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
         monthlyMobile: agg?.mm || 0,
         objDate: getSiteObjectives(s.name).daily,
         objMensuel: getSiteObjectives(s.name).monthly,
-        manager: s.manager,
-        email: s.email,
-        phone: s.phone
+        manager: dynS?.manager || s.manager,
+        email: dynS?.email || s.email,
+        phone: dynS?.phone || s.phone
       };
       regionsMap.get(regName)!.sites.push(siteRec);
     });
