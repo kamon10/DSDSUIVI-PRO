@@ -1,7 +1,11 @@
 
 import React, { useMemo, useState } from 'react';
-import { SITES_DATA, getSiteObjectives, COLORS } from '../constants';
+import { getSiteObjectives, COLORS } from '../constants';
 import { Target, Search, Building2, MapPin, ChevronRight, Zap, Calendar } from 'lucide-react';
+
+interface SiteObjectivesViewProps {
+  sites: any[];
+}
 
 const REGION_COLORS: Record<string, string> = {
   "PRES ABIDJAN": "#e2efda", 
@@ -16,13 +20,13 @@ const REGION_COLORS: Record<string, string> = {
   "PRES KABADOUGOU": "#fee5e5"
 };
 
-export const SiteObjectivesView: React.FC = () => {
+export const SiteObjectivesView: React.FC<SiteObjectivesViewProps> = ({ sites }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const groupedObjectives = useMemo(() => {
     const map = new Map<string, any[]>();
     
-    SITES_DATA.forEach(site => {
+    sites.forEach(site => {
       if (searchTerm && !site.name.toLowerCase().includes(searchTerm.toLowerCase()) && !site.code.includes(searchTerm)) {
         return;
       }
@@ -38,12 +42,10 @@ export const SiteObjectivesView: React.FC = () => {
     });
 
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [searchTerm]);
+  }, [searchTerm, sites]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      
-      {/* HEADER SECTION */}
       <div className="bg-[#0f172a] rounded-[3rem] p-10 lg:p-14 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-8">
@@ -66,16 +68,15 @@ export const SiteObjectivesView: React.FC = () => {
                 placeholder="Rechercher un site ou un code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl text-sm font-bold text-white outline-none focus:ring-2 ring-red-500 placeholder:text-white/20 transition-all"
+                className="w-full pl-12 pr-6 py-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl text-sm font-bold text-white outline-none focus:ring-2 ring-red-50 placeholder:text-white/20 transition-all"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* GRID DE RÉGIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {groupedObjectives.map(([region, sites]) => (
+        {groupedObjectives.map(([region, regionSites]) => (
           <div key={region} className="bg-white rounded-[3rem] shadow-warm border border-slate-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
             <div className="px-10 py-8 flex justify-between items-center border-b border-slate-50" style={{ backgroundColor: REGION_COLORS[region] || '#f8fafc' }}>
               <div className="flex items-center gap-4">
@@ -84,11 +85,11 @@ export const SiteObjectivesView: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900">{region}</h3>
               </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sites.length} SITES</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{regionSites.length} SITES</span>
             </div>
 
             <div className="p-4 lg:p-8 space-y-4">
-              {sites.map((site, idx) => (
+              {regionSites.map((site, idx) => (
                 <div key={idx} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 hover:bg-white hover:shadow-lg transition-all group/site">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4">
@@ -128,14 +129,6 @@ export const SiteObjectivesView: React.FC = () => {
             </div>
           </div>
         ))}
-
-        {groupedObjectives.length === 0 && (
-          <div className="col-span-full py-40 flex flex-col items-center justify-center gap-6">
-             <Target size={64} className="text-slate-200" />
-             <p className="text-xs font-black text-slate-300 uppercase tracking-[0.3em]">Aucun site ne correspond à votre recherche</p>
-             <button onClick={() => setSearchTerm("")} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Réinitialiser</button>
-          </div>
-        )}
       </div>
     </div>
   );

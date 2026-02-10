@@ -1,10 +1,12 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types';
-import { SITES_DATA, WORKING_DAYS_YEAR, COLORS } from '../constants';
+import { WORKING_DAYS_YEAR, COLORS } from '../constants';
 import { MapPin, User, Mail, Phone, Calendar, Search, Building2, Truck, Target, CheckCircle2, XCircle, AlertTriangle, History, Zap, Globe, BarChart3 } from 'lucide-react';
 
 interface DetailedHistoryViewProps {
   data: DashboardData;
+  sites: any[];
 }
 
 const MONTHS_FR = [
@@ -12,8 +14,7 @@ const MONTHS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }) => {
-  // Liste des années et mois disponibles
+export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, sites }) => {
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
@@ -40,46 +41,40 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
     availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()
   );
 
-  // Filtre Région avec l'option "TOUS LES SITES"
   const regions = useMemo(() => {
     const rSet = new Set<string>();
-    SITES_DATA.forEach(s => rSet.add(s.region));
+    sites.forEach(s => rSet.add(s.region));
     return ["TOUS LES SITES", ...Array.from(rSet).sort()];
-  }, []);
+  }, [sites]);
 
   const [selectedRegion, setSelectedRegion] = useState(regions[0] || "TOUS LES SITES");
 
-  // Filtre Site (dynamique selon région ou liste complète)
   const sitesInRegion = useMemo(() => {
     let baseSites = [];
     let label = "";
     
     if (selectedRegion === "TOUS LES SITES") {
-      baseSites = [...SITES_DATA].sort((a, b) => a.name.localeCompare(b.name));
+      baseSites = [...sites].sort((a, b) => a.name.localeCompare(b.name));
       label = "CUMUL NATIONAL (TOUS)";
     } else {
-      baseSites = SITES_DATA.filter(s => s.region === selectedRegion).sort((a, b) => a.name.localeCompare(b.name));
+      baseSites = sites.filter(s => s.region === selectedRegion).sort((a, b) => a.name.localeCompare(b.name));
       label = `CUMUL ${selectedRegion.replace('PRES ', '')}`;
     }
 
-    // On ajoute l'option de cumul en haut de liste
     return [{ code: "ALL", name: label, region: selectedRegion, annualObjective: 0 }, ...baseSites];
-  }, [selectedRegion]);
+  }, [selectedRegion, sites]);
 
   const [selectedSiteCode, setSelectedSiteCode] = useState("ALL");
 
-  // Reset le site à "ALL" quand on change de région pour avoir la vue consolidée par défaut
   useEffect(() => {
     setSelectedSiteCode("ALL");
   }, [selectedRegion]);
 
-  // Informations sur le site ou la zone sélectionnée
   const selectionInfo = useMemo(() => {
     if (selectedSiteCode === "ALL") {
-      // Vue Consolidée
       const relevantSites = selectedRegion === "TOUS LES SITES" 
-        ? SITES_DATA 
-        : SITES_DATA.filter(s => s.region === selectedRegion);
+        ? sites 
+        : sites.filter(s => s.region === selectedRegion);
       
       const totalAnnualObj = relevantSites.reduce((acc, s) => acc + s.annualObjective, 0);
       
@@ -93,17 +88,15 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
         relevantSitesNames: new Set(relevantSites.map(s => s.name.toUpperCase()))
       };
     } else {
-      // Vue Site Unique
-      const site = SITES_DATA.find(s => s.code === selectedSiteCode);
+      const site = sites.find(s => s.code === selectedSiteCode);
       return {
         ...site,
         isConsolidated: false,
         relevantSitesNames: new Set([site?.name.toUpperCase() || ""])
       };
     }
-  }, [selectedSiteCode, selectedRegion]);
+  }, [selectedSiteCode, selectedRegion, sites]);
 
-  // Données historiques agrégées ou filtrées
   const historyData = useMemo(() => {
     return data.dailyHistory
       .filter(h => {
@@ -125,7 +118,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
           }
         });
 
-        // Si l'objectif n'est pas fourni dans les data, on utilise le prorata de l'objectif annuel
         if (dailyObjective === 0 && selectionInfo.annualObjective) {
             dailyObjective = Math.round(selectionInfo.annualObjective / WORKING_DAYS_YEAR);
         }
@@ -145,7 +137,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
       });
   }, [data.dailyHistory, selectedYear, selectedMonth, selectionInfo]);
 
-  // Calcul des cumuls de réalisation pour la sélection
   const performanceStats = useMemo(() => {
     let annualRealized = 0;
     let monthlyRealized = 0;
@@ -168,8 +159,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-12">
-      
-      {/* 1. BARRE DE FILTRES INTELLIGENTE */}
       <div className="bg-slate-900 rounded-[2.5rem] p-6 lg:p-10 shadow-2xl text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-[80px]"></div>
         
@@ -192,35 +181,32 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
             <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
               <Calendar size={14} className="text-slate-400" />
               <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer">
-                {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
+                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
               <History size={14} className="text-slate-400" />
               <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer">
-                {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
+                {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
               </select>
             </div>
             <div className={`border rounded-xl px-4 py-2 flex items-center gap-2 transition-all ${selectedRegion === "TOUS LES SITES" ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20' : 'bg-white/5 border-white/10'}`}>
               <MapPin size={14} className={selectedRegion === "TOUS LES SITES" ? "text-white" : "text-slate-400"} />
               <select value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
-                {regions.map(r => <option key={r} value={r} className="text-slate-900">{r}</option>)}
+                {regions.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div className="bg-red-600 border border-red-500 rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg shadow-red-900/40">
               <Building2 size={14} className="text-white" />
               <select value={selectedSiteCode} onChange={(e) => setSelectedSiteCode(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white max-w-[150px] lg:max-w-none">
-                {sitesInRegion.map(s => <option key={s.code} value={s.code} className="text-slate-900">{s.name}</option>)}
+                {sitesInRegion.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. FICHE D'IDENTITÉ ET STATS CONSOLIDÉES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Bloc Responsable / Zone */}
         <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 flex flex-col justify-between group">
           <div className="flex items-center gap-5 mb-8">
              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform ${selectionInfo.isConsolidated ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-800'}`}>
@@ -267,7 +253,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
           </div>
         </div>
 
-        {/* Bloc Objectifs & Performance Agrégés */}
         <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-slate-50 rounded-full -mr-24 -mt-24 pointer-events-none"></div>
           
@@ -318,7 +303,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
         </div>
       </div>
 
-      {/* 3. TABLEAU DES PRÉLÈVEMENTS QUOTIDIENS AGRÉGÉS */}
       <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
         <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
            <div className="flex items-center gap-4">
@@ -328,14 +312,6 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data }
               <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">
                 Journal de collecte : {MONTHS_FR[selectedMonth]} {selectedYear}
               </h3>
-           </div>
-           <div className="hidden lg:flex items-center gap-6">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> COLLECTE SITE FIXE
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400">
-                 <div className="w-3 h-3 bg-orange-500 rounded-sm"></div> COLLECTE MOBILE
-              </div>
            </div>
         </div>
 

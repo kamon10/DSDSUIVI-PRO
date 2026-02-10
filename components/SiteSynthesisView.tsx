@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData, User, DistributionRecord } from '../types';
-import { SITES_DATA, COLORS, getSiteObjectives, PRODUCT_COLORS } from '../constants';
+import { COLORS, getSiteObjectives, PRODUCT_COLORS } from '../constants';
 import { 
   Building2, User as UserIcon, Phone, MapPin, Target, Activity, Award, 
   History, Calendar, PieChart, MessageSquare,
@@ -16,6 +16,7 @@ import {
 interface SiteSynthesisViewProps {
   data: DashboardData;
   user?: User | null;
+  sites: any[];
 }
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -26,30 +27,27 @@ const getStatusColor = (percentage: number) => {
   return '#ef4444';
 };
 
-export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user }) => {
-  const [selectedSiteCode, setSelectedSiteCode] = useState(SITES_DATA[0].code);
+export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user, sites }) => {
+  const [selectedSiteCode, setSelectedSiteCode] = useState(sites[0]?.code || "");
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   
-  // --- ÉTATS FILTRES TEMPORELS ---
   const [timeScale, setTimeScale] = useState<'day' | 'month' | 'year'>('month');
   const [selYear, setSelYear] = useState<string>("");
   const [selMonth, setSelMonth] = useState<string>("");
   const [selDate, setSelDate] = useState<string>("");
 
-  // Liste unique des régions pour le groupement dans le sélecteur
   const availableRegions = useMemo(() => {
-    return Array.from(new Set(SITES_DATA.map(s => s.region))).sort();
-  }, []);
+    return Array.from(new Set(sites.map(s => s.region))).sort();
+  }, [sites]);
 
-  // Initialisation automatique basée sur l'utilisateur et les dernières données
   useEffect(() => {
-    // 1. Site par défaut
     if (user && user.role === 'AGENT' && user.site) {
-      const site = SITES_DATA.find(s => s.name.toUpperCase() === user.site.toUpperCase());
+      const site = sites.find(s => s.name.toUpperCase() === user.site.toUpperCase());
       if (site) setSelectedSiteCode(site.code);
+    } else if (sites.length > 0 && !selectedSiteCode) {
+      setSelectedSiteCode(sites[0].code);
     }
 
-    // 2. Dates par défaut
     if (data.dailyHistory.length > 0) {
       const latest = data.dailyHistory[0];
       const parts = latest.date.split('/');
@@ -57,7 +55,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       setSelMonth((parseInt(parts[1]) - 1).toString());
       setSelDate(latest.date);
     }
-  }, [user, data.dailyHistory]);
+  }, [user, data.dailyHistory, sites]);
 
   const availableYears = useMemo(() => {
     const years = new Set<string>();
@@ -75,15 +73,14 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
   }, [data.dailyHistory, selYear, selMonth]);
 
   const selectedSiteInfo = useMemo(() => 
-    SITES_DATA.find(s => s.code === selectedSiteCode) || SITES_DATA[0]
-  , [selectedSiteCode]);
+    sites.find(s => s.code === selectedSiteCode) || sites[0] || {}
+  , [selectedSiteCode, sites]);
 
-  // --- STATISTIQUES DE PRÉLÈVEMENTS (DONATIONS) ---
   const siteStats = useMemo(() => {
+    if (!selectedSiteInfo.name) return { realized: 0, fixed: 0, mobile: 0, objective: 0, percentage: 0, chartData: [] };
     const siteName = selectedSiteInfo.name.toUpperCase();
     const siteObjs = getSiteObjectives(selectedSiteInfo.name);
 
-    // Filtrage de l'historique selon l'échelle choisie
     const relevantHistory = data.dailyHistory.filter(h => {
       const parts = h.date.split('/');
       const y = parts[2];
@@ -110,14 +107,12 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       return acc + (s?.mobile || 0);
     }, 0);
 
-    // Calcul de l'objectif selon l'échelle
     let currentObjective = siteObjs.monthly;
     if (timeScale === 'day') currentObjective = siteObjs.daily;
     if (timeScale === 'year') currentObjective = siteObjs.annual;
 
     const percentage = currentObjective > 0 ? (totalRealized / currentObjective) * 100 : 0;
 
-    // Historique pour graphique (toujours les 7 dernières entrées de la période)
     const chartData = relevantHistory.slice(0, 7).reverse().map(h => {
       const s = h.sites.find(site => site.name.toUpperCase() === siteName);
       return {
@@ -138,8 +133,8 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     };
   }, [selectedSiteInfo, data.dailyHistory, timeScale, selYear, selMonth, selDate]);
 
-  // --- STATISTIQUES DE DISTRIBUTION (SOURCE UNIQUE : HEMO-STATS / BASE DISTRIBUTION) ---
   const distributionStats = useMemo(() => {
+    if (!selectedSiteInfo.name) return null;
     const distRecords = data.distributions?.records;
     if (!distRecords || distRecords.length === 0) return null;
     
@@ -204,10 +199,10 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     window.open(`https://wa.me/225${selectedSiteInfo.phone.replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  if (!sites.length) return null;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      
-      {/* HEADER AVEC SÉLECTEUR DE SITE ET DE MODE HARMONISÉ */}
       <div className="bg-[#0f172a] rounded-[3.5rem] p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] -mr-32 -mt-32"></div>
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
@@ -239,7 +234,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
               >
                 {availableRegions.map(region => (
                   <optgroup key={region} label={region} className="bg-slate-900 text-slate-400 font-black uppercase text-[10px]">
-                    {SITES_DATA.filter(s => s.region === region).map(site => (
+                    {sites.filter(s => s.region === region).map(site => (
                       <option key={site.code} value={site.code} className="text-white bg-slate-900 font-bold py-2">
                         {site.name}
                       </option>
@@ -253,7 +248,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
         </div>
       </div>
 
-      {/* FILTRES TEMPORELS */}
       <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-8">
         <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
            {['day', 'month', 'year'].map(scale => (
@@ -296,8 +290,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
-        {/* COLONNE INFOS SITE ET MIX */}
         <div className="lg:col-span-1 space-y-10">
           <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col items-center text-center relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform ${viewMode === 'donations' ? 'bg-emerald-50' : 'bg-orange-50'}`}></div>
@@ -312,11 +304,11 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-400"><Award size={18} /></div>
                  <div className="text-left">
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Responsable</p>
-                    <p className="text-[11px] font-black text-slate-800 uppercase leading-none">{selectedSiteInfo.manager}</p>
+                    <p className="text-[11px] font-black text-slate-800 uppercase leading-none">{selectedSiteInfo.manager || 'Non assigné'}</p>
                  </div>
               </div>
               <div className="flex gap-2">
-                 <a href={`tel:${selectedSiteInfo.phone}`} className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-slate-50 transition-all shadow-sm group/btn text-center">
+                 <a href={`tel:${selectedSiteInfo.phone?.replace(/\s/g, '') || ''}`} className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-slate-50 transition-all shadow-sm group/btn text-center">
                     <Phone size={16} className="mx-auto text-emerald-500 group-hover/btn:scale-110 transition-transform" />
                     <span className="text-[9px] font-black text-slate-700 uppercase">Appeler</span>
                  </a>
@@ -363,10 +355,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
           </div>
         </div>
 
-        {/* COLONNE ANALYSE PRINCIPALE DYNAMIQUE */}
         <div className="lg:col-span-2 space-y-10">
-          
-          {/* MODE PRÉLÈVEMENTS (DONATIONS) */}
           {viewMode === 'donations' && (
             <div className="contents animate-in fade-in duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -429,7 +418,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
             </div>
           )}
 
-          {/* MODE DISTRIBUTION (SYNCHRONISÉ SUR HEMO-STATS) HARMONISÉ */}
           {viewMode === 'distribution' && (
             <div className="contents animate-in fade-in duration-500">
               {distributionStats ? (

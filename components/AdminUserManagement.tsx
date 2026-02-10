@@ -3,15 +3,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw, Upload, Phone, MapPin, Edit3 } from 'lucide-react';
 import { fetchUsers, saveRecordToSheet } from '../services/googleSheetService';
 import { User as UserType, UserRole } from '../types';
-import { SITES_DATA } from '../constants';
 
 interface AdminUserManagementProps {
   scriptUrl: string;
   onBrandingChange: (branding: {logo: string, hashtag: string}) => void;
   currentBranding: {logo: string, hashtag: string};
+  sites: any[];
+  onSyncRequest?: () => void;
 }
 
-export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ scriptUrl, onBrandingChange, currentBranding }) => {
+export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ scriptUrl, onBrandingChange, currentBranding, sites, onSyncRequest }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'branding' | 'sites'>('users');
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,12 +24,11 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
-  // Branding
   const [tempHashtag, setTempHashtag] = useState(currentBranding.hashtag);
   const [tempLogo, setTempLogo] = useState(currentBranding.logo);
 
   const roles: UserRole[] = ['AGENT', 'PRES', 'ADMIN', 'SUPERADMIN'];
-  const regions = useMemo(() => ["TOUS LES PRES", ...Array.from(new Set(SITES_DATA.map(s => s.region))).sort()], []);
+  const regions = useMemo(() => ["TOUS LES PRES", ...Array.from(new Set(sites.map(s => s.region))).sort()], [sites]);
 
   const loadUsers = async () => {
     if (!scriptUrl) return;
@@ -54,12 +54,12 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   }, [users, searchTerm, filterRole]);
 
   const filteredSites = useMemo(() => {
-    return SITES_DATA.filter(s => 
+    return sites.filter(s => 
       s.name.toLowerCase().includes(siteSearchTerm.toLowerCase()) || 
       s.code.toLowerCase().includes(siteSearchTerm.toLowerCase()) ||
       s.manager.toLowerCase().includes(siteSearchTerm.toLowerCase())
     );
-  }, [siteSearchTerm]);
+  }, [siteSearchTerm, sites]);
 
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +85,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       await saveRecordToSheet(scriptUrl, { type: 'UPDATE_SITE_INFO', ...editingSite });
       setStatus({ type: 'success', msg: `Informations du site ${editingSite.name} mises à jour.` });
       setEditingSite(null);
-      // Idéalement on rafraîchirait la liste ici si elle venait d'une API
+      if (onSyncRequest) onSyncRequest();
     } catch (err) {
       setStatus({ type: 'error', msg: "Échec de la modification." });
     } finally {
@@ -249,7 +249,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Rôle</label><select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase">{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Région (PRES)</label><select value={editingUser.region || ""} onChange={e => setEditingUser({...editingUser, region: e.target.value})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase"><option value="">Aucune</option>{regions.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
                  </div>
-                 <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Site (AGENT)</label><select value={editingUser.site || ""} onChange={e => setEditingUser({...editingUser, site: e.target.value})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase"><option value="">Tous les sites</option>{SITES_DATA.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}</select></div>
+                 <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Site (AGENT)</label><select value={editingUser.site || ""} onChange={e => setEditingUser({...editingUser, site: e.target.value})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase"><option value="">Tous les sites</option>{sites.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}</select></div>
                  <button disabled={submitting} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">{submitting ? <RefreshCw className="animate-spin" /> : <Shield size={18} />} Enregistrer</button>
               </form>
            </div>

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { DashboardData, DistributionRecord } from '../types';
 import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User, Truck, Package } from 'lucide-react';
@@ -172,7 +173,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
            <div className="bg-slate-900 border border-white/10 rounded-2xl px-6 py-3 flex items-center gap-3 shadow-2xl mr-2">
              <Activity size={14} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} />
              <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)} className="bg-transparent outline-none text-[11px] font-black uppercase tracking-widest cursor-pointer text-white">
-               {availableDays.map(d => <option key={d} value={d} className="text-slate-900">{d}</option>)}
+               {availableDays.map(d => <option key={d} value={d}>{d}</option>)}
              </select>
            </div>
            <div className="flex gap-2">
@@ -207,7 +208,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
               </div>
             </div>
             <div className="flex-1 space-y-12 text-center lg:text-left">
-              <h2 className="text-6xl font-black uppercase tracking-tighter leading-none mb-4">{viewMode === 'donations' ? 'Rythme National' : 'Sorties Nationales'}</h2>
+              <h2 className="text-6xl font-black uppercase tracking-tighter leading-none mb-4">{viewMode === 'donations' ? 'PRELEVEMENTS NATIONAUX' : 'DISTRIBUTION NATIONALE'}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                 {viewMode === 'donations' ? (
                   <>

@@ -10,9 +10,12 @@ interface LoginViewProps {
   onLogin: (user: UserType) => void;
   scriptUrl: string;
   sheetUrl: string;
+  // Added sites to props definition to fix type error in App.tsx
+  sites: any[];
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUrl, sheetUrl }) => {
+// Updated component signature to receive sites prop
+export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUrl, sheetUrl, sites }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [formData, setFormData] = useState({
     nom: '',
@@ -134,7 +137,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                           <input 
                             name="lastname"
-                            // Fix: Renamed from autocomplete to autoComplete for React compatibility
                             autoComplete="family-name"
                             required 
                             value={formData.nom} 
@@ -149,7 +151,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                           <input 
                             name="firstname"
-                            // Fix: Renamed from autocomplete to autoComplete for React compatibility
                             autoComplete="given-name"
                             required 
                             value={formData.prenoms} 
@@ -167,7 +168,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                       <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                       <input 
                         name="email"
-                        // Fix: Renamed from autocomplete to autoComplete for React compatibility
                         autoComplete="email"
                         type="email" 
                         required 
@@ -186,7 +186,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           <Briefcase size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors" />
                           <input 
                             name="jobtitle"
-                            // Fix: Renamed from autocomplete to autoComplete for React compatibility
                             autoComplete="organization-title"
                             required 
                             value={formData.fonction} 
@@ -208,7 +207,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           >
                              <option value="">Sélectionner un site...</option>
                              <option value="DIRECTION GENERALE">DIRECTION GENERALE</option>
-                             {SITES_DATA.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
+                             {/* Replaced static SITES_DATA with passed sites prop */}
+                             {sites.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
                           </select>
                           <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                        </div>

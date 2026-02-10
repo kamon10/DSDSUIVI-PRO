@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { DashboardData } from '../types';
 import { Trophy, TrendingDown, Globe, MapPin, Mail, Phone, X, User, CheckCircle2, AlertTriangle, XCircle, BarChart, ExternalLink, Building2, Truck } from 'lucide-react';
-import { SITES_DATA } from '../constants';
+// SITES_DATA removed from imports as it's passed as a prop now
 
 const getPerfColor = (p: number) => {
   if (p >= 100) return 'text-emerald-500 bg-emerald-50 border-emerald-100';
@@ -15,7 +16,8 @@ const getStatusIcon = (p: number) => {
   return XCircle;
 };
 
-export const PerformanceView: React.FC<{ data: DashboardData }> = ({ data }) => {
+// Added sites prop to fix "Property 'sites' does not exist" error
+export const PerformanceView: React.FC<{ data: DashboardData; sites: any[] }> = ({ data, sites }) => {
   const [selectedRegionName, setSelectedRegionName] = useState<string | null>(null);
 
   const allSites = useMemo(() => data.regions.flatMap(r => r.sites.map(s => ({
@@ -29,7 +31,8 @@ export const PerformanceView: React.FC<{ data: DashboardData }> = ({ data }) => 
 
   const regionPerformance = useMemo(() => data.regions.map(r => {
     const totalMois = r.sites.reduce((acc, s) => acc + s.totalMois, 0);
-    const regionAnnualObj = SITES_DATA.filter(s => s.region === r.name).reduce((acc, s) => acc + s.annualObjective, 0);
+    // Use the sites prop instead of the static SITES_DATA
+    const regionAnnualObj = sites.filter(s => s.region === r.name).reduce((acc, s) => acc + s.annualObjective, 0);
     const regionMonthlyObj = Math.round(regionAnnualObj / 12);
     return {
       originalName: r.name,
@@ -41,7 +44,7 @@ export const PerformanceView: React.FC<{ data: DashboardData }> = ({ data }) => 
       annualPercentage: regionAnnualObj > 0 ? (totalMois / regionAnnualObj) * 100 : 0,
       sites: r.sites
     };
-  }), [data.regions]);
+  }), [data.regions, sites]);
 
   const selectedRegion = useMemo(() => regionPerformance.find(r => r.originalName === selectedRegionName), [selectedRegionName, regionPerformance]);
 

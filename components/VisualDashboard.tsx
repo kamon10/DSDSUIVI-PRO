@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData, AppTab, User, DistributionRecord } from '../types';
 import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package } from 'lucide-react';
-import { COLORS, SITES_DATA, PRODUCT_COLORS } from '../constants';
+import { COLORS, PRODUCT_COLORS } from '../constants';
 
 const getPerfColor = (perc: number) => {
   if (perc >= 100) return 'text-emerald-500';
@@ -13,7 +14,8 @@ export const VisualDashboard: React.FC<{
   data: DashboardData; 
   setActiveTab?: (tab: AppTab) => void;
   user?: User | null;
-}> = ({ data, setActiveTab, user }) => {
+  sites: any[];
+}> = ({ data, setActiveTab, user, sites }) => {
   const [selectedDate, setSelectedDate] = useState<string>(data.date);
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
 
@@ -26,7 +28,6 @@ export const VisualDashboard: React.FC<{
     }
   }, [data.dailyHistory, selectedDate]);
 
-  const allSites = useMemo(() => data.regions.flatMap(reg => reg.sites), [data.regions]);
   const currentDailyRecord = useMemo(() => data.dailyHistory.find(r => r.date === selectedDate) || data.dailyHistory[0], [selectedDate, data.dailyHistory]);
 
   const dailyDistStats = useMemo(() => {
@@ -80,18 +81,18 @@ export const VisualDashboard: React.FC<{
     if (user.role === 'ADMIN' || user.role === 'SUPERADMIN' || user.region === 'TOUS LES PRES') return null;
     if (user.role === 'PRES') return user.region;
     if (user.role === 'AGENT' && user.site) {
-      const siteInfo = SITES_DATA.find(s => s.name.toUpperCase() === user.site.toUpperCase());
+      const siteInfo = sites.find(s => s.name.toUpperCase() === user.site.toUpperCase());
       return siteInfo?.region || null;
     }
     return null;
-  }, [user]);
+  }, [user, sites]);
 
   const missingSites = useMemo(() => {
     if (!currentDailyRecord) return [];
     const activeNames = new Set(currentDailyRecord.sites.filter(site => site.total > 0).map(s => s.name.trim().toUpperCase()));
-    let scopeSites = userRegion ? SITES_DATA.filter(s => s.region?.toUpperCase() === userRegion.toUpperCase()) : SITES_DATA;
+    let scopeSites = userRegion ? sites.filter(s => s.region?.toUpperCase() === userRegion.toUpperCase()) : sites;
     return scopeSites.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
-  }, [currentDailyRecord, userRegion]);
+  }, [currentDailyRecord, userRegion, sites]);
 
   const dayAchievement = currentDailyRecord ? (currentDailyRecord.stats.realized / (currentDailyRecord.sites.reduce((acc, s) => acc + (s.objective || 0), 0) || 1137)) * 100 : 0;
 

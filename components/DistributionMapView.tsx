@@ -1,28 +1,30 @@
+
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { DashboardData, DistributionRecord } from '../types';
-import { PRES_COORDINATES, SITES_DATA, COLORS, getSiteObjectives, PRODUCT_COLORS } from '../constants';
+import { PRES_COORDINATES, COLORS, getSiteObjectives, PRODUCT_COLORS } from '../constants';
 import { Activity, Truck, Calendar, MapPin, Target, Layers, PieChart, Info, Award, Globe, Filter, Package } from 'lucide-react';
 
 interface DistributionMapViewProps {
   data: DashboardData;
+  sites: any[];
 }
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
 const getPerfColor = (p: number) => {
-  if (p >= 100) return '#10b981'; // Vert Excellence
-  if (p >= 75) return '#f59e0b';  // Orange Attention
-  return '#ef4444';               // Rouge Alerte
+  if (p >= 100) return '#10b981'; 
+  if (p >= 75) return '#f59e0b';  
+  return '#ef4444';               
 };
 
-export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }) => {
+export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, sites }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('distribution');
   const [selectedDate, setSelectedDate] = useState(data.date);
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-  // --- FILTRES TEMPORELS ---
   const availableYears = useMemo(() => {
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
@@ -50,11 +52,9 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
     }
   }, [availableDates]);
 
-  // --- CALCUL DES DONNÉES PAR RÉGION (PRES) ---
   const mapStats = useMemo(() => {
     const presMap = new Map<string, any>();
     
-    // Initialiser les PRES
     Object.keys(PRES_COORDINATES).forEach(pres => {
         presMap.set(pres, { 
           name: pres, 
@@ -95,7 +95,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
     return Array.from(presMap.values()).filter(p => PRES_COORDINATES[p.name]);
   }, [data, selectedDate, viewMode]);
 
-  // --- INITIALISATION LEAFLET ---
   useEffect(() => {
     if (!mapRef.current) return;
     
@@ -110,13 +109,26 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
       });
 
       (window as any).L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(leafletMapInstance.current);
+      
+      // Auto-rafraîchissement dès que la taille change
+      resizeObserverRef.current = new ResizeObserver(() => {
+        if (leafletMapInstance.current) {
+          leafletMapInstance.current.invalidateSize();
+        }
+      });
+      resizeObserverRef.current.observe(mapRef.current);
+
+      // Multiple rafraîchissements au départ pour contrer les animations de transition d'onglets
+      [50, 200, 500, 1000].forEach(delay => {
+        setTimeout(() => {
+          if (leafletMapInstance.current) leafletMapInstance.current.invalidateSize();
+        }, delay);
+      });
     }
 
-    // Nettoyer les anciens marqueurs
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    // Ajouter les bulles
     mapStats.forEach(pres => {
       const coords = PRES_COORDINATES[pres.name];
       if (!coords) return;
@@ -175,13 +187,23 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
       markersRef.current.push(circle);
       markersRef.current.push(labelMarker);
     });
-
   }, [mapStats, viewMode]);
+
+  // Nettoyage lors de la sortie de l'onglet Carte
+  useEffect(() => {
+    return () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
+      if (leafletMapInstance.current) {
+        leafletMapInstance.current.remove();
+        leafletMapInstance.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-24">
-      
-      {/* HEADER AVEC SÉLECTEUR DE MODE PALETTE */}
       <div className="bg-[#0f172a] rounded-[4rem] p-10 lg:p-14 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] -mr-40 -mt-40"></div>
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
@@ -217,13 +239,10 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        {/* CARTE CARRÉE FIGÉE */}
         <div className="lg:col-span-7 bg-white rounded-[4rem] shadow-3xl border border-slate-100 p-8 flex flex-col items-center overflow-hidden">
            <div className="w-full aspect-square relative max-w-[700px]">
               <div ref={mapRef} className="w-full h-full border-4 border-slate-50 shadow-inner overflow-hidden rounded-[3rem]"></div>
               
-              {/* Overlay Filtres sur la carte */}
               <div className="absolute top-8 right-8 z-[500] flex flex-col gap-3">
                  <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-2xl border border-slate-100 flex flex-col gap-4">
                     <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
@@ -247,7 +266,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
                  </div>
               </div>
 
-              {/* Légende */}
               <div className="absolute bottom-8 left-8 z-[500] bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-xl border border-slate-100">
                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Légende Statuts</p>
                  <div className="space-y-2">
@@ -259,7 +277,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data }
            </div>
         </div>
 
-        {/* CLASSEMENT LATÉRAL */}
         <div className="lg:col-span-5 space-y-8">
            <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 h-full flex flex-col">
               <div className="flex items-center gap-5 mb-10">

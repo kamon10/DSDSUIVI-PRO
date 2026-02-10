@@ -1,14 +1,18 @@
+
 import React, { useState, useMemo } from 'react';
-import { SITES_DATA } from '../constants';
 import { User, Phone, Mail, MessageSquare, Search, Building2, MapPin, Globe, ChevronRight } from 'lucide-react';
 
-export const ContactsView: React.FC = () => {
+interface ContactsViewProps {
+  sites: any[];
+}
+
+export const ContactsView: React.FC<ContactsViewProps> = ({ sites }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const groupedContacts = useMemo(() => {
     const map = new Map<string, any[]>();
     
-    SITES_DATA.forEach(site => {
+    sites.forEach(site => {
       const matchSearch = 
         site.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         site.manager.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -22,11 +26,11 @@ export const ContactsView: React.FC = () => {
     });
 
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [searchTerm]);
+  }, [searchTerm, sites]);
 
   const handleWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\s/g, '');
-    const msg = `Bonjour ${name}, je vous contacte via l'application DSDSUIVI concernant votre site de prélèvement.`;
+    const msg = `Bonjour ${name}, je vous contacte via l'application HEMO-STATS concernant votre site de prélèvement.`;
     window.open(`https://wa.me/225${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -55,16 +59,15 @@ export const ContactsView: React.FC = () => {
                 placeholder="Rechercher un site, un nom..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl text-sm font-bold text-white outline-none focus:ring-2 ring-blue-500 placeholder:text-white/20 transition-all"
+                className="w-full pl-12 pr-6 py-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl text-sm font-bold text-white outline-none focus:ring-2 ring-blue-50 placeholder:text-white/20 transition-all"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* LISTE DES CONTACTS PAR RÉGION */}
       <div className="space-y-12">
-        {groupedContacts.length > 0 ? groupedContacts.map(([region, sites]) => (
+        {groupedContacts.length > 0 ? groupedContacts.map(([region, sitesList]) => (
           <div key={region} className="space-y-6">
             <div className="flex items-center gap-4 px-6">
                <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-lg">
@@ -72,11 +75,11 @@ export const ContactsView: React.FC = () => {
                </div>
                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">{region}</h3>
                <div className="h-px flex-1 bg-slate-200"></div>
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sites.length} CONTACTS</span>
+               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sitesList.length} CONTACTS</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sites.map((site, idx) => (
+              {sitesList.map((site, idx) => (
                 <div key={idx} className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 group hover:border-blue-200 transition-all hover:shadow-xl">
                   <div className="flex justify-between items-start mb-6">
                     <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shadow-inner">

@@ -1,12 +1,13 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
-import { SITES_DATA } from '../constants';
 import { DashboardData } from '../types';
 
 interface DataEntryFormProps {
   scriptUrl: string | null;
   data: DashboardData;
+  sites: any[];
 }
 
 const MONTHS_FR_UPPER = [
@@ -14,7 +15,7 @@ const MONTHS_FR_UPPER = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "Novembre", "DECEMBRE"
 ];
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, sites }) => {
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
@@ -33,10 +34,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
 
   const selectedSite = useMemo(() => {
     if (formData.siteIndex === "") return null;
-    return SITES_DATA[parseInt(formData.siteIndex)];
-  }, [formData.siteIndex]);
+    return sites[parseInt(formData.siteIndex)];
+  }, [formData.siteIndex, sites]);
 
-  // Détecter si une saisie existe déjà pour le site et la date sélectionnés
   useEffect(() => {
     if (selectedSite && formData.date) {
       const [y, m, d] = formData.date.split('-');
@@ -47,7 +47,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
       
       if (existingSiteData && existingSiteData.total > 0) {
         setIsEditing(true);
-        // Pré-remplissage des valeurs existantes
         setFormData(prev => ({
           ...prev,
           fixe: existingSiteData.fixe,
@@ -72,17 +71,17 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
           date: day.date,
           site: site.name,
           total: site.total,
-          code: SITES_DATA.find(sd => sd.name === site.name)?.code || ""
+          code: sites.find(sd => sd.name === site.name)?.code || ""
         });
       });
     });
     return entries.slice(0, 6);
-  }, [data.dailyHistory]);
+  }, [data.dailyHistory, sites]);
 
   const handleEditFromHistory = (entry: any) => {
     const [d, m, y] = entry.date.split('/');
     const dateValue = `${y}-${m}-${d}`;
-    const siteIdx = SITES_DATA.findIndex(s => s.name === entry.site);
+    const siteIdx = sites.findIndex(s => s.name === entry.site);
     
     setFormData({
       ...formData,
@@ -149,13 +148,13 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
     return (
       <div className="max-w-xl mx-auto py-10 text-center animate-in zoom-in duration-300">
         <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-green-100 flex flex-col items-center">
-          <div className="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
+          <div className="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-green-100">
             <CheckCircle2 size={40} />
           </div>
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">
             {isEditing ? "Mise à jour Réussie" : "Transmission Réussie"}
           </h2>
-          <p className="text-slate-500 text-sm mb-8 font-medium">Les données ont été injectées dans DATABASE1.</p>
+          <p className="text-slate-500 text-sm mb-10 font-medium">Les données ont été injectées avec succès.</p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
             <RefreshCw size={18} /> Nouvelle saisie
           </button>
@@ -202,7 +201,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
                 <div className="relative">
                   <select required value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none appearance-none transition-all focus:ring-4 ring-blue-50">
                     <option value="">Sélectionner un site...</option>
-                    {SITES_DATA.map((s, idx) => <option key={idx} value={idx}>{s.name}</option>)}
+                    {sites.map((s, idx) => <option key={idx} value={idx}>{s.name}</option>)}
                   </select>
                   <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                 </div>
@@ -240,7 +239,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data })
         </form>
       </div>
 
-      {/* PANNEAU HISTORIQUE RÉCENT */}
       <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-200">
          <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm"><History size={24} /></div>
