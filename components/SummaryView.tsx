@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData, AppTab, DistributionRecord } from '../types';
 import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2, Truck, Package } from 'lucide-react';
@@ -17,6 +16,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
   const contentRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
+    // --- STATS DONATIONS ---
     const totalMois = data.monthly.realized || 1;
     const objectiveMois = data.monthly.objective;
     const pochesRestantes = Math.max(0, objectiveMois - data.monthly.realized);
@@ -36,6 +36,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
       };
     }).sort((a, b) => b.percent - a.percent);
 
+    // --- STATS DISTRIBUTION ---
     let distTotal = 0;
     let distRendu = 0;
     const distRegionMap = new Map<string, { qty: number, rendu: number }>();
@@ -69,16 +70,25 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
     };
   }, [data]);
 
+  const getVitalityClasses = (percent: number) => {
+    if (percent >= 110) return { text: 'text-emerald-600', bgTag: 'bg-emerald-50', bgProgress: 'bg-emerald-500' };
+    if (percent >= 100) return { text: 'text-emerald-600', bgTag: 'bg-emerald-50', bgProgress: 'bg-emerald-500' };
+    if (percent >= 75) return { text: 'text-orange-500', bgTag: 'bg-orange-50', bgProgress: 'bg-orange-500' };
+    return { text: 'text-red-600', bgTag: 'bg-red-50', bgProgress: 'bg-red-500' };
+  };
+
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!contentRef.current) return;
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+      const element = contentRef.current;
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const filename = `RESUME_CNTS_${viewMode}`;
+      const filename = `RESUME_CNTS_${viewMode}_${data.month.replace(/\s/g, '_')}`;
       if (type === 'image') {
-        const link = document.createElement('a'); link.download = `${filename}.png`; link.href = imgData; link.click();
+        const link = document.createElement('a');
+        link.download = `${filename}.png`; link.href = imgData; link.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageWidth = pdf.internal.pageSize.getWidth(); 
@@ -92,46 +102,37 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000">
       
-      {/* BANDE DES SÉLECTEURS DE FLUX (RÉSUMÉ) */}
-      <div className="glass-card p-2 rounded-[2.5rem] flex flex-wrap items-center justify-between gap-6 shadow-2xl relative transition-all border-l-8" style={{ borderLeftColor: viewMode === 'donations' ? '#10b981' : '#f59e0b' }}>
-        
-        {/* Palette de Mode Intégrée */}
-        <div className="flex bg-slate-100 p-1.5 rounded-3xl gap-1.5 ml-2">
-           <button onClick={() => setViewMode('donations')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+      {/* SWITCH DE MODE RESUME */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
+        <div className="bg-white p-1.5 rounded-3xl shadow-xl border border-slate-100 flex gap-2">
+           <button onClick={() => setViewMode('donations')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
              <Activity size={16}/> Prélèvements
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+           <button onClick={() => setViewMode('distribution')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-50'}`}>
              <Truck size={16}/> Distribution
            </button>
         </div>
-
-        {/* Info Période */}
-        <div className="flex-1 flex justify-center">
-           <div className="px-8 py-3 bg-slate-900 rounded-2xl text-white shadow-xl flex items-center gap-4">
-              <TrendingUp size={16} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Performance {data.month} {data.year}</span>
-           </div>
-        </div>
-
-        {/* Exports */}
-        <div className="flex gap-2 mr-2">
-          <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
-            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
+        <div className="flex gap-3">
+          <button onClick={() => handleExport('image')} disabled={!!exporting} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />} PNG
           </button>
-          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`p-3 text-white rounded-xl transition-all shadow-md ${viewMode === 'donations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`flex items-center gap-2 px-6 py-3 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md ${viewMode === 'donations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
+            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} PDF
           </button>
         </div>
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
         {/* CARTE VEDETTE */}
-        <div onClick={() => setActiveTab(viewMode === 'donations' ? 'pulse' : 'hemo-stats')} className="relative group overflow-hidden cursor-pointer">
+        <div 
+          onClick={() => setActiveTab(viewMode === 'donations' ? 'pulse' : 'hemo-stats')}
+          className="relative group overflow-hidden cursor-pointer"
+        >
           <div className={`absolute -inset-1 bg-gradient-to-r ${viewMode === 'donations' ? (stats.isReached ? 'from-emerald-600 to-teal-400' : 'from-emerald-600 to-green-500') : 'from-orange-600 to-orange-400'} rounded-[4rem] blur opacity-25 group-hover:opacity-40 transition duration-1000`}></div>
           <div className="relative bg-white rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white flex flex-col lg:flex-row items-center justify-between gap-10">
             <div className="flex items-center gap-8">
-              <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl ${viewMode === 'donations' ? (stats.isReached ? 'bg-emerald-50' : 'bg-emerald-600') : 'bg-orange-600'}`}>
-                {viewMode === 'donations' ? (stats.isReached ? <CheckCircle2 size={48} className="text-emerald-600" /> : <Target size={48} />) : <Package size={48} />}
+              <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl ${viewMode === 'donations' ? (stats.isReached ? 'bg-emerald-500' : 'bg-emerald-600') : 'bg-orange-600'}`}>
+                {viewMode === 'donations' ? (stats.isReached ? <CheckCircle2 size={48} /> : <Target size={48} />) : <Package size={48} />}
               </div>
               <div>
                 <h2 className={`text-sm font-black uppercase tracking-[0.4em] mb-2 ${viewMode === 'donations' ? (stats.isReached ? 'text-emerald-500' : 'text-emerald-600') : 'text-orange-500'}`}>
@@ -145,6 +146,20 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
                 </div>
               </div>
             </div>
+            <div className="flex flex-col items-center lg:items-end text-center lg:text-right">
+              <div className={`px-6 py-3 rounded-2xl border mb-4 ${viewMode === 'donations' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-orange-50 border-orange-100 text-orange-600'}`}>
+                 <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                   {viewMode === 'donations' ? <Activity size={14}/> : <TrendingUp size={14}/>} {viewMode === 'donations' ? 'Flux National' : 'Flux Actif'}
+                 </p>
+              </div>
+              <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
+                {viewMode === 'donations' 
+                  ? `Il manque ${stats.pochesRestantes.toLocaleString()} prélèvements pour valider le contrat mensuel.`
+                  : `Efficacité nette de distribution enregistrée à ${stats.distEfficiency.toFixed(1)}% ce mois.`
+                }
+                <span className="text-slate-900 font-black block mt-1">Détails en temps réel →</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -156,10 +171,10 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
                <div className="w-56 h-56 lg:w-72 lg:h-72 rounded-full border-[10px] border-white/5 flex items-center justify-center relative">
                  <div className="text-center">
                     <span className="text-6xl lg:text-7xl font-black tracking-tighter block">{viewMode === 'donations' ? data.monthly.percentage.toFixed(0) : stats.distEfficiency.toFixed(0)}%</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 block mt-2">{viewMode === 'donations' ? 'Vitalité' : 'Utilisation'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 block mt-2">{viewMode === 'donations' ? 'Taux de Vitalité' : 'Taux d\'Utilisation'}</span>
                  </div>
                  <svg className="absolute inset-0 w-full h-full -rotate-90">
-                   <circle cx="50%" cy="50%" r="48%" fill="none" stroke={viewMode === 'donations' ? '#10b981' : '#f59e0b'} strokeWidth="10" strokeDasharray="854" strokeDashoffset={(854 - (854 * Math.min(viewMode === 'donations' ? data.monthly.percentage : stats.distEfficiency, 100)) / 100).toString()} strokeLinecap="round" className="transition-all duration-1000"/>
+                   <circle cx="50%" cy="50%" r="48%" fill="none" stroke={viewMode === 'donations' ? COLORS.green : '#f59e0b'} strokeWidth="10" strokeDasharray="854" strokeDashoffset={(854 - (854 * Math.min(viewMode === 'donations' ? data.monthly.percentage : stats.distEfficiency, 100)) / 100).toString()} strokeLinecap="round" className="transition-all duration-1000"/>
                  </svg>
                </div>
             </div>
@@ -172,7 +187,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10 text-center">
-                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">{viewMode === 'donations' ? 'Réalisé' : 'Distribué'}</p>
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">{viewMode === 'donations' ? 'Réalisé Mois' : 'Distribué'}</p>
                   <p className="text-2xl font-black text-white">{viewMode === 'donations' ? data.monthly.realized.toLocaleString() : stats.distTotal.toLocaleString()}</p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md p-5 rounded-3xl border border-white/10 text-center">
@@ -190,6 +205,41 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
               </div>
             </div>
           </div>
+        </div>
+
+        {/* VITALITÉ DES RÉGIONS (TOUS LES PRES) */}
+        <div className="space-y-8">
+           <div className="flex items-center gap-4 px-6">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${viewMode === 'donations' ? 'bg-emerald-900' : 'bg-orange-900'}`}>
+                 <MapPin size={24} />
+              </div>
+              <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">{viewMode === 'donations' ? 'Vitalité de toutes les Régions' : 'Flux par Région'}</h3>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {(viewMode === 'donations' ? stats.regionsPerf : stats.distRegionsPerf).map((reg, idx) => {
+                const colors = getVitalityClasses(reg.percent);
+                return (
+                  <div 
+                    key={idx} 
+                    className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 transition-all hover:shadow-xl hover:scale-105"
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                       <h4 className="text-base font-black uppercase tracking-tighter text-slate-800 leading-none">{reg.name}</h4>
+                       <span className={`text-[10px] font-black px-3 py-1 rounded-full ${viewMode === 'donations' ? (colors.bgTag + ' ' + colors.text) : 'bg-orange-50 text-orange-600'}`}>
+                          {reg.percent.toFixed(0)}%
+                       </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-4">
+                       <span className={`text-3xl font-black ${viewMode === 'donations' ? 'text-slate-900' : 'text-orange-900'}`}>{reg.realized.toLocaleString()}</span>
+                       <span className="text-[10px] font-bold text-slate-300 uppercase">Poches</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                       <div className={`h-full transition-all duration-1000 ${viewMode === 'donations' ? colors.bgProgress : 'bg-orange-500'}`} style={{ width: `${Math.min(reg.percent, 100)}%` }}/>
+                    </div>
+                  </div>
+                );
+              })}
+           </div>
         </div>
       </div>
     </div>
