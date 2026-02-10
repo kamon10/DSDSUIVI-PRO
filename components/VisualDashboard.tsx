@@ -94,6 +94,13 @@ export const VisualDashboard: React.FC<{
     return scopeSites.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
   }, [currentDailyRecord, userRegion, sites]);
 
+  const handleMissingSiteWhatsApp = (site: any) => {
+    if (!site.phone) return;
+    const cleanPhone = site.phone.replace(/\D/g, '');
+    const message = `Bonjour ${site.manager || 'Responsable'},\n\n⚠️ *Rappel Saisie HEMO-STATS*\n\nNous constatons que les données de collecte du *${selectedDate}* pour le site *${site.name}* ne sont pas encore renseignées dans le cockpit.\n\nMerci de bien vouloir procéder à la saisie dès que possible pour permettre la consolidation nationale.\n\nRestons mobilisés.\nCordialement, DSD CNTSCI.`;
+    window.open(`https://wa.me/225${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const dayAchievement = currentDailyRecord ? (currentDailyRecord.stats.realized / (currentDailyRecord.sites.reduce((acc, s) => acc + (s.objective || 0), 0) || 1137)) * 100 : 0;
 
   return (
@@ -209,7 +216,15 @@ export const VisualDashboard: React.FC<{
                       <div className="truncate"><p className="text-[11px] font-black text-slate-800 uppercase truncate">{site.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase truncate">{site.manager || "Non assigné"}</p></div>
                    </div>
                    <div className="flex gap-2">
-                      {site.phone ? <a href={`https://wa.me/225${site.phone.replace(/\D/g,'')}`} target="_blank" className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-md active:scale-95"><MessageSquare size={16} /></a> : <div className="w-10 h-10 bg-slate-200 text-slate-400 rounded-xl flex items-center justify-center"><Truck size={14} /></div>}
+                      {site.phone ? (
+                        <button 
+                          onClick={() => handleMissingSiteWhatsApp(site)}
+                          className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-md active:scale-95"
+                          title="Envoyer Rappel WhatsApp"
+                        >
+                          <MessageSquare size={16} />
+                        </button>
+                      ) : <div className="w-10 h-10 bg-slate-200 text-slate-400 rounded-xl flex items-center justify-center"><Truck size={14} /></div>}
                    </div>
                 </div>
               )) : <div className="h-full flex flex-col items-center justify-center text-center py-20 gap-4 opacity-30"><CheckCircle2 size={48} className="text-emerald-500" /><p className="text-xs font-black uppercase tracking-[0.2em]">Saisies à jour</p></div>
