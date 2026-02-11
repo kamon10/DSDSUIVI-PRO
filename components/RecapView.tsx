@@ -1,7 +1,6 @@
-
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { DashboardData } from '../types';
-import { SITES_DATA } from '../constants';
+import { DashboardData } from '../types.ts';
+import { SITES_DATA } from '../constants.tsx';
 import { FileImage, FileText, Loader2, TableProperties, Printer, CalendarCheck, BarChart3, Target, Calendar, Filter, MessageSquare } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -44,7 +43,7 @@ const getPerfColor = (perc: number) => {
 export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
   const availableYears = useMemo(() => {
     const years = new Set<string>();
-    data.dailyHistory.forEach(h => {
+    data.dailyHistory.forEach((h: any) => {
       const year = h.date.split('/')[2];
       if (year) years.add(year);
     });
@@ -65,12 +64,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
       setSelectedMonth(parseInt(parts[1]) - 1);
       setSelectedDate(data.date);
     }
-  }, [data.date]);
+  }, [data.date, selectedYear]);
 
   const availableMonths = useMemo(() => {
     if (!selectedYear) return [];
     const months = new Set<number>();
-    data.dailyHistory.forEach(h => {
+    data.dailyHistory.forEach((h: any) => {
       const parts = h.date.split('/');
       if (parts[2] === selectedYear) {
         months.add(parseInt(parts[1]) - 1);
@@ -80,10 +79,10 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
   }, [data.dailyHistory, selectedYear]);
 
   const filteredDates = useMemo(() => {
-    return data.dailyHistory.filter(h => {
+    return data.dailyHistory.filter((h: any) => {
       const parts = h.date.split('/');
       return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
-    }).map(h => h.date);
+    }).map((h: any) => h.date);
   }, [data.dailyHistory, selectedYear, selectedMonth]);
 
   useEffect(() => {
@@ -93,12 +92,13 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
   }, [filteredDates, selectedDate]);
 
   const dailyRecord = useMemo(() => 
-    data.dailyHistory.find(h => h.date === selectedDate)
+    data.dailyHistory.find((h: any) => h.date === selectedDate)
   , [selectedDate, data.dailyHistory]);
 
   const formattedData = useMemo(() => {
     if (!isValidDate(selectedDate)) return [];
-    const [selD, selM, selY] = selectedDate.split('/').map(Number);
+    const parts = selectedDate.split('/').map(Number);
+    const selD = parts[0]; const selM = parts[1]; const selY = parts[2];
     const isCurrentLatest = selectedDate === data.date;
 
     const getSitePriority = (name: string) => {
@@ -130,7 +130,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
           };
         }
 
-        const siteDaily = dailyRecord?.sites.find(s => 
+        const siteDaily = dailyRecord?.sites.find((s: any) => 
           s.name.trim().toUpperCase() === site.name.trim().toUpperCase()
         );
         
@@ -139,12 +139,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
         const totalJour = siteDaily?.total || (fixeJour + mobileJour);
 
         const totalMoisALaDate = data.dailyHistory
-          .filter(h => {
-            const [hD, hM, hY] = h.date.split('/').map(Number);
-            return hY === selY && hM === selM && hD <= selD;
+          .filter((h: any) => {
+            const hParts = h.date.split('/').map(Number);
+            return hParts[2] === selY && hParts[1] === selM && hParts[0] <= selD;
           })
           .reduce((acc, h) => {
-            const s = h.sites.find(siteH => 
+            const s = h.sites.find((siteH: any) => 
               siteH.name.trim().toUpperCase() === site.name.trim().toUpperCase()
             );
             return acc + (s?.total || 0);
@@ -197,12 +197,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
     const achievementGlobal = objMens > 0 ? (totalMois / objMens) * 100 : 0;
     
     return { 
-      fixed, 
-      mobile, 
-      totalJour, 
-      totalMois, 
-      objMens, 
-      achievementGlobal 
+      fixed, mobile, totalJour, totalMois, objMens, achievementGlobal 
     };
   }, [formattedData, selectedDate, data]);
 
@@ -253,7 +248,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-10">
-      
       <div className="flex flex-col xl:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
         <div className="flex items-center gap-4">
            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
@@ -264,7 +258,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Synthèse détaillée par PRES et CDTS</p>
            </div>
         </div>
-
         <div className="flex flex-wrap items-center justify-center gap-3">
           <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
             <Calendar size={14} className="text-slate-400" />
@@ -272,14 +265,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
-
           <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
             <Filter size={14} className="text-slate-400" />
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent font-black text-slate-800 text-xs outline-none cursor-pointer uppercase">
               {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
             </select>
           </div>
-
           <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
             <span className="font-black text-blue-800 text-[9px] uppercase tracking-widest">Situation au :</span>
             <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-blue-200 px-3 py-1 font-black text-blue-900 text-xs rounded-lg outline-none cursor-pointer">
@@ -287,7 +278,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
             </select>
           </div>
         </div>
-
         <div className="flex gap-2">
           <button onClick={() => handleExport('image')} disabled={!!exporting} className="px-4 py-2.5 bg-slate-100 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
             {exporting === 'image' ? <Loader2 size={12} className="animate-spin" /> : <FileImage size={14} />} Image
@@ -297,7 +287,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
           </button>
         </div>
       </div>
-
       <div className="overflow-x-auto rounded-[2.5rem] shadow-2xl bg-white border border-slate-100">
         <div ref={recapRef} className="min-w-[900px] p-6 bg-white text-slate-900" style={{ width: '100%', maxWidth: '950px', margin: '0 auto' }}>
           <div className="flex justify-between items-center mb-6 border-b-2 border-slate-900 pb-4">
@@ -315,7 +304,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
               <p className="text-xl font-black leading-none">{selectedDate}</p>
             </div>
           </div>
-
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="border-2 border-slate-900 p-3 flex flex-col items-center justify-center bg-slate-50">
                <div className="flex items-center gap-2 mb-1">
@@ -339,7 +327,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
                <p className="text-3xl font-black text-blue-600 leading-none">{grandTotals.objMens.toLocaleString()}</p>
             </div>
           </div>
-
           <table className="w-full border-collapse border-2 border-slate-900 text-[10px] font-bold text-slate-950 leading-tight">
             <thead>
               <tr className="bg-slate-900 text-white">
@@ -355,13 +342,13 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
               </tr>
             </thead>
             <tbody>
-              {formattedData.map((region, rIdx) => {
+              {formattedData.map((region: any, rIdx: number) => {
                 const regionNameKey = region.name.trim().toUpperCase();
                 const regionColor = REGION_COLORS[regionNameKey] || '#ffffff';
                 const regionPerf = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
                 return (
                   <React.Fragment key={rIdx}>
-                    {region.sites.map((site, sIdx) => {
+                    {region.sites.map((site: any, sIdx: number) => {
                       const siteInfo = sites.find(s => s.name.trim().toUpperCase() === site.name.trim().toUpperCase());
                       return (
                         <tr key={`${rIdx}-${sIdx}`} style={{ backgroundColor: regionColor }} className="hover:brightness-95 transition-all">
@@ -420,7 +407,6 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites }) => {
               </tr>
             </tfoot>
           </table>
-
           <div className="mt-4 flex justify-between items-center opacity-70 italic border-t-2 border-slate-100 pt-3">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 bg-slate-900 rounded-full"></div>

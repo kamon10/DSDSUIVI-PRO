@@ -1,9 +1,8 @@
-
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { DashboardData, DistributionRecord } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { Calendar, Layers, TrendingUp, Filter, Target, CheckCircle2, AlertTriangle, XCircle, Clock, MapPin, Zap, Activity, FileImage, FileText, Loader2, Truck, Package } from 'lucide-react';
-import { COLORS, PRODUCT_COLORS } from '../constants';
+import React, { useState, useMemo, useRef } from 'react';
+import { DashboardData, DistributionRecord, DailyHistoryRecord } from '../types';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine } from 'recharts';
+import { Calendar, Layers, TrendingUp, Filter, Target, Activity, FileImage, FileText, Loader2, Truck, Package, Clock, CalendarDays, Zap, Award } from 'lucide-react';
+import { COLORS } from '../constants';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -16,52 +15,29 @@ const MONTHS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-const getWeekNumber = (d: Date): number => {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-};
-
-// Couleurs locales pour garantir l'affichage harmonisé
 const THEME = {
-  fixed: '#10b981',      // Vert Émeraude Vibrant (Collecte)
-  mobile: '#fbbf24',     // Ambre Brillant (Collecte / Mobilité)
-  expedie: '#f59e0b',    // Orange Pro (Sortie)
-  rendu: '#f43f5e',      // Rose-Rouge Alerte
-  national: '#10b981'    // Vert National
+  fixed: '#10b981',      // Vert Émeraude (Collecte Fixe)
+  mobile: '#fbbf24',     // Ambre (Collecte Mobile)
+  total: '#3b82f6',      // Bleu (Total)
+  expedie: '#f59e0b',    // Orange (Distribution Brute)
+  rendu: '#f43f5e',      // Rouge (Rendus)
+  net: '#10b981'         // Vert (Sorties Nettes)
 };
 
 export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
+  const [timeScale, setTimeScale] = useState<'days' | 'months' | 'years'>('days');
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // --- ANALYSE DES DISPONIBILITÉS ---
   const availableYears = useMemo(() => {
     const years = new Set<string>();
-    data.dailyHistory.forEach(h => {
-      const parts = h.date.split('/');
-      if (parts.length === 3) years.add(parts[2]);
-    });
-    data.distributions?.records.forEach(r => {
-      const parts = r.date.split('/');
-      if (parts.length === 3) years.add(parts[2]);
-    });
+    data.dailyHistory.forEach(h => years.add(h.date.split('/')[2]));
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data.dailyHistory, data.distributions]);
+  }, [data.dailyHistory]);
 
-  // Initialisation robuste
-  const [selectedYear, setSelectedYear] = useState<string>(() => {
-    if (data.dailyHistory.length > 0) return data.dailyHistory[0].date.split('/')[2];
-    return availableYears[0] || new Date().getFullYear().toString();
-  });
-
-  const [selectedMonth, setSelectedMonth] = useState<number>(() => {
-    if (data.dailyHistory.length > 0) return parseInt(data.dailyHistory[0].date.split('/')[1]) - 1;
-    return new Date().getMonth();
-  });
-
-  const [selectedWeekNum, setSelectedWeekNum] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>(availableYears[0] || "2026");
 
   const availableMonths = useMemo(() => {
     const months = new Set<number>();
@@ -69,289 +45,323 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data }) => {
       const parts = h.date.split('/');
       if (parts[2] === selectedYear) months.add(parseInt(parts[1]) - 1);
     });
-    data.distributions?.records.forEach(r => {
-      const parts = r.date.split('/');
-      if (parts[2] === selectedYear) months.add(parseInt(parts[1]) - 1);
-    });
     return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, data.distributions, selectedYear]);
+  }, [data.dailyHistory, selectedYear]);
 
-  const weeklyStats = useMemo(() => {
-    if (!selectedYear || selectedMonth === -1) return [];
-    const weeksMap = new Map<number, any>();
-    
-    if (viewMode === 'donations') {
-      data.dailyHistory.forEach(record => {
-        const parts = record.date.split('/');
-        if (parts.length !== 3) return;
-        const [dStr, mStr, yStr] = parts;
-        const m = parseInt(mStr) - 1;
-        if (yStr === selectedYear && m === selectedMonth) {
-          const dateObj = new Date(parseInt(yStr), m, parseInt(dStr));
-          const weekNum = getWeekNumber(dateObj);
-          if (!weeksMap.has(weekNum)) {
-            weeksMap.set(weekNum, { 
-              week: weekNum, fixed: 0, mobile: 0, total: 0, days: 0, 
-              startDate: dateObj, endDate: dateObj, regionalData: new Map<string, number>() 
-            });
-          }
-          const w = weeksMap.get(weekNum);
-          w.fixed += record.stats.fixed || 0;
-          w.mobile += record.stats.mobile || 0;
-          w.total += record.stats.realized || 0;
-          w.days += 1;
-          if (dateObj < w.startDate) w.startDate = dateObj;
-          if (dateObj > w.endDate) w.endDate = dateObj;
-          record.sites.forEach(site => {
-            const reg = site.region || "AUTRES";
-            w.regionalData.set(reg, (w.regionalData.get(reg) || 0) + (site.total || 0));
-          });
+  const [selectedMonth, setSelectedMonth] = useState<number>(availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth());
+
+  // --- LOGIQUE D'AGRÉGATION ÉVOLUTION ---
+  const evolutionData = useMemo(() => {
+    if (timeScale === 'days') {
+      // Évolution par jour pour le mois sélectionné
+      const days = data.dailyHistory.filter(h => {
+        const p = h.date.split('/');
+        return p[2] === selectedYear && (parseInt(p[1]) - 1) === selectedMonth;
+      }).sort((a, b) => {
+        const da = parseInt(a.date.split('/')[0]);
+        const db = parseInt(b.date.split('/')[0]);
+        return da - db;
+      });
+
+      return days.map(d => {
+        const dayKey = d.date.split('/')[0];
+        if (viewMode === 'donations') {
+          return { name: dayKey, total: d.stats.realized, fixe: d.stats.fixed, mobile: d.stats.mobile };
+        } else {
+          const dists = data.distributions?.records.filter(r => r.date === d.date) || [];
+          const qty = dists.reduce((acc, r) => acc + r.quantite, 0);
+          const rendu = dists.reduce((acc, r) => acc + r.rendu, 0);
+          return { name: dayKey, expedie: qty, rendu: rendu, net: qty - rendu };
         }
       });
-    } else {
-      data.distributions?.records.forEach(record => {
-        const parts = record.date.split('/');
-        if (parts.length !== 3) return;
-        const [dStr, mStr, yStr] = parts;
-        const m = parseInt(mStr) - 1;
-        if (yStr === selectedYear && m === selectedMonth) {
-          const dateObj = new Date(parseInt(yStr), m, parseInt(dStr));
-          const weekNum = getWeekNumber(dateObj);
-          if (!weeksMap.has(weekNum)) {
-            weeksMap.set(weekNum, { 
-              week: weekNum, qty: 0, rendu: 0, total: 0, daysSet: new Set<string>(), 
-              startDate: dateObj, endDate: dateObj, regionalData: new Map<string, number>() 
-            });
-          }
-          const w = weeksMap.get(weekNum);
-          w.qty += record.quantite || 0;
-          w.rendu += record.rendu || 0;
-          w.total += record.quantite || 0;
-          w.daysSet.add(record.date);
-          if (dateObj < w.startDate) w.startDate = dateObj;
-          if (dateObj > w.endDate) w.endDate = dateObj;
-          const reg = record.region || "AUTRES";
-          w.regionalData.set(reg, (w.regionalData.get(reg) || 0) + (record.quantite || 0));
+    } else if (timeScale === 'months') {
+      // Évolution par mois pour l'année sélectionnée
+      const monthlyMap = new Map<number, any>();
+      
+      data.dailyHistory.forEach(h => {
+        const p = h.date.split('/');
+        const y = p[2], m = parseInt(p[1]) - 1;
+        if (y === selectedYear) {
+          if (!monthlyMap.has(m)) monthlyMap.set(m, { m, total: 0, fixe: 0, mobile: 0, expedie: 0, rendu: 0, net: 0 });
+          const entry = monthlyMap.get(m);
+          entry.total += h.stats.realized;
+          entry.fixe += h.stats.fixed;
+          entry.mobile += h.stats.mobile;
         }
       });
-    }
 
-    const monthlyObjective = data.monthly.objective || 1;
-    const weeklyObjective = Math.round(monthlyObjective / 4.33);
+      if (data.distributions?.records) {
+        data.distributions.records.forEach(r => {
+          const p = r.date.split('/');
+          const y = p[2], m = parseInt(p[1]) - 1;
+          if (y === selectedYear) {
+            if (!monthlyMap.has(m)) monthlyMap.set(m, { m, total: 0, fixe: 0, mobile: 0, expedie: 0, rendu: 0, net: 0 });
+            const entry = monthlyMap.get(m);
+            entry.expedie += r.quantite;
+            entry.rendu += r.rendu;
+            entry.net += (r.quantite - r.rendu);
+          }
+        });
+      }
 
-    return Array.from(weeksMap.values())
-      .sort((a, b) => a.week - b.week)
-      .map(w => ({
-        ...w,
-        days: viewMode === 'donations' ? w.days : w.daysSet.size,
-        objective: weeklyObjective,
-        percentage: viewMode === 'donations' ? (w.total / weeklyObjective) * 100 : (w.qty > 0 ? ((w.qty - w.rendu) / w.qty) * 100 : 0),
-        formattedRange: `Semaine ${w.week} (du ${w.startDate.getDate().toString().padStart(2, '0')}/${(w.startDate.getMonth()+1).toString().padStart(2, '0')} au ${w.endDate.getDate().toString().padStart(2, '0')}/${(w.endDate.getMonth()+1).toString().padStart(2, '0')})`,
-        sortedRegions: Array.from(w.regionalData.entries())
-          .map(([name, total]) => ({ name, total }))
-          .sort((a, b) => b.total - a.total)
+      return Array.from(monthlyMap.values()).sort((a, b) => a.m - b.m).map(e => ({
+        ...e, name: MONTHS_FR[e.m].substring(0, 3).toUpperCase()
       }));
-  }, [data, viewMode, selectedYear, selectedMonth]);
-
-  const activeWeekData = useMemo(() => {
-    if (weeklyStats.length === 0) return null;
-    return selectedWeekNum ? (weeklyStats.find(w => w.week === selectedWeekNum) || weeklyStats[weeklyStats.length - 1]) : weeklyStats[weeklyStats.length - 1];
-  }, [selectedWeekNum, weeklyStats]);
-
-  const intensityColor = useMemo(() => {
-    if (!activeWeekData) return THEME.national;
-    const p = activeWeekData.percentage;
-    if (viewMode === 'donations') {
-      if (p >= 100) return THEME.fixed;
-      if (p >= 75) return THEME.mobile;
-      return THEME.rendu;
     } else {
-      if (p >= 95) return THEME.fixed;
-      if (p >= 90) return THEME.expedie;
-      return THEME.mobile;
+      // Évolution par année
+      const annualMap = new Map<string, any>();
+
+      data.dailyHistory.forEach(h => {
+        const y = h.date.split('/')[2];
+        if (!annualMap.has(y)) annualMap.set(y, { y, total: 0, fixe: 0, mobile: 0, expedie: 0, rendu: 0, net: 0 });
+        const entry = annualMap.get(y);
+        entry.total += h.stats.realized;
+        entry.fixe += h.stats.fixed;
+        entry.mobile += h.stats.mobile;
+      });
+
+      if (data.distributions?.records) {
+        data.distributions.records.forEach(r => {
+          const y = r.date.split('/')[2];
+          if (!annualMap.has(y)) annualMap.set(y, { y, total: 0, fixe: 0, mobile: 0, expedie: 0, rendu: 0, net: 0 });
+          const entry = annualMap.get(y);
+          entry.expedie += r.quantite;
+          entry.rendu += r.rendu;
+          entry.net += (r.quantite - r.rendu);
+        });
+      }
+
+      return Array.from(annualMap.values()).sort((a, b) => a.y.localeCompare(b.y)).map(e => ({
+        ...e, name: e.y
+      }));
     }
-  }, [activeWeekData, viewMode]);
+  }, [data, viewMode, timeScale, selectedYear, selectedMonth]);
+
+  const totals = useMemo(() => {
+    return evolutionData.reduce((acc, curr) => ({
+      val1: acc.val1 + (viewMode === 'donations' ? curr.total : curr.expedie),
+      val2: acc.val2 + (viewMode === 'donations' ? curr.fixe : curr.net),
+      val3: acc.val3 + (viewMode === 'donations' ? curr.mobile : curr.rendu)
+    }), { val1: 0, val2: 0, val3: 0 });
+  }, [evolutionData, viewMode]);
 
   const handleExport = async (type: 'image' | 'pdf') => {
     if (!contentRef.current) return;
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+      const canvas = await html2canvas(contentRef.current, { scale: 2.5, useCORS: true, backgroundColor: '#f8fafc' });
       const imgData = canvas.toDataURL('image/png', 1.0);
+      const filename = `EVOLUTION_${viewMode}_${timeScale}`;
       if (type === 'image') {
-        const link = document.createElement('a'); link.download = `RAPPORT_HEBDO_${viewMode}.png`; link.href = imgData; link.click();
+        const link = document.createElement('a'); link.download = `${filename}.png`; link.href = imgData; link.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageWidth = pdf.internal.pageSize.getWidth();
-        const ratio = pageWidth / (canvas.width / 2);
-        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
-        pdf.save(`RAPPORT_HEBDO_${viewMode}.pdf`);
+        const ratio = pageWidth / (canvas.width / 2.5);
+        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2.5) * ratio);
+        pdf.save(`${filename}.pdf`);
       }
     } catch (err) { console.error(err); } finally { setExporting(null); }
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 pb-24">
+    <div className="space-y-8 animate-in fade-in duration-1000 pb-24">
       
-      {/* SÉLECTEUR DE MODE HARMONISÉ */}
-      <div className="flex flex-wrap items-center justify-between gap-6 px-4">
+      {/* HEADER & SELECTORS */}
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
         <div className="bg-white p-1.5 rounded-3xl shadow-xl border border-slate-100 flex gap-2">
-           <button onClick={() => { setViewMode('donations'); setSelectedWeekNum(null); }} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={16}/> Collecte
+           <button onClick={() => setViewMode('donations')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Activity size={16}/> Prélèvements
            </button>
-           <button onClick={() => { setViewMode('distribution'); setSelectedWeekNum(null); }} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={16}/> Sortie
+           <button onClick={() => setViewMode('distribution')} className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Truck size={16}/> Distribution
            </button>
         </div>
-        <div className="flex gap-3">
-          <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm">
-            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
+
+        <div className="flex bg-slate-900/5 p-1.5 rounded-2xl border border-slate-200">
+           {[
+             { id: 'days', label: 'Jours' },
+             { id: 'months', label: 'Mois' },
+             { id: 'years', label: 'Années' }
+           ].map(s => (
+             <button 
+               key={s.id} 
+               onClick={() => setTimeScale(s.id as any)} 
+               className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${timeScale === s.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+             >
+                {s.label}
+             </button>
+           ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 shadow-sm transition-all">
+            {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={18} />}
           </button>
-          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`p-3 text-white rounded-xl shadow-md transition-all ${viewMode === 'donations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-orange-600 hover:bg-orange-700'}`}>
-            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+          <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`p-3 text-white rounded-xl shadow-lg transition-all ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}>
+            {exporting === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={18} />}
           </button>
         </div>
       </div>
 
-      <div ref={contentRef} className="space-y-10 p-1">
-        {/* HEADER */}
-        <div className="bg-[#0f172a] rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl overflow-hidden relative">
-          <div className={`absolute top-0 right-0 w-[500px] h-[500px] blur-[120px] rounded-full -mr-40 -mt-40 opacity-20 ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}></div>
-          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div className="flex items-center gap-8">
-              <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center shadow-2xl ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}>
-                 {viewMode === 'donations' ? <Layers size={36} /> : <Package size={36} />}
+      <div ref={contentRef} className="space-y-8 p-1">
+        {/* BANNIÈRE ANALYTIQUE */}
+        <div className={`relative overflow-hidden rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl border border-white/5 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-[#0f172a]' : 'bg-[#1e1b4b]'}`}>
+           <div className={`absolute top-0 right-0 w-[500px] h-[500px] blur-[150px] rounded-full -mr-40 -mt-40 opacity-20 ${viewMode === 'donations' ? 'bg-emerald-500' : 'bg-orange-500'}`}></div>
+           
+           <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-10">
+              <div className="flex items-center gap-8">
+                 <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center shadow-2xl transition-all ${viewMode === 'donations' ? 'bg-emerald-600' : 'bg-orange-600'}`}>
+                    {timeScale === 'days' ? <CalendarDays size={32} /> : timeScale === 'months' ? <Layers size={32} /> : <Award size={32} />}
+                 </div>
+                 <div>
+                    <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-none mb-3">Courbe d'Évolution</h2>
+                    <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px] flex items-center gap-3">
+                       <Clock size={14} className={viewMode === 'donations' ? "text-emerald-500" : "text-orange-500"} /> 
+                       Séquence : {timeScale === 'days' ? `${MONTHS_FR[selectedMonth]} ${selectedYear}` : timeScale === 'months' ? `Année ${selectedYear}` : 'Série Historique'}
+                    </p>
+                 </div>
               </div>
-              <div>
-                <h2 className="text-4xl font-black uppercase tracking-tighter leading-none mb-3">{viewMode === 'donations' ? 'Rythme de Collecte' : 'Flux de Distribution'}</h2>
-                <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px]">{MONTHS_FR[selectedMonth].toUpperCase()} {selectedYear}</p>
+
+              <div className="flex flex-wrap justify-center gap-4 bg-white/5 p-2 rounded-[2rem] backdrop-blur-xl border border-white/10 shadow-inner">
+                 <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none px-6 py-2 cursor-pointer">
+                    {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
+                 </select>
+                 {timeScale === 'days' && (
+                   <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none px-6 py-2 border-l border-white/10 cursor-pointer">
+                      {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
+                   </select>
+                 )}
               </div>
-            </div>
-            <div className="flex gap-4 bg-white/5 p-2 rounded-[2rem] backdrop-blur-xl">
-                <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none px-4">
-                  {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
-                </select>
-                <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none px-4 border-l border-white/10">
-                  {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
-                </select>
-            </div>
-          </div>
+           </div>
         </div>
 
-        {/* SECTION GRAPHIQUE CORRIGÉE */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col">
-             <div className="flex items-center justify-between mb-12">
-                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">{viewMode === 'donations' ? 'Analyse de Mixité' : 'Analyse des Volumes'}</h3>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.fixed : THEME.expedie }}></div><span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Fixe' : 'Expédié'}</span></div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.mobile : THEME.rendu }}></div><span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Mobile' : 'Rendu'}</span></div>
-                </div>
-             </div>
-             
-             <div className="h-[450px] w-full min-h-[450px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  {weeklyStats.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center opacity-20 gap-4"><Activity size={80} className="animate-pulse"/><p className="font-black text-xs uppercase tracking-widest">Aucune donnée trouvée</p></div>
-                  ) : (
-                    <BarChart 
-                      key={`${viewMode}-${selectedMonth}-${selectedYear}`}
-                      data={weeklyStats} 
-                      margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
-                      // Fix: Using type casting to any for the onClick event object to address property access warnings in some Recharts versions.
-                      onClick={(d: any) => d?.activePayload && setSelectedWeekNum(d.activePayload[0].payload.week)}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: 900, fill: '#94a3b8'}} tickFormatter={(v) => `SEM ${v}`} />
-                      <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: 900, fill: '#94a3b8'}} />
-                      <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1rem' }} />
-                      {viewMode === 'donations' ? (
-                        <>
-                          <Bar dataKey="fixed" stackId="a" fill={THEME.fixed} radius={[0, 0, 0, 0]} name="Site Fixe" />
-                          <Bar dataKey="mobile" stackId="a" fill={THEME.mobile} radius={[10, 10, 0, 0]} name="Collecte Mobile" />
-                        </>
-                      ) : (
-                        <>
-                          <Bar dataKey="qty" stackId="a" fill={THEME.expedie} radius={[0, 0, 0, 0]} name="Expédié" />
-                          <Bar dataKey="rendu" stackId="a" fill={THEME.rendu} radius={[10, 10, 0, 0]} name="Rendu" />
-                        </>
-                      )}
-                    </BarChart>
-                  )}
-                </ResponsiveContainer>
-             </div>
-          </div>
+        {/* METRICS & CHART */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+           <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 group">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{viewMode === 'donations' ? 'Total Période' : 'Expédié Brut'}</p>
+                 <div className="flex items-baseline gap-2">
+                    <p className="text-5xl font-[950] text-slate-900 tracking-tighter">{totals.val1.toLocaleString()}</p>
+                    <p className="text-[10px] font-black text-slate-300 uppercase">Poches</p>
+                 </div>
+                 <div className="mt-6 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full transition-all duration-1000" style={{ width: '100%', backgroundColor: viewMode === 'donations' ? THEME.total : THEME.expedie }} />
+                 </div>
+              </div>
 
-          <div className="bg-white rounded-[3.5rem] p-10 shadow-warm border border-slate-100 flex flex-col justify-between group overflow-hidden relative">
-             <div className="absolute top-0 right-0 w-32 h-32 opacity-10 blur-2xl rounded-full -mr-16 -mt-16" style={{ backgroundColor: intensityColor }}></div>
-             <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Séquence Active</p>
-                {activeWeekData ? (
-                  <>
-                    <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter mb-10 leading-none">Semaine {activeWeekData.week}</h3>
-                    <div className="grid grid-cols-2 gap-4 mb-10">
-                       <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-center">
-                          <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Volume</p>
-                          <p className="text-3xl font-black text-slate-900">{viewMode === 'donations' ? activeWeekData.total : activeWeekData.qty}</p>
-                       </div>
-                       <div className="bg-slate-900 p-6 rounded-[2rem] text-center shadow-xl">
-                          <p className="text-[9px] font-black text-white/30 uppercase mb-2">Taux</p>
-                          <p className="text-3xl font-black" style={{ color: intensityColor }}>{activeWeekData.percentage.toFixed(0)}%</p>
-                       </div>
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{viewMode === 'donations' ? 'Collecte Fixe' : 'Sorties Nettes'}</p>
+                 <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-black text-slate-800 tracking-tighter">{totals.val2.toLocaleString()}</p>
+                    <p className="text-[10px] font-black text-slate-300 uppercase">{viewMode === 'donations' ? 'Sur Site' : 'Utilisation'}</p>
+                 </div>
+                 <div className="mt-6 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full transition-all duration-1000" style={{ width: `${(totals.val2 / (totals.val1 || 1)) * 100}%`, backgroundColor: viewMode === 'donations' ? THEME.fixed : THEME.net }} />
+                 </div>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{viewMode === 'donations' ? 'Unité Mobile' : 'Rendus / Périmés'}</p>
+                 <div className="flex items-baseline gap-2">
+                    <p className={`text-4xl font-black tracking-tighter ${viewMode === 'donations' ? 'text-slate-800' : 'text-red-500'}`}>{totals.val3.toLocaleString()}</p>
+                    <p className="text-[10px] font-black text-slate-300 uppercase">Poches</p>
+                 </div>
+                 <div className="mt-6 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full transition-all duration-1000" style={{ width: `${(totals.val3 / (totals.val1 || 1)) * 100}%`, backgroundColor: viewMode === 'donations' ? THEME.mobile : THEME.rendu }} />
+                 </div>
+              </div>
+           </div>
+
+           <div className="lg:col-span-3 bg-white rounded-[3.5rem] p-10 lg:p-14 shadow-2xl border border-slate-100 flex flex-col">
+              <div className="flex items-center justify-between mb-12">
+                 <h3 className="text-2xl font-[950] text-slate-900 tracking-tighter uppercase leading-none">Graphique de Performance</h3>
+                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.total : THEME.expedie }}></div>
+                       <span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Total' : 'Brut'}</span>
                     </div>
-                    <div className="space-y-3">
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin size={14} style={{ color: intensityColor }}/> Top Régions</p>
-                       {activeWeekData.sortedRegions.slice(0, 4).map((r: any, i: number) => (
-                         <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                           <span className="text-[10px] font-black text-slate-600 uppercase truncate pr-4">{r.name}</span>
-                           <span className="text-[10px] font-black text-slate-900">{r.total}</span>
-                         </div>
-                       ))}
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.fixed : THEME.net }}></div>
+                       <span className="text-[9px] font-black text-slate-400 uppercase">{viewMode === 'donations' ? 'Fixe' : 'Net'}</span>
                     </div>
-                  </>
-                ) : (
-                  <div className="py-20 text-center text-slate-300 uppercase font-black text-[10px]">Sélectionnez un segment</div>
-                )}
-             </div>
-             <div className="mt-10 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                   {viewMode === 'donations' ? <Zap size={24} style={{ color: intensityColor }} /> : <Truck size={24} style={{ color: intensityColor }} />}
-                </div>
-                <div className="text-right">
-                   <p className="text-[9px] font-black text-slate-400 uppercase">État de santé</p>
-                   <p className="text-lg font-black uppercase" style={{ color: intensityColor }}>{activeWeekData?.percentage >= 100 ? 'EXCELLENT' : 'STANDARD'}</p>
-                </div>
-             </div>
-          </div>
+                 </div>
+              </div>
+
+              <div className="flex-1 w-full min-h-[450px]">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={evolutionData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} padding={{left: 20, right: 20}} />
+                       <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
+                       <Tooltip 
+                          contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1.5rem', fontWeight: '900' }}
+                          cursor={{ stroke: '#e2e8f0', strokeWidth: 2 }}
+                       />
+                       <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2rem' }} />
+                       
+                       {viewMode === 'donations' ? (
+                         <>
+                           <Line type="monotone" dataKey="total" name="Total Collecte" stroke={THEME.total} strokeWidth={5} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} activeDot={{ r: 8, strokeWidth: 0 }} animationDuration={2000} />
+                           <Line type="monotone" dataKey="fixe" name="Site Fixe" stroke={THEME.fixed} strokeWidth={3} strokeDasharray="5 5" dot={false} animationDuration={1500} />
+                           <Line type="monotone" dataKey="mobile" name="Unité Mobile" stroke={THEME.mobile} strokeWidth={3} strokeDasharray="5 5" dot={false} animationDuration={1500} />
+                         </>
+                       ) : (
+                         <>
+                           <Line type="monotone" dataKey="expedie" name="Volume Brute" stroke={THEME.expedie} strokeWidth={5} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} activeDot={{ r: 8, strokeWidth: 0 }} animationDuration={2000} />
+                           <Line type="monotone" dataKey="net" name="Consommation Net" stroke={THEME.net} strokeWidth={4} dot={false} animationDuration={1500} />
+                           <Line type="monotone" dataKey="rendu" name="Rendus" stroke={THEME.rendu} strokeWidth={2} strokeDasharray="4 4" dot={false} animationDuration={1000} />
+                         </>
+                       )}
+                    </LineChart>
+                 </ResponsiveContainer>
+              </div>
+           </div>
         </div>
 
-        {/* JOURNAL */}
-        <div className="bg-white rounded-[4rem] shadow-2xl border border-slate-100 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="px-12 py-6 text-left">Semaine</th>
-                <th className="px-8 py-6 text-center">Jours Actifs</th>
-                <th className="px-8 py-6 text-center">{viewMode === 'donations' ? 'Poches' : 'Sorties Net'}</th>
-                <th className="px-12 py-6 text-right">Performance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {weeklyStats.map((w, i) => (
-                <tr key={i} onClick={() => setSelectedWeekNum(w.week)} className={`hover:bg-slate-50 cursor-pointer transition-all ${selectedWeekNum === w.week ? 'bg-slate-50' : ''}`}>
-                  <td className="px-12 py-7 font-black text-slate-800 uppercase">Séquence {w.week}</td>
-                  <td className="px-8 py-7 text-center font-bold text-slate-400 text-xs">{w.days} jrs</td>
-                  <td className="px-8 py-7 text-center font-black text-lg text-slate-900">{viewMode === 'donations' ? w.total : (w.qty - w.rendu)}</td>
-                  <td className="px-12 py-7 text-right">
-                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black" style={{ backgroundColor: `${intensityColor}15`, color: intensityColor }}>
-                      {w.percentage.toFixed(1)}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* JOURNAL RÉCAPITULATIF */}
+        <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+           <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg"><Activity size={18} /></div>
+                 <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">Journal du Flux Temporel</h3>
+              </div>
+           </div>
+           <div className="overflow-x-auto">
+              <table className="w-full">
+                 <thead>
+                    <tr className="bg-slate-50/30 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b">
+                       <th className="px-12 py-6 text-left">Période</th>
+                       <th className="px-8 py-6 text-center">{viewMode === 'donations' ? 'Total' : 'Expédié'}</th>
+                       <th className="px-8 py-6 text-center">{viewMode === 'donations' ? 'Fixe' : 'Rendu'}</th>
+                       <th className="px-8 py-6 text-center">{viewMode === 'donations' ? 'Mobile' : 'Net'}</th>
+                       <th className="px-12 py-6 text-right">Contribution</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-50">
+                    {evolutionData.map((row, i) => {
+                       const mainVal = viewMode === 'donations' ? row.total : row.expedie;
+                       const perc = totals.val1 > 0 ? (mainVal / totals.val1) * 100 : 0;
+                       return (
+                          <tr key={i} className="hover:bg-slate-50/80 transition-colors group">
+                             <td className="px-12 py-6 font-black text-slate-800 uppercase tracking-tighter">
+                                {timeScale === 'days' ? `Jour ${row.name}` : timeScale === 'months' ? row.name : `Année ${row.name}`}
+                             </td>
+                             <td className="px-8 py-6 text-center text-sm font-black text-slate-900">{mainVal.toLocaleString()}</td>
+                             <td className={`px-8 py-6 text-center text-xs font-bold ${viewMode === 'donations' ? 'text-emerald-600' : 'text-red-500'}`}>{viewMode === 'donations' ? row.fixe.toLocaleString() : row.rendu.toLocaleString()}</td>
+                             <td className={`px-8 py-6 text-center text-xs font-bold ${viewMode === 'donations' ? 'text-orange-600' : 'text-emerald-600'}`}>{viewMode === 'donations' ? row.mobile.toLocaleString() : row.net.toLocaleString()}</td>
+                             <td className="px-12 py-6 text-right">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase">
+                                   {perc.toFixed(1)}%
+                                </div>
+                             </td>
+                          </tr>
+                       );
+                    })}
+                 </tbody>
+              </table>
+           </div>
         </div>
       </div>
     </div>

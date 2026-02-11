@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw, Upload, Phone, MapPin, Edit3 } from 'lucide-react';
-import { fetchUsers, saveRecordToSheet } from '../services/googleSheetService';
-import { User as UserType, UserRole } from '../types';
+import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw, Upload, Phone, MapPin, Edit3, Clock, Database, LogIn } from 'lucide-react';
+import { fetchUsers, fetchLogs, saveRecordToSheet } from '../services/googleSheetService';
+import { User as UserType, UserRole, ActivityLog } from '../types';
 
 interface AdminUserManagementProps {
   scriptUrl: string;
@@ -13,10 +13,12 @@ interface AdminUserManagementProps {
 }
 
 export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ scriptUrl, onBrandingChange, currentBranding, sites, onSyncRequest }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'branding' | 'sites'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'branding' | 'sites' | 'logs'>('users');
   const [users, setUsers] = useState<UserType[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [logSearchTerm, setLogSearchTerm] = useState("");
   const [siteSearchTerm, setSiteSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("ALL");
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
@@ -30,12 +32,16 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   const roles: UserRole[] = ['AGENT', 'PRES', 'ADMIN', 'SUPERADMIN'];
   const regions = useMemo(() => ["TOUS LES PRES", ...Array.from(new Set(sites.map(s => s.region))).sort()], [sites]);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     if (!scriptUrl) return;
     setLoading(true);
     try {
-      const data = await fetchUsers(scriptUrl);
-      setUsers(data);
+      const [usersData, logsData] = await Promise.all([
+        fetchUsers(scriptUrl),
+        fetchLogs(scriptUrl)
+      ]);
+      setUsers(usersData);
+      setLogs(logsData.reverse()); // Plus récents d'abord
     } catch (err) {
       console.error("Erreur chargement:", err);
     } finally {
@@ -43,7 +49,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     }
   };
 
-  useEffect(() => { loadUsers(); }, [scriptUrl]);
+  useEffect(() => { loadData(); }, [scriptUrl]);
 
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
@@ -52,6 +58,14 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       return matchSearch && matchRole;
     });
   }, [users, searchTerm, filterRole]);
+
+  const filteredLogs = useMemo(() => {
+    return logs.filter(l => 
+      l.user.toLowerCase().includes(logSearchTerm.toLowerCase()) || 
+      l.details.toLowerCase().includes(logSearchTerm.toLowerCase()) ||
+      l.action.toLowerCase().includes(logSearchTerm.toLowerCase())
+    );
+  }, [logs, logSearchTerm]);
 
   const filteredSites = useMemo(() => {
     return sites.filter(s => 
@@ -69,7 +83,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       await saveRecordToSheet(scriptUrl, { type: 'UPDATE_USER', ...editingUser });
       setStatus({ type: 'success', msg: `Utilisateur mis à jour.` });
       setEditingUser(null);
-      await loadUsers();
+      await loadData();
     } catch (err) {
       setStatus({ type: 'error', msg: "Échec mise à jour." });
     } finally {
@@ -127,6 +141,13 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     }
   };
 
+  const getLogIcon = (action: string) => {
+    if (action === 'CONNEXION') return <LogIn size={16} className="text-blue-500" />;
+    if (action === 'SAISIE') return <Database size={16} className="text-emerald-500" />;
+    if (action === 'MISE_A_JOUR') return <Edit3 size={16} className="text-orange-500" />;
+    return <Clock size={16} className="text-slate-400" />;
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-12">
       <div className="bg-[#0f172a] rounded-[3.5rem] p-10 lg:p-14 text-white shadow-2xl relative overflow-hidden">
@@ -142,9 +163,10 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
             </div>
           </div>
           
-          <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl">
+          <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl overflow-x-auto no-scrollbar">
              <button onClick={() => setActiveTab('users')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Agents</button>
              <button onClick={() => setActiveTab('sites')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sites' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Structures</button>
+             <button onClick={() => setActiveTab('logs')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'logs' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Journaux</button>
              <button onClick={() => setActiveTab('branding')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'branding' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Branding</button>
           </div>
         </div>
@@ -162,10 +184,10 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                   <option value="ALL">Tous les rôles</option>
                   {roles.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
-                <button onClick={loadUsers} className="p-3 bg-slate-900 text-white rounded-xl shadow-lg"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
+                <button onClick={loadData} className="p-3 bg-slate-900 text-white rounded-xl shadow-lg"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
              </div>
           </div>
-          <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden overflow-x-auto">
             <table className="w-full">
               <thead><tr className="bg-slate-50 border-b"><th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Identité</th><th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Rôle</th><th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Rattachement</th><th className="px-8 py-6 text-right text-[10px] font-black text-slate-400 uppercase">Actions</th></tr></thead>
               <tbody className="divide-y">
@@ -181,6 +203,61 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
             </table>
           </div>
         </>
+      )}
+
+      {activeTab === 'logs' && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4">
+          <div className="flex flex-col lg:flex-row gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 items-center justify-between">
+             <div className="relative flex-1 w-full lg:w-auto">
+                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input value={logSearchTerm} onChange={(e) => setLogSearchTerm(e.target.value)} placeholder="Filtrer l'activité (Nom, Action, Détail)..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none" />
+             </div>
+             <button onClick={loadData} className="p-3 bg-slate-900 text-white rounded-xl shadow-lg flex items-center gap-2 px-6">
+               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+               <span className="text-[10px] font-black uppercase">Actualiser</span>
+             </button>
+          </div>
+          <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden overflow-x-auto">
+             <table className="w-full">
+                <thead>
+                   <tr className="bg-slate-50 border-b">
+                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Date & Heure</th>
+                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Utilisateur</th>
+                      <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Action</th>
+                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Détails de l'activité</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y">
+                   {loading ? (
+                     <tr><td colSpan={4} className="py-20 text-center opacity-30">Chargement des journaux...</td></tr>
+                   ) : filteredLogs.length > 0 ? filteredLogs.map((log, i) => (
+                     <tr key={i} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-8 py-6">
+                           <p className="text-[11px] font-black text-slate-900">{log.timestamp}</p>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="text-[11px] font-black uppercase text-slate-800">{log.user}</p>
+                           <p className="text-[9px] text-slate-400">{log.email}</p>
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                           <div className="flex flex-col items-center gap-1">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mb-1">
+                                 {getLogIcon(log.action)}
+                              </div>
+                              <span className="text-[8px] font-black uppercase text-slate-500 tracking-tighter">{log.action.replace(/_/g, ' ')}</span>
+                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="text-[11px] text-slate-600 font-medium italic">{log.details}</p>
+                        </td>
+                     </tr>
+                   )) : (
+                     <tr><td colSpan={4} className="py-20 text-center text-slate-300 italic">Aucune activité enregistrée.</td></tr>
+                   )}
+                </tbody>
+             </table>
+          </div>
+        </div>
       )}
 
       {activeTab === 'sites' && (

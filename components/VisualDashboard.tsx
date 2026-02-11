@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { DashboardData, AppTab, User, DistributionRecord } from '../types';
+import { DashboardData, AppTab, User } from '../types.ts';
 import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package } from 'lucide-react';
-import { COLORS, PRODUCT_COLORS } from '../constants';
+import { COLORS } from '../constants.tsx';
 
 const getPerfColor = (perc: number) => {
   if (perc >= 100) return 'text-emerald-500';
@@ -21,24 +20,27 @@ export const VisualDashboard: React.FC<{
 
   useEffect(() => {
     if (data.dailyHistory.length > 0) {
-      const exists = data.dailyHistory.some(h => h.date === selectedDate);
+      const exists = data.dailyHistory.some((h: any) => h.date === selectedDate);
       if (!selectedDate || !exists) {
         setSelectedDate(data.dailyHistory[0].date);
       }
     }
   }, [data.dailyHistory, selectedDate]);
 
-  const currentDailyRecord = useMemo(() => data.dailyHistory.find(r => r.date === selectedDate) || data.dailyHistory[0], [selectedDate, data.dailyHistory]);
+  const currentDailyRecord = useMemo(() => {
+    return data.dailyHistory.find((r: any) => r.date === selectedDate) || data.dailyHistory[0];
+  }, [selectedDate, data.dailyHistory]);
 
   const dailyDistStats = useMemo(() => {
     if (!data.distributions?.records) return null;
-    const records = data.distributions.records.filter(r => r.date === selectedDate);
-    const qty = records.reduce((acc, r) => acc + r.quantite, 0);
-    const rendu = records.reduce((acc, r) => acc + r.rendu, 0);
+    const records = data.distributions.records.filter((r: any) => r.date === selectedDate);
+    const qty = records.reduce((acc: number, r: any) => acc + r.quantite, 0);
+    const rendu = records.reduce((acc: number, r: any) => acc + r.rendu, 0);
     const prodMap = new Map<string, number>();
-    records.forEach(r => prodMap.set(r.typeProduit, (prodMap.get(r.typeProduit) || 0) + r.quantite));
+    records.forEach((r: any) => prodMap.set(r.typeProduit, (prodMap.get(r.typeProduit) || 0) + r.quantite));
     return {
-      qty, rendu,
+      qty, 
+      rendu,
       efficiency: qty > 0 ? ((qty - rendu) / qty) * 100 : 0,
       recordsCount: records.length,
       topProducts: Array.from(prodMap.entries()).sort((a,b) => b[1] - a[1]).slice(0, 3)
@@ -49,30 +51,36 @@ export const VisualDashboard: React.FC<{
     if (viewMode === 'donations') {
       if (!currentDailyRecord) return [];
       return currentDailyRecord.sites
-        .filter(site => site.total > 0)
-        .sort((a, b) => b.total - a.total)
-        .map(s => ({
-          name: s.name, value: s.total, subValue: (s.total / (s.objective || 1)) * 100,
-          label: "de l'objectif", type: 'donation'
+        .filter((site: any) => site.total > 0)
+        .sort((a: any, b: any) => b.total - a.total)
+        .map((s: any) => ({
+          name: s.name, 
+          value: s.total, 
+          subValue: (s.total / (s.objective || 1)) * 100,
+          label: "de l'objectif", 
+          type: 'donation'
         }));
     } else {
       if (!data.distributions?.records) return [];
-      const dayRecs = data.distributions.records.filter(r => r.date === selectedDate);
+      const dayRecs = data.distributions.records.filter((r: any) => r.date === selectedDate);
       const siteMap = new Map<string, { cgr: number, total: number }>();
-      dayRecs.forEach(r => {
+      dayRecs.forEach((r: any) => {
         if (!siteMap.has(r.site)) siteMap.set(r.site, { cgr: 0, total: 0 });
         const s = siteMap.get(r.site)!;
-        if (r.typeProduit.startsWith("CGR")) s.cgr += r.quantite;
+        if (r.typeProduit.toUpperCase().startsWith("CGR")) s.cgr += r.quantite;
         s.total += r.quantite;
       });
-      return Array.from(siteMap.entries()).map(entry => {
-          const name = entry[0]; const stats = entry[1];
-          return {
-            name, value: stats.cgr, total: stats.total,
-            subValue: stats.total > 0 ? (stats.cgr / stats.total) * 100 : 0,
-            label: "du volume servi", type: 'distribution'
-          };
-      }).filter(item => item.total > 0).sort((a, b) => b.value - a.value);
+      return Array.from(siteMap.entries())
+        .map((entry) => ({
+          name: entry[0], 
+          value: entry[1].cgr, 
+          total: entry[1].total,
+          subValue: entry[1].total > 0 ? (entry[1].cgr / entry[1].total) * 100 : 0,
+          label: "du volume servi", 
+          type: 'distribution'
+        }))
+        .filter((item) => item.total > 0)
+        .sort((a, b) => b.value - a.value);
     }
   }, [viewMode, currentDailyRecord, data.distributions, selectedDate]);
 
@@ -81,7 +89,7 @@ export const VisualDashboard: React.FC<{
     if (user.role === 'ADMIN' || user.role === 'SUPERADMIN' || user.region === 'TOUS LES PRES') return null;
     if (user.role === 'PRES') return user.region;
     if (user.role === 'AGENT' && user.site) {
-      const siteInfo = sites.find(s => s.name.toUpperCase() === user.site.toUpperCase());
+      const siteInfo = sites.find((s: any) => s.name.toUpperCase() === user.site.toUpperCase());
       return siteInfo?.region || null;
     }
     return null;
@@ -89,9 +97,9 @@ export const VisualDashboard: React.FC<{
 
   const missingSites = useMemo(() => {
     if (!currentDailyRecord) return [];
-    const activeNames = new Set(currentDailyRecord.sites.filter(site => site.total > 0).map(s => s.name.trim().toUpperCase()));
-    let scopeSites = userRegion ? sites.filter(s => s.region?.toUpperCase() === userRegion.toUpperCase()) : sites;
-    return scopeSites.filter(site => !activeNames.has(site.name.trim().toUpperCase()));
+    const activeNames = new Set(currentDailyRecord.sites.filter((site: any) => site.total > 0).map((s: any) => s.name.trim().toUpperCase()));
+    let scopeSites = userRegion ? sites.filter((s: any) => s.region?.toUpperCase() === userRegion.toUpperCase()) : sites;
+    return scopeSites.filter((site: any) => !activeNames.has(site.name.trim().toUpperCase()));
   }, [currentDailyRecord, userRegion, sites]);
 
   const handleMissingSiteWhatsApp = (site: any) => {
@@ -101,7 +109,7 @@ export const VisualDashboard: React.FC<{
     window.open(`https://wa.me/225${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const dayAchievement = currentDailyRecord ? (currentDailyRecord.stats.realized / (currentDailyRecord.sites.reduce((acc, s) => acc + (s.objective || 0), 0) || 1137)) * 100 : 0;
+  const dayAchievement = currentDailyRecord ? (currentDailyRecord.stats.realized / (currentDailyRecord.sites.reduce((acc: number, s: any) => acc + (s.objective || 0), 0) || 1137)) * 100 : 0;
 
   return (
     <div className="space-y-8 pb-24 animate-in fade-in duration-700">
@@ -130,16 +138,22 @@ export const VisualDashboard: React.FC<{
                   <div className="flex items-center gap-2 mt-1">
                     <Filter size={14} className={viewMode === 'donations' ? "text-emerald-400" : "text-orange-400"} />
                     <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest cursor-pointer text-white/60 hover:text-white transition-colors">
-                      {data.dailyHistory.map(h => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
+                      {data.dailyHistory.map((h: any) => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
                     </select>
                   </div>
                 </div>
               </div>
               <div className="text-right">
                  {viewMode === 'donations' ? (
-                    <><p className={`text-4xl font-black leading-none ${getPerfColor(dayAchievement)}`}>{dayAchievement.toFixed(1)}%</p><p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Objectif atteint</p></>
+                    <React.Fragment>
+                      <p className={`text-4xl font-black leading-none ${getPerfColor(dayAchievement)}`}>{dayAchievement.toFixed(1)}%</p>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Objectif atteint</p>
+                    </React.Fragment>
                  ) : (
-                    <><p className="text-4xl font-black text-emerald-400 leading-none">{dailyDistStats?.efficiency.toFixed(1)}%</p><p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Utilisation Nette</p></>
+                    <React.Fragment>
+                      <p className="text-4xl font-black text-emerald-400 leading-none">{dailyDistStats?.efficiency.toFixed(1)}%</p>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-white/30 mt-1">Utilisation Nette</p>
+                    </React.Fragment>
                  )}
               </div>
             </div>
@@ -170,7 +184,7 @@ export const VisualDashboard: React.FC<{
               </div>
               {viewMode === 'donations' ? (
                 <div className="space-y-2">
-                   {currentDailyRecord?.sites.filter(s => s.total > 0).slice(0, 4).map((s, idx) => (
+                   {currentDailyRecord?.sites.filter((s: any) => s.total > 0).slice(0, 4).map((s: any, idx: number) => (
                      <div key={idx} className="flex justify-between items-center text-[10px] font-black uppercase">
                         <span className="text-slate-500 truncate max-w-[140px]">{s.name}</span>
                         <span className="text-emerald-600">{s.total} poches</span>
@@ -179,7 +193,7 @@ export const VisualDashboard: React.FC<{
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {dailyDistStats?.topProducts.map((p, i) => (
+                  {dailyDistStats?.topProducts.map((p: any, i: number) => (
                     <div key={i} className="flex items-center justify-between text-[10px] font-black uppercase">
                       <span className="text-slate-500 truncate max-w-[120px]">{p[0]}</span>
                       <span className="text-orange-600">{p[1]} poches</span>
@@ -229,7 +243,7 @@ export const VisualDashboard: React.FC<{
                 </div>
               )) : <div className="h-full flex flex-col items-center justify-center text-center py-20 gap-4 opacity-30"><CheckCircle2 size={48} className="text-emerald-500" /><p className="text-xs font-black uppercase tracking-[0.2em]">Saisies à jour</p></div>
             ) : (
-               data.distributions?.records.filter(r => r.date === selectedDate).slice(0, 20).map((r, idx) => (
+               data.distributions?.records.filter((r: any) => r.date === selectedDate).slice(0, 20).map((r: any, idx: number) => (
                 <div key={idx} className="p-4 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between group">
                    <div className="flex items-center gap-4 min-w-0">
                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-orange-400"><Truck size={18} /></div>

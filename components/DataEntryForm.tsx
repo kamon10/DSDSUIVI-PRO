@@ -2,11 +2,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
-import { DashboardData } from '../types';
+import { DashboardData, User } from '../types';
 
 interface DataEntryFormProps {
   scriptUrl: string | null;
   data: DashboardData;
+  user: User | null;
   sites: any[];
 }
 
@@ -15,7 +16,7 @@ const MONTHS_FR_UPPER = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "Novembre", "DECEMBRE"
 ];
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, sites }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites }) => {
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
@@ -120,10 +121,22 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, s
         "NombreMobile": totalMobile,
         "Total poches": totalPoches,
         "Mois": calculatedFields.monthName,
-        "Mode": isEditing ? "UPDATE" : "APPEND"
+        "Mode": isEditing ? "UPDATE" : "APPEND",
+        "Auteur": user ? `${user.prenoms} ${user.nom}` : "Système",
+        "AuteurEmail": user?.email || ""
       };
 
       await saveRecordToSheet(scriptUrl, payload);
+
+      // Enregistrer le log d'audit
+      await saveRecordToSheet(scriptUrl, {
+        type: 'LOG_EVENT',
+        action: isEditing ? 'MISE_A_JOUR' : 'SAISIE',
+        user: user ? `${user.prenoms} ${user.nom}` : "Système",
+        email: user?.email || "",
+        details: `${isEditing ? 'Modification' : 'Nouvelle saisie'} pour ${selectedSite.name} le ${d}/${m}/${y} : ${totalPoches} poches`
+      });
+
       setStatus('success');
     } catch (err: any) {
       setStatus('error');

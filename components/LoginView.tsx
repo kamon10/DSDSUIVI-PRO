@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Building2, Briefcase, Send, X, ShieldCheck, AlertCircle, RefreshCw, UserCheck } from 'lucide-react';
-import { SITES_DATA } from '../constants';
 import { fetchUsers, saveRecordToSheet } from '../services/googleSheetService';
 import { User as UserType } from '../types';
 
@@ -10,11 +9,9 @@ interface LoginViewProps {
   onLogin: (user: UserType) => void;
   scriptUrl: string;
   sheetUrl: string;
-  // Added sites to props definition to fix type error in App.tsx
   sites: any[];
 }
 
-// Updated component signature to receive sites prop
 export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUrl, sheetUrl, sites }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [formData, setFormData] = useState({
@@ -37,6 +34,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
       const user = users.find(u => u.email.toLowerCase() === formData.email.toLowerCase());
 
       if (user) {
+        // Enregistrer le log de connexion
+        await saveRecordToSheet(scriptUrl, {
+          type: 'LOG_EVENT',
+          action: 'CONNEXION',
+          user: `${user.prenoms} ${user.nom}`,
+          email: user.email,
+          details: `Connexion réussie au cockpit (${user.role})`
+        });
+
         localStorage.setItem('dsd_user', JSON.stringify(user));
         onLogin(user);
         onClose();
@@ -100,7 +106,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
   return (
     <div className="fixed inset-0 z-[300] bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-4">
        <div className="bg-white rounded-[3.5rem] max-w-2xl w-full shadow-3xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col lg:flex-row">
-          {/* Sidebar */}
           <div className="lg:w-1/3 bg-slate-900 p-10 text-white flex flex-col justify-between relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/20 blur-2xl rounded-full -mr-16 -mt-16"></div>
              <div className="relative z-10">
@@ -119,7 +124,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
              </div>
           </div>
 
-          {/* Main Content */}
           <div className="flex-1 p-10 lg:p-14 relative">
              <button onClick={onClose} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24} /></button>
              
@@ -207,7 +211,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onClose, onLogin, scriptUr
                           >
                              <option value="">Sélectionner un site...</option>
                              <option value="DIRECTION GENERALE">DIRECTION GENERALE</option>
-                             {/* Replaced static SITES_DATA with passed sites prop */}
                              {sites.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
                           </select>
                           <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
