@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { DashboardData, DistributionRecord } from '../types';
 import { PRES_COORDINATES, COLORS, getSiteObjectives, PRODUCT_COLORS } from '../constants';
-import { Activity, Truck, Calendar, MapPin, Target, Layers, PieChart, Info, Award, Globe, Filter, Package, ChevronRight, Search } from 'lucide-react';
+import { Activity, Truck, Calendar, MapPin, Target, Layers, PieChart, Info, Award, Globe, Filter, Package, ChevronRight, Search, Plus, Minus } from 'lucide-react';
 
 interface DistributionMapViewProps {
   data: DashboardData;
@@ -105,6 +105,18 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     }
   };
 
+  const handleZoomIn = () => {
+    if (leafletMapInstance.current) {
+      leafletMapInstance.current.zoomIn();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (leafletMapInstance.current) {
+      leafletMapInstance.current.zoomOut();
+    }
+  };
+
   useEffect(() => {
     if (!mapRef.current) return;
     
@@ -149,7 +161,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
         : 100;
 
       const color = viewMode === 'donations' ? getPerfColor(perf) : '#f59e0b';
-      // Bulles plus petites : réduction du multiplicateur et du rayon de base
       const radius = Math.sqrt(value) * 2 + 10;
       const isSelected = selectedPresName === pres.name;
 
@@ -253,6 +264,26 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
            <div className="w-full aspect-square relative max-w-[700px]">
               <div ref={mapRef} className="w-full h-full border border-slate-100 shadow-inner overflow-hidden rounded-[3rem]"></div>
               
+              {/* BOUTONS DE ZOOM */}
+              <div className="absolute bottom-6 right-6 z-[500] flex flex-col gap-2">
+                 <div className="bg-white/60 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-white/40 flex flex-col gap-1.5">
+                    <button 
+                      onClick={handleZoomIn}
+                      className="w-10 h-10 bg-white/80 rounded-xl flex items-center justify-center text-slate-800 hover:bg-slate-900 hover:text-white transition-all shadow-sm active:scale-95"
+                      title="Zoomer"
+                    >
+                      <Plus size={20} strokeWidth={3} />
+                    </button>
+                    <button 
+                      onClick={handleZoomOut}
+                      className="w-10 h-10 bg-white/80 rounded-xl flex items-center justify-center text-slate-800 hover:bg-slate-900 hover:text-white transition-all shadow-sm active:scale-95"
+                      title="Dézoomer"
+                    >
+                      <Minus size={20} strokeWidth={3} />
+                    </button>
+                 </div>
+              </div>
+
               {/* SÉLECTEUR MINI ET TRANSPARENT */}
               <div className="absolute top-6 right-6 z-[500] flex flex-col gap-2">
                  <div className="bg-white/60 backdrop-blur-md p-3 rounded-[1.5rem] shadow-xl border border-white/40 flex flex-col gap-2 transition-all hover:bg-white/90">
