@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { DashboardData, DistributionRecord } from '../types';
 import { PRES_COORDINATES, COLORS, getSiteObjectives, PRODUCT_COLORS } from '../constants';
-import { Activity, Truck, Calendar, MapPin, Target, Layers, PieChart, Info, Award, Globe, Filter, Package } from 'lucide-react';
+import { Activity, Truck, Calendar, MapPin, Target, Layers, PieChart, Info, Award, Globe, Filter, Package, ChevronRight, Search } from 'lucide-react';
 
 interface DistributionMapViewProps {
   data: DashboardData;
@@ -20,6 +20,8 @@ const getPerfColor = (p: number) => {
 export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, sites }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('distribution');
   const [selectedDate, setSelectedDate] = useState(data.date);
+  const [selectedPresName, setSelectedPresName] = useState<string | null>(null);
+  
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -31,7 +33,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
         const parts = h.date.split('/');
         if (parts[2]) years.add(parts[2]);
     });
-    return Array.from(years).sort().reverse();
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
   }, [data.dailyHistory]);
 
   const [selYear, setSelYear] = useState(availableYears[0] || "2026");
@@ -95,6 +97,14 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     return Array.from(presMap.values()).filter(p => PRES_COORDINATES[p.name]);
   }, [data, selectedDate, viewMode]);
 
+  const handleSelectPres = (name: string) => {
+    setSelectedPresName(name);
+    const coords = PRES_COORDINATES[name];
+    if (coords && leafletMapInstance.current) {
+      leafletMapInstance.current.flyTo(coords, 9, { duration: 1.5 });
+    }
+  };
+
   useEffect(() => {
     if (!mapRef.current) return;
     
@@ -110,7 +120,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
 
       (window as any).L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(leafletMapInstance.current);
       
-      // Auto-rafraîchissement dès que la taille change
       resizeObserverRef.current = new ResizeObserver(() => {
         if (leafletMapInstance.current) {
           leafletMapInstance.current.invalidateSize();
@@ -118,7 +127,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
       });
       resizeObserverRef.current.observe(mapRef.current);
 
-      // Multiple rafraîchissements au départ pour contrer les animations de transition d'onglets
       [50, 200, 500, 1000].forEach(delay => {
         setTimeout(() => {
           if (leafletMapInstance.current) leafletMapInstance.current.invalidateSize();
@@ -141,42 +149,47 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
         : 100;
 
       const color = viewMode === 'donations' ? getPerfColor(perf) : '#f59e0b';
-      const radius = Math.sqrt(value) * 3 + 15;
+      // Bulles plus petites : réduction du multiplicateur et du rayon de base
+      const radius = Math.sqrt(value) * 2 + 10;
+      const isSelected = selectedPresName === pres.name;
 
       const circle = (window as any).L.circleMarker(coords, {
         radius: radius,
         fillColor: color,
-        color: 'white',
-        weight: 3,
+        color: isSelected ? '#000' : 'white',
+        weight: isSelected ? 4 : 2,
         opacity: 1,
-        fillOpacity: 0.8
+        fillOpacity: isSelected ? 0.9 : 0.7,
+        className: 'marker-pulse'
       }).addTo(leafletMapInstance.current);
+
+      circle.on('click', () => handleSelectPres(pres.name));
 
       const label = (window as any).L.divIcon({
         className: 'custom-div-icon',
-        html: `<div style="color:white; font-weight:950; font-size:11px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); text-align:center; width:100%">${value}</div>`,
-        iconSize: [40, 20],
-        iconAnchor: [20, 10]
+        html: `<div style="color:white; font-weight:950; font-size:${value > 99 ? '9px' : '10px'}; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align:center; width:100%">${value}</div>`,
+        iconSize: [30, 20],
+        iconAnchor: [15, 10]
       });
 
       const labelMarker = (window as any).L.marker(coords, { icon: label }).addTo(leafletMapInstance.current);
+      labelMarker.on('click', () => handleSelectPres(pres.name));
 
       const popupContent = `
-        <div class="p-3 font-sans min-w-[140px]">
-          <p class="font-black text-[9px] uppercase text-slate-400 mb-1 tracking-widest">${pres.name}</p>
-          <div class="flex items-center gap-2 mb-3">
-             <span class="text-xl font-black text-slate-800">${value}</span>
-             <span class="text-[9px] font-black text-slate-400 uppercase">Poches</span>
+        <div class="p-2 font-sans min-w-[120px]">
+          <p class="font-black text-[8px] uppercase text-slate-400 mb-0.5 tracking-widest">${pres.name}</p>
+          <div class="flex items-center gap-2 mb-1">
+             <span class="text-base font-black text-slate-800">${value}</span>
+             <span class="text-[8px] font-black text-slate-400 uppercase">Poches</span>
           </div>
           ${viewMode === 'donations' ? `
-            <div class="pt-2 border-t border-slate-100">
-               <p class="text-[9px] font-black text-emerald-600 uppercase">Atteinte: ${perf.toFixed(1)}%</p>
+            <div class="pt-1 border-t border-slate-100">
+               <p class="text-[8px] font-black text-emerald-600 uppercase">Atteinte: ${perf.toFixed(1)}%</p>
             </div>
           ` : `
-            <div class="space-y-1.5 pt-2 border-t border-slate-100">
-               <div class="flex justify-between items-center"><span class="text-[8px] font-black text-slate-500 uppercase">CGR</span> <span class="text-[9px] font-black text-red-500">${pres.distribution.cgr}</span></div>
-               <div class="flex justify-between items-center"><span class="text-[8px] font-black text-slate-500 uppercase">PLASMA</span> <span class="text-[9px] font-black text-blue-500">${pres.distribution.plasma}</span></div>
-               <div class="flex justify-between items-center"><span class="text-[8px] font-black text-slate-500 uppercase">PLAQ.</span> <span class="text-[9px] font-black text-orange-500">${pres.distribution.platelets}</span></div>
+            <div class="space-y-1 pt-1 border-t border-slate-100">
+               <div class="flex justify-between items-center"><span class="text-[7px] font-black text-slate-500 uppercase">CGR</span> <span class="text-[8px] font-black text-red-500">${pres.distribution.cgr}</span></div>
+               <div class="flex justify-between items-center"><span class="text-[7px] font-black text-slate-500 uppercase">PLA.</span> <span class="text-[8px] font-black text-blue-500">${pres.distribution.plasma}</span></div>
             </div>
           `}
         </div>
@@ -187,14 +200,11 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
       markersRef.current.push(circle);
       markersRef.current.push(labelMarker);
     });
-  }, [mapStats, viewMode]);
+  }, [mapStats, viewMode, selectedPresName]);
 
-  // Nettoyage lors de la sortie de l'onglet Carte
   useEffect(() => {
     return () => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
+      if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
       if (leafletMapInstance.current) {
         leafletMapInstance.current.remove();
         leafletMapInstance.current = null;
@@ -218,7 +228,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
                    <Activity size={16}/> Prélèvements
                  </button>
                  <button onClick={() => setViewMode('distribution')} className={`px-10 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-white/40 hover:text-white'}`}>
-                   <Truck size={16}/> Distribution
+                   <Package size={16}/> Distribution
                  </button>
               </div>
             </div>
@@ -239,39 +249,41 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-7 bg-white rounded-[4rem] shadow-3xl border border-slate-100 p-8 flex flex-col items-center overflow-hidden">
+        <div className="lg:col-span-7 bg-white rounded-[4rem] shadow-3xl border border-slate-100 p-6 flex flex-col items-center overflow-hidden">
            <div className="w-full aspect-square relative max-w-[700px]">
-              <div ref={mapRef} className="w-full h-full border-4 border-slate-50 shadow-inner overflow-hidden rounded-[3rem]"></div>
+              <div ref={mapRef} className="w-full h-full border border-slate-100 shadow-inner overflow-hidden rounded-[3rem]"></div>
               
-              <div className="absolute top-8 right-8 z-[500] flex flex-col gap-3">
-                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-2xl border border-slate-100 flex flex-col gap-4">
-                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                       <Calendar size={14} className="text-blue-500" />
-                       <select value={selYear} onChange={(e) => setSelYear(e.target.value)} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
+              {/* SÉLECTEUR MINI ET TRANSPARENT */}
+              <div className="absolute top-6 right-6 z-[500] flex flex-col gap-2">
+                 <div className="bg-white/60 backdrop-blur-md p-3 rounded-[1.5rem] shadow-xl border border-white/40 flex flex-col gap-2 transition-all hover:bg-white/90">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/50 rounded-lg border border-slate-200/50">
+                       <Calendar size={12} className="text-blue-500" />
+                       <select value={selYear} onChange={(e) => setSelYear(e.target.value)} className="bg-transparent font-black text-slate-800 text-[9px] outline-none cursor-pointer uppercase">
                           {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                        </select>
                     </div>
-                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                       <Layers size={14} className="text-orange-500" />
-                       <select value={selMonth} onChange={(e) => setSelMonth(e.target.value)} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/50 rounded-lg border border-slate-200/50">
+                       <Layers size={12} className="text-orange-500" />
+                       <select value={selMonth} onChange={(e) => setSelMonth(e.target.value)} className="bg-transparent font-black text-slate-800 text-[9px] outline-none cursor-pointer uppercase">
                           {MONTHS_FR.map((m, i) => <option key={i} value={i.toString()}>{m}</option>)}
                        </select>
                     </div>
-                    <div className={`flex items-center gap-3 px-6 py-3 border rounded-xl shadow-lg transition-all ${viewMode === 'donations' ? 'bg-emerald-600 border-emerald-500 shadow-emerald-100' : 'bg-orange-600 border-orange-500 shadow-orange-100'}`}>
-                       <Target size={14} className="text-white/70" />
-                       <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent font-black text-white text-[10px] outline-none cursor-pointer uppercase">
-                          {availableDates.map(d => <option key={d} value={d}>{d}</option>)}
+                    <div className={`flex items-center gap-2 px-4 py-2 border rounded-lg shadow-md transition-all ${viewMode === 'donations' ? 'bg-emerald-600/80 border-emerald-500' : 'bg-orange-600/80 border-orange-500'}`}>
+                       <Target size={12} className="text-white/70" />
+                       <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent font-black text-white text-[9px] outline-none cursor-pointer uppercase">
+                          {availableDates.map(d => <option key={d} value={d} className="text-slate-900">{d}</option>)}
                        </select>
                     </div>
                  </div>
               </div>
 
-              <div className="absolute bottom-8 left-8 z-[500] bg-white/90 backdrop-blur-md p-5 rounded-3xl shadow-xl border border-slate-100">
-                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Légende Statuts</p>
-                 <div className="space-y-2">
-                    <div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full bg-emerald-500"></div><span className="text-[10px] font-black text-slate-700 uppercase">Objectif Atteint</span></div>
-                    <div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full bg-orange-500"></div><span className="text-[10px] font-black text-slate-700 uppercase">Flux Actif</span></div>
-                    <div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full bg-red-500"></div><span className="text-[10px] font-black text-slate-700 uppercase">Attention</span></div>
+              {/* LÉGENDE MINI ET TRANSPARENTE */}
+              <div className="absolute bottom-6 left-6 z-[500] bg-white/60 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/40 transition-all hover:bg-white/90">
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-70">Statuts</p>
+                 <div className="space-y-1.5">
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[8px] font-black text-slate-700 uppercase">Cible OK</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div><span className="text-[8px] font-black text-slate-700 uppercase">Actif</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[8px] font-black text-slate-700 uppercase">Alerte</span></div>
                  </div>
               </div>
            </div>
@@ -285,40 +297,44 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
                  </div>
                  <div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Détail par PRES</h3>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Répartition des volumes territoriaux</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliquez pour localiser sur carte</p>
                  </div>
               </div>
 
-              <div className="space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar">
+              <div className="space-y-3 flex-1 overflow-y-auto pr-2 no-scrollbar">
                  {mapStats.sort((a,b) => (viewMode === 'donations' ? b.realized - a.realized : b.distribution.total - a.distribution.total)).map((pres, idx) => {
                     const val = viewMode === 'donations' ? pres.realized : pres.distribution.total;
                     const perc = viewMode === 'donations' ? (pres.objective > 0 ? (pres.realized / pres.objective) * 100 : 0) : 100;
+                    const isSelected = selectedPresName === pres.name;
                     
                     return (
-                      <div key={idx} className="group p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:bg-white hover:shadow-xl hover:border-blue-100 transition-all duration-300">
-                         <div className="flex justify-between items-start mb-4">
+                      <div 
+                        key={idx} 
+                        onClick={() => handleSelectPres(pres.name)}
+                        className={`group p-5 rounded-3xl border transition-all duration-300 cursor-pointer ${isSelected ? 'bg-white border-blue-400 shadow-xl scale-[1.02]' : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-blue-100'}`}
+                      >
+                         <div className="flex justify-between items-start mb-3">
                             <div>
-                               <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight leading-none mb-1">{pres.name}</p>
+                               <p className={`text-[11px] font-black uppercase tracking-tight leading-none mb-1 ${isSelected ? 'text-blue-600' : 'text-slate-800'}`}>{pres.name}</p>
                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Zone Territoriale</p>
                             </div>
                             <div className="text-right">
-                               <p className={`text-2xl font-black ${viewMode === 'donations' ? 'text-slate-900' : 'text-orange-600'}`}>{val.toLocaleString()}</p>
-                               <p className="text-[8px] font-black text-slate-300 uppercase">Poches</p>
+                               <p className={`text-xl font-black ${viewMode === 'donations' ? 'text-slate-900' : 'text-orange-600'}`}>{val.toLocaleString()}</p>
                             </div>
                          </div>
                          {viewMode === 'donations' && (
                            <div className="space-y-2">
-                              <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                              <div className="flex justify-between items-center text-[9px] font-black uppercase">
                                  <span className="text-slate-400">Atteinte</span>
                                  <span style={{ color: getPerfColor(perc) }}>{perc.toFixed(1)}%</span>
                               </div>
-                              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
                                  <div className="h-full transition-all duration-1000" style={{ width: `${Math.min(perc, 100)}%`, backgroundColor: getPerfColor(perc) }}></div>
                               </div>
                            </div>
                          )}
-                         {viewMode === 'distribution' && (
-                           <div className="grid grid-cols-3 gap-2 mt-4">
+                         {viewMode === 'distribution' && isSelected && (
+                           <div className="grid grid-cols-2 gap-2 mt-4 animate-in slide-in-from-top-2">
                               <div className="p-2 bg-white rounded-xl border border-slate-100 text-center">
                                  <p className="text-[7px] font-black text-slate-300 uppercase mb-0.5">CGR</p>
                                  <p className="text-xs font-black text-red-500">{pres.distribution.cgr}</p>
@@ -326,10 +342,6 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
                               <div className="p-2 bg-white rounded-xl border border-slate-100 text-center">
                                  <p className="text-[7px] font-black text-slate-300 uppercase mb-0.5">Plasma</p>
                                  <p className="text-xs font-black text-blue-500">{pres.distribution.plasma}</p>
-                              </div>
-                              <div className="p-2 bg-white rounded-xl border border-slate-100 text-center">
-                                 <p className="text-[7px] font-black text-slate-300 uppercase mb-0.5">Plaq.</p>
-                                 <p className="text-xs font-black text-orange-500">{pres.distribution.platelets}</p>
                               </div>
                            </div>
                          )}
