@@ -11,6 +11,15 @@ export interface User {
   region?: string;
 }
 
+export interface ActivityLog {
+  timestamp: string;
+  user: string;
+  email: string;
+  action: 'CONNEXION' | 'SAISIE' | 'MISE_A_JOUR' | 'SUPPRESSION' | 'ADMIN_CHANGE';
+  details: string;
+  site?: string;
+}
+
 export interface DonationStats {
   realized: number;
   objective: number;

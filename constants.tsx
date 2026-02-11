@@ -43,7 +43,7 @@ export const SITES_DATA = [
   { code: "42", name: "CDTS DE BOUNA", region: "PRES GONTOUGO", annualObjective: 4000, manager: "Dr. KONAN BRUNO", email: "konanbruno14@yahoo.fr", phone: "07 77 11 88 66" },
   
   // PRES HAUT SASSANDRA
-  { code: "20", name: "CRTS DE DALOA", region: "PRES HAUT SASSANDRA", annualObjective: 20000, manager: "Dr. BOSSO Jacques", email: "bossojacques@gmail.com", phone: "01 01 05 074 3" },
+  { code: "20", name: "CRTS DE DALOA", region: "PRES HAUT SASSANDRA", annualObjective: 20000, manager: "Dr. BOSSO Jacques", email: "bossojacques@gmail.com", phone: "07 59 32 77 69" },
   { code: "21", name: "CDTS DE SEGUELA", region: "PRES HAUT SASSANDRA", annualObjective: 7000, manager: "M. ASSI Aboua Ulrich Modeste", email: "modesteassi@yahoo.fr", phone: "07 07 45 92 91" },
   
   // PRES SAN-PEDRO

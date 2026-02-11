@@ -1,25 +1,23 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants';
-import { VisualDashboard } from './components/VisualDashboard';
-import { PerformanceView } from './components/PerformanceView';
-import { DetailedHistoryView } from './components/DetailedHistoryView';
-import { RecapView } from './components/RecapView';
-import { PulsePerformance } from './components/PulsePerformance';
-import { EvolutionView } from './components/EvolutionView';
-import { ComparisonView } from './components/ComparisonView';
-import { SummaryView } from './components/SummaryView';
-import { WeeklyView } from './components/WeeklyView';
-import { SiteSynthesisView } from './components/SiteSynthesisView';
-import { DataEntryForm } from './components/DataEntryForm';
-import { ContactsView } from './components/ContactsView';
-import { DistributionView } from './components/DistributionView';
-import { DistributionMapView } from './components/DistributionMapView';
-import { LoginView } from './components/LoginView';
-import { AdminUserManagement } from './components/AdminUserManagement';
-import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService';
-import { AppTab, DashboardData, User } from './types';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, Calendar, History, FileText, AlertCircle, HeartPulse, LineChart, ArrowLeftRight, Layout, Database, Clock, Layers, Target, UserCheck, PlusSquare, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon } from 'lucide-react';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants.tsx';
+import { VisualDashboard } from './components/VisualDashboard.tsx';
+import { PerformanceView } from './components/PerformanceView.tsx';
+import { RecapView } from './components/RecapView.tsx';
+import { PulsePerformance } from './components/PulsePerformance.tsx';
+import { EvolutionView } from './components/EvolutionView.tsx';
+import { SummaryView } from './components/SummaryView.tsx';
+import { WeeklyView } from './components/WeeklyView.tsx';
+import { SiteSynthesisView } from './components/SiteSynthesisView.tsx';
+import { DataEntryForm } from './components/DataEntryForm.tsx';
+import { ContactsView } from './components/ContactsView.tsx';
+import { DistributionView } from './components/DistributionView.tsx';
+import { DistributionMapView } from './components/DistributionMapView.tsx';
+import { LoginView } from './components/LoginView.tsx';
+import { AdminUserManagement } from './components/AdminUserManagement.tsx';
+import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
+import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
+import { AppTab, DashboardData, User } from './types.ts';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -32,12 +30,9 @@ const App: React.FC = () => {
   
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
-    const defaultBranding = {
-      logo: './assets/logo.png',
-      hashtag: '#DONSANG_CI'
-    };
+    const defaultBranding = { logo: './assets/logo.svg', hashtag: '#DONSANG_CI' };
     if (!saved) return defaultBranding;
-    return JSON.parse(saved);
+    try { return JSON.parse(saved); } catch (e) { return defaultBranding; }
   });
 
   const updateBranding = (newBranding: {logo: string, hashtag: string}) => {
@@ -46,21 +41,20 @@ const App: React.FC = () => {
   };
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [distSheetInput] = useState(DEFAULT_LINK_DISTRIBUTION); 
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(JSON.parse(localStorage.getItem('dsd_user') || 'null'));
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('dsd_user');
+    if (!saved) return null;
+    try { return JSON.parse(saved); } catch (e) { return null; }
+  });
   const [error, setError] = useState<string | null>(null);
 
   const scriptUrl = DEFAULT_SCRIPT_URL;
   const isSyncingRef = useRef(false);
   const sheetInputRef = useRef(sheetInput);
-  const distInputRef = useRef(distSheetInput);
   
-  useEffect(() => {
-    sheetInputRef.current = sheetInput;
-    distInputRef.current = distSheetInput;
-  }, [sheetInput, distSheetInput]);
+  useEffect(() => { sheetInputRef.current = sheetInput; }, [sheetInput]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -70,87 +64,72 @@ const App: React.FC = () => {
   const handleSync = useCallback(async (isSilent = false, force = false) => {
     if (isSyncingRef.current) return;
     const currentInput = sheetInputRef.current;
-    const currentDistInput = distInputRef.current;
-    const currentScript = DEFAULT_SCRIPT_URL;
-    
     isSyncingRef.current = true;
     if (!isSilent) setLoading(true);
     setSyncStatus('syncing');
 
     try {
       const [dynSitesResult, brandingResult] = await Promise.all([
-        fetchDynamicSites(currentScript),
-        fetchBrandingConfig(currentScript)
+        fetchDynamicSites(DEFAULT_SCRIPT_URL),
+        fetchBrandingConfig(DEFAULT_SCRIPT_URL)
       ]);
-
       if (dynSitesResult) setDynamicSites(dynSitesResult);
-
-      const dataResult = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim(), dynSitesResult || []);
-
+      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || []);
       if (dataResult) {
         setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
       }
-      
       if (brandingResult) {
         setBranding(brandingResult);
         localStorage.setItem('hemo_branding', JSON.stringify(brandingResult));
       }
-
       setLastSync(new Date());
       setSyncStatus('synced');
       setError(null);
     } catch (err: any) {
       setSyncStatus('error');
-      if (!isSilent) setError(err.message || "Échec de la connexion.");
+      if (!isSilent) setError(err.message || "Échec de synchronisation.");
     } finally {
       setLoading(false);
       isSyncingRef.current = false;
     }
   }, []);
 
-  useEffect(() => { 
-    handleSync(false, true); 
-  }, [handleSync]);
-
-  useEffect(() => {
-    const autoRefreshInterval = setInterval(() => {
-      handleSync(true, false);
-    }, 15000);
-    return () => clearInterval(autoRefreshInterval);
-  }, [handleSync]);
-
-  const saveSettings = () => {
-    localStorage.setItem('gsheet_input_1', sheetInput.trim());
-    setShowSettings(false);
-    handleSync(false, true);
-  };
+  useEffect(() => { handleSync(false, true); }, [handleSync]);
 
   const filteredData = useMemo(() => {
-    if (!currentUser || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') {
-      return fullData;
-    }
+    if (!currentUser || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') return fullData;
+    
     const filtered = { ...fullData };
-    if (currentUser.role === 'PRES') {
-      const regionName = currentUser.region || "";
-      if (regionName.toUpperCase() !== "TOUS LES PRES") {
-        filtered.regions = fullData.regions.filter(r => r.name.toUpperCase() === regionName.toUpperCase());
-        filtered.dailyHistory = fullData.dailyHistory.map(h => ({
-          ...h,
-          sites: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()),
-          stats: {
-            realized: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.total, 0),
-            fixed: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.fixe, 0),
-            mobile: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
-          }
-        }));
+    const regionName = currentUser.region || "";
+    const siteName = currentUser.site || "";
+
+    // Filtrage pour PRES
+    if (currentUser.role === 'PRES' && regionName.toUpperCase() !== "TOUS LES PRES") {
+      filtered.regions = fullData.regions.filter(r => r.name.toUpperCase() === regionName.toUpperCase());
+      filtered.dailyHistory = fullData.dailyHistory.map(h => ({
+        ...h,
+        sites: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()),
+        stats: {
+          realized: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.total, 0),
+          fixed: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.fixe, 0),
+          mobile: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
+        }
+      }));
+      if (filtered.distributions) {
+        filtered.distributions = {
+          ...filtered.distributions,
+          records: filtered.distributions.records.filter(r => r.region.toUpperCase() === regionName.toUpperCase())
+        };
       }
-    } else if (currentUser.role === 'AGENT') {
-      const siteName = currentUser.site || "";
+    } 
+    // Filtrage pour AGENT
+    else if (currentUser.role === 'AGENT') {
       filtered.regions = fullData.regions.map(r => ({
         ...r,
         sites: r.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase())
       })).filter(r => r.sites.length > 0);
+      
       filtered.dailyHistory = fullData.dailyHistory.map(h => ({
         ...h,
         sites: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()),
@@ -160,16 +139,13 @@ const App: React.FC = () => {
           mobile: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
         }
       }));
+      if (filtered.distributions) {
+        filtered.distributions = {
+          ...filtered.distributions,
+          records: filtered.distributions.records.filter(r => r.site.toUpperCase() === siteName.toUpperCase())
+        };
+      }
     }
-    const mRealized = filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + s.totalMois, 0), 0);
-    const mObj = filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + s.objMensuel, 0), 0);
-    filtered.monthly = {
-      realized: mRealized,
-      objective: mObj || 1,
-      percentage: mObj > 0 ? (mRealized / mObj) * 100 : 0,
-      fixed: filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + (s.monthlyFixed || 0), 0), 0),
-      mobile: filtered.regions.reduce((acc, r) => acc + r.sites.reduce((sAcc, s) => sAcc + (s.monthlyMobile || 0), 0), 0),
-    };
     return filtered;
   }, [fullData, currentUser]);
 
@@ -181,7 +157,8 @@ const App: React.FC = () => {
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
     { id: 'hemo-stats', icon: <Truck size={18} />, label: 'Hemo-Stats', public: false },
     { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
-    { id: 'weekly', icon: <Layers size={18} />, label: 'Semaine', public: false },
+    { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
+    { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
     { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
     { id: 'recap', icon: <FileText size={18} />, label: 'Récap', public: false },
     { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
@@ -210,194 +187,96 @@ const App: React.FC = () => {
   }, [dynamicSites]);
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0 selection:bg-blue-100">
+    <div className="min-h-screen pb-24 lg:pb-0">
       <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex flex-col lg:flex-row items-center justify-between shadow-2xl min-h-[7.5rem] gap-4">
-          <div className="flex items-center gap-4 shrink-0">
-             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl pulse-glow cursor-pointer transition-transform hover:scale-110 active:scale-95 border border-slate-100 overflow-hidden" onClick={() => setActiveTab('pulse')}>
-               <img src={branding.logo} alt="HEMO-STATS Logo" className="w-full h-full object-contain p-0.5" />
+        <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl min-h-[5rem]">
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActiveTab('pulse')}>
+             <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
+               <img src={branding.logo} alt="Logo" className="w-full h-full object-contain p-1.5" />
              </div>
-             <div className="flex flex-col justify-center">
-               <span className="font-black text-xl tracking-tighter leading-none uppercase text-slate-900">HEMO-STATS</span>
-               <div className="flex items-start gap-2 mt-1">
-                 <div className="flex flex-col max-w-[45px] leading-[1.1] pt-0.5">
-                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest break-words leading-[1.2]">
-                      {branding.hashtag.replace('_', ' ')}
-                    </span>
-                 </div>
-                 {currentUser && (
-                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 ml-1">
-                      <span className="text-[6px] font-black uppercase text-white tracking-tighter">{currentUser.role}</span>
-                   </div>
-                 )}
-               </div>
-             </div>
+             <span className="font-black text-lg tracking-tighter uppercase text-slate-900">HEMO-STATS</span>
           </div>
-
-          <nav className="hidden lg:flex items-center gap-1 flex-1 px-4 overflow-x-auto no-scrollbar">
+          <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
             {visibleNavItems.map((tab) => (
-              <button 
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as AppTab)} 
-                className={`group flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-xl transition-all relative overflow-hidden flex-1 min-w-[70px] ${
-                  activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-900 bg-slate-50/50'
-                }`}
-              >
-                {activeTab === tab.id && (
-                  <div className="absolute inset-0 bg-slate-900 -z-10 animate-in fade-in zoom-in duration-500"></div>
-                )}
-                <span className={`${activeTab === tab.id ? 'scale-110 text-white' : 'group-hover:scale-110 text-slate-400 group-hover:text-slate-900'} transition-transform`}>
-                  {tab.icon}
-                </span>
-                <span className="text-[8px] font-black uppercase tracking-tighter text-center leading-none">
-                  {tab.label}
-                </span>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id as AppTab)} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}>
+                {tab.icon} <span className="text-[10px] font-black uppercase">{tab.label}</span>
               </button>
             ))}
           </nav>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden md:flex flex-col items-end px-3 border-r border-slate-100">
-               <span className="text-[10px] font-black text-slate-900 tabular-nums tracking-tighter">
-                 {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-               </span>
-               <div className="flex items-center gap-1">
-                 <div className={`w-1 h-1 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`}></div>
-                 <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Live</span>
-               </div>
-            </div>
-
-            {syncStatus === 'syncing' && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full animate-pulse border border-blue-100">
-                <RefreshCw size={10} className="animate-spin" />
-                <span className="text-[8px] font-black uppercase tracking-widest">Sync</span>
-              </div>
-            )}
+          <div className="flex items-center gap-3">
             {currentUser ? (
               <div className="flex items-center gap-3">
-                <div className="hidden xl:flex flex-col items-end">
-                   <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest leading-none mb-1">{currentUser.nom}</span>
-                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">{currentUser.site || currentUser.region || 'National'}</span>
+                <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4">
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-slate-900 leading-none">
+                    {currentUser.prenoms} {currentUser.nom}
+                  </span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500 mt-1">
+                    {currentUser.fonction}
+                  </span>
+                  <span className="text-[7px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+                    {currentUser.role === 'AGENT' ? currentUser.site : currentUser.role === 'PRES' ? currentUser.region : 'DIRECTION NATIONALE'}
+                  </span>
                 </div>
-                <button onClick={handleLogout} className="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all border border-slate-200" title="Déconnexion">
+                <button onClick={handleLogout} className="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors shadow-sm">
                   <LogOut size={16} />
                 </button>
               </div>
             ) : (
-              <button onClick={() => setShowLogin(true)} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl flex flex-col items-center gap-1">
-                <UserIcon size={14} /> Connexion
-              </button>
+              <button onClick={() => setShowLogin(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Connexion</button>
             )}
-            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 hover:bg-white transition-all shadow-sm">
-              <Settings size={16} />
-            </button>
+            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 shadow-sm"><Settings size={16} /></button>
           </div>
         </div>
       </header>
-
-      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100]">
-        <div className="glass-nav rounded-[2.5rem] px-4 py-3 flex justify-between items-center shadow-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2">
-           {visibleNavItems.map((tab) => (
-             <button 
-               key={tab.id}
-               onClick={() => setActiveTab(tab.id as AppTab)}
-               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all shrink-0 min-w-[60px] ${
-                 activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400'
-               }`}
-             >
-               {tab.icon}
-               <span className="text-[8px] font-black uppercase tracking-tighter">{tab.label}</span>
-             </button>
-           ))}
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-44 lg:pt-48 pb-24">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-28 pb-24">
         {loading && !fullData.dailyHistory.length ? (
-          <div className="flex flex-col items-center justify-center py-48 gap-10">
-             <div className="relative">
-                <div className="absolute inset-0 bg-blue-500 blur-[50px] opacity-20 animate-pulse"></div>
-                <Activity size={72} className="text-blue-600 animate-bounce relative z-10" />
-             </div>
-             <p className="text-[11px] font-black text-slate-900 uppercase tracking-[0.6em] animate-pulse">Synchronisation Vitale...</p>
+          <div className="flex flex-col items-center justify-center py-48 gap-6">
+             <Activity size={60} className="text-blue-600 animate-pulse" />
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
           </div>
         ) : (
           <div className="page-transition">
-            {activeTab === 'pulse' && <PulsePerformance data={filteredData} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
+            {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
             {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
-            
             {currentUser && (
               <>
-                {activeTab === 'summary' && <SummaryView data={fullData} setActiveTab={setActiveTab} />}
+                {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'map' && <DistributionMapView data={filteredData} sites={effectiveSitesList} />}
-                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={fullData} sites={effectiveSitesList} />}
-                {activeTab === 'hemo-stats' && <DistributionView data={filteredData} />}
+                {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'hemo-stats' && <DistributionView data={filteredData} user={currentUser} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'weekly' && <WeeklyView data={filteredData} />}
-                {activeTab === 'evolution' && <EvolutionView data={filteredData} />}
-                {activeTab === 'recap' && <RecapView data={filteredData} sites={effectiveSitesList} />}
-                {activeTab === 'performance' && <PerformanceView data={filteredData} sites={effectiveSitesList} />}
+                {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
+                {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
+                {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
               </>
-            )}
-
-            {!currentUser && activeTab !== 'pulse' && activeTab !== 'contact' && (
-              <div className="py-48 flex flex-col items-center gap-8 text-center glass-card rounded-[4rem] max-w-2xl mx-auto">
-                <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-400">
-                  <Lock size={40} />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-black uppercase text-slate-900 tracking-tighter mb-3">Accès Restreint</h2>
-                  <p className="text-slate-500 text-sm max-w-sm font-medium leading-relaxed">Cette section est réservée aux agents habilités du CNTS CI. Veuillez vous connecter pour accéder au cockpit complet.</p>
-                </div>
-                <button onClick={() => setShowLogin(true)} className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:bg-black transition-all active:scale-95">Se connecter maintenant</button>
-              </div>
             )}
           </div>
         )}
       </main>
-
+      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] glass-nav rounded-3xl p-2 flex justify-between items-center shadow-2xl overflow-x-auto no-scrollbar gap-2">
+           {visibleNavItems.map((tab) => (
+             <button key={tab.id} onClick={() => setActiveTab(tab.id as AppTab)} className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl shrink-0 min-w-[60px] ${activeTab === tab.id ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>
+               {tab.icon} <span className="text-[8px] font-black uppercase">{tab.label}</span>
+             </button>
+           ))}
+      </nav>
       {showSettings && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-2xl flex items-center justify-center p-4">
-          <div className="bg-white rounded-[4rem] p-12 lg:p-16 max-w-xl w-full shadow-3xl border border-slate-100 animate-in zoom-in-95 duration-500">
-             <div className="flex items-center gap-6 mb-12">
-               <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-800 shadow-inner"><Settings size={32} /></div>
-               <h3 className="text-3xl font-black uppercase tracking-tighter text-slate-900">Architecture</h3>
-             </div>
-             <div className="space-y-10">
-               <div className="space-y-4">
-                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Source Core-Database</label>
-                 <input 
-                   value={sheetInput} 
-                   onChange={(e) => setSheetInput(e.target.value)}
-                   className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-8 py-5 text-sm font-bold text-slate-600 outline-none focus:ring-4 ring-blue-50 transition-all"
-                 />
-               </div>
-               <div className="p-8 bg-blue-50 border border-blue-100 rounded-[2.5rem] flex items-start gap-6">
-                  <Database size={24} className="text-blue-600 shrink-0 mt-1" />
-                  <p className="text-[11px] font-bold text-blue-800 leading-relaxed uppercase tracking-tight">
-                    Le flux de distribution (HEMO-STATS) est synchronisé sur le canal national prioritaire pour préserver l'intégrité de la supply chain sanguine.
-                  </p>
-               </div>
-               <div className="flex gap-4 pt-4">
-                 <button onClick={() => setShowSettings(false)} className="flex-1 px-8 py-6 border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition-all">Annuler</button>
-                 <button onClick={saveSettings} className="flex-1 px-8 py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-2xl active:scale-95">Valider</button>
-               </div>
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-3xl">
+             <h3 className="text-xl font-black uppercase mb-6">Source Core-DB</h3>
+             <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold mb-8 outline-none" />
+             <div className="flex gap-4">
+               <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
+               <button onClick={() => { localStorage.setItem('gsheet_input_1', sheetInput.trim()); setShowSettings(false); handleSync(false, true); }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
              </div>
           </div>
         </div>
       )}
-
       {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} sites={effectiveSitesList} />}
-
-      {error && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[200] px-10 py-5 bg-rose-600 text-white rounded-3xl shadow-3xl flex items-center gap-5 animate-in slide-in-from-bottom-12 transition-all">
-           <AlertCircle size={24} />
-           <p className="text-xs font-black uppercase tracking-widest leading-none">{error}</p>
-           <button onClick={() => setError(null)} className="ml-6 opacity-60 hover:opacity-100 text-xl font-bold">×</button>
-        </div>
-      )}
     </div>
   );
 };
