@@ -1,5 +1,5 @@
 
-import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats } from "../types.ts";
+import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats, ActivityLog } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
 const MONTHS_FR = [
@@ -96,6 +96,22 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
     }
   } catch (err) {
     console.error("fetchUsers error:", err);
+    return [];
+  }
+};
+
+export const fetchLogs = async (scriptUrl: string): Promise<ActivityLog[]> => {
+  if (!scriptUrl) return [];
+  try {
+    const response = await fetch(`${scriptUrl}?action=getLogs&_t=${Date.now()}`);
+    if (!response.ok) return [];
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return [];
+    }
+  } catch (err) {
     return [];
   }
 };
