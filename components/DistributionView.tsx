@@ -1,7 +1,7 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { DashboardData, DistributionRecord, User } from '../types';
-import { Truck, Package, Calendar, MapPin, Building2, Search, Activity, ChevronDown, Award, Globe, RefreshCw, TrendingUp, Layers, LayoutList, Box, ClipboardList, PieChart } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, LabelList } from 'recharts';
+import { Truck, Search, RefreshCw, ClipboardList, Box } from 'lucide-react';
 import { PRODUCT_COLORS } from '../constants';
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -90,27 +90,24 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
   }, [filteredRecords]);
 
   const totals = useMemo(() => {
-    return filteredRecords.reduce((acc, r) => ({
-      qty: acc.qty + r.quantite,
-      rendu: acc.rendu + r.rendu
-    }), { qty: 0, rendu: 0 });
-  }, [filteredRecords]);
+    const globalGroups = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
+    let globalRendu = 0;
+    let globalGross = 0;
 
-  const productStats = useMemo(() => {
-    const map = new Map<string, number>();
-    filteredRecords.forEach(r => map.set(r.typeProduit, (map.get(r.typeProduit) || 0) + r.quantite));
-    return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value, fill: PRODUCT_COLORS[name] || '#94a3b8' }))
-      .sort((a,b) => b.value - a.value);
-  }, [filteredRecords]);
-
-  const groupStats = useMemo(() => {
-    const map = new Map<string, number>();
     filteredRecords.forEach(r => {
-      const g = r.groupeSanguin || "N/A";
-      map.set(g, (map.get(g) || 0) + r.quantite);
+      const grp = r.groupeSanguin || "N/A";
+      if (SANG_GROUPS.includes(grp)) {
+        globalGroups[grp] += r.quantite;
+      }
+      globalRendu += r.rendu;
+      globalGross += r.quantite;
     });
-    return Array.from(map.entries()).sort((a,b) => b[1] - a[1]);
+
+    return { 
+      qty: globalGross, 
+      rendu: globalRendu,
+      groups: globalGroups
+    };
   }, [filteredRecords]);
 
   if (!dist || !dist.records.length) {
@@ -203,65 +200,96 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
 
       <div className="bg-white rounded-[4rem] shadow-3xl border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse table-auto">
+          <table className="w-full border-collapse table-fixed min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="px-4 py-6 text-left sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[120px]">Site Source</th>
-                <th className="px-4 py-6 text-left min-w-[150px]">Structure</th>
-                <th className="px-4 py-6 text-left min-w-[120px]">Produit</th>
-                {SANG_GROUPS.map(g => <th key={g} className="px-2 py-6 text-center w-[45px]">{g}</th>)}
-                <th className="px-4 py-6 text-right text-indigo-600 w-[60px]">Rendu</th>
-                <th className="px-4 py-6 text-right bg-slate-100/50 w-[60px]">Total</th>
+                <th className="px-4 py-6 text-left sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]">Site Source</th>
+                <th className="px-4 py-6 text-left w-[150px]">Structure</th>
+                <th className="px-4 py-6 text-left w-[120px]">Produit</th>
+                {SANG_GROUPS.map(g => <th key={g} className="px-1 py-6 text-center w-[45px]">{g}</th>)}
+                <th className="px-4 py-6 text-right text-indigo-600 w-[65px]">Rendu</th>
+                <th className="px-4 py-6 text-right bg-slate-100/50 w-[70px]">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {Object.keys(registerData).length > 0 ? Object.entries(registerData).sort().map(([sitName, sitData]: [string, any]) => {
-                const siteTotals = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
-                let siteRendu = 0; let siteGrossTotal = 0;
-                Object.values(sitData.destinations).forEach((dest: any) => {
-                  Object.values(dest.products).forEach((prod: any) => {
-                    SANG_GROUPS.forEach(g => { siteTotals[g] += prod.groups[g]; siteGrossTotal += prod.groups[g]; });
-                    siteRendu += prod.rendu;
-                  });
-                });
-                return (
-                  <React.Fragment key={sitName}>
-                    {Object.entries(sitData.destinations).sort().map(([destName, destData]: [string, any], dIdx) => (
-                      <React.Fragment key={destName}>
-                        {Object.entries(destData.products).sort().map(([prodName, prodMetrics]: [string, any], pIdx) => {
-                          const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
-                          return (
-                            <tr key={prodName} className="hover:bg-slate-50/50 transition-colors group">
-                              {dIdx === 0 && pIdx === 0 && (
-                                <td rowSpan={(Object.values(sitData.destinations).reduce((acc: number, d: any) => acc + Object.keys(d.products).length, 0) as number) + 1} className="px-4 py-4 align-top sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                  <span className="text-[11px] font-black text-red-600 uppercase leading-tight">{sitName}</span>
-                                </td>
-                              )}
-                              {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top"><span className="text-[10px] font-black text-slate-800 uppercase leading-tight">{destName}</span></td>}
-                              <td className="px-4 py-3">
-                                <span className="px-2 py-0.5 rounded text-[8px] font-black border uppercase block truncate max-w-[110px]" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
-                              </td>
-                              {SANG_GROUPS.map(g => {
-                                const val = prodMetrics.groups[g];
-                                return <td key={g} className={`px-2 py-3 text-center text-[10px] ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>{val}</td>;
-                              })}
-                              <td className={`px-4 py-3 text-right text-[10px] font-black ${prodMetrics.rendu > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{prodMetrics.rendu}</td>
-                              <td className="px-4 py-3 text-right text-[10px] font-black text-slate-900 bg-slate-50/30">{rowGrossTotal}</td>
-                            </tr>
-                          );
-                        })}
+              {Object.keys(registerData).length > 0 ? (
+                <>
+                  {Object.entries(registerData).sort().map(([sitName, sitData]: [string, any]) => {
+                    const siteTotals = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
+                    let siteRendu = 0; let siteGrossTotal = 0;
+                    Object.values(sitData.destinations).forEach((dest: any) => {
+                      Object.values(dest.products).forEach((prod: any) => {
+                        SANG_GROUPS.forEach(g => { siteTotals[g] += prod.groups[g]; siteGrossTotal += prod.groups[g]; });
+                        siteRendu += prod.rendu;
+                      });
+                    });
+                    return (
+                      <React.Fragment key={sitName}>
+                        {Object.entries(sitData.destinations).sort().map(([destName, destData]: [string, any], dIdx) => (
+                          <React.Fragment key={destName}>
+                            {Object.entries(destData.products).sort().map(([prodName, prodMetrics]: [string, any], pIdx) => {
+                              const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
+                              return (
+                                <tr key={prodName} className="hover:bg-slate-50/50 transition-colors group">
+                                  {dIdx === 0 && pIdx === 0 && (
+                                    <td rowSpan={(Object.values(sitData.destinations).reduce((acc: number, d: any) => acc + Object.keys(d.products).length, 0) as number) + 1} className="px-4 py-4 align-top sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                      <span className="text-[11px] font-black text-red-600 uppercase leading-tight">{sitName}</span>
+                                    </td>
+                                  )}
+                                  {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top"><span className="text-[10px] font-black text-slate-800 uppercase leading-tight">{destName}</span></td>}
+                                  <td className="px-4 py-3">
+                                    <span className="px-2 py-0.5 rounded text-[8px] font-black border uppercase block truncate max-w-[110px]" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
+                                  </td>
+                                  {SANG_GROUPS.map(g => {
+                                    const val = prodMetrics.groups[g];
+                                    return <td key={g} className={`px-1 py-3 text-center text-[10px] ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>{val}</td>;
+                                  })}
+                                  <td className={`px-4 py-3 text-right text-[10px] font-black ${prodMetrics.rendu > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{prodMetrics.rendu}</td>
+                                  <td className="px-4 py-3 text-right text-[10px] font-black text-slate-900 bg-slate-50/30">{rowGrossTotal}</td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        ))}
+                        <tr className="bg-indigo-50/30 font-black border-b-2 border-indigo-100">
+                          <td className="px-4 py-4 sticky left-0 bg-indigo-50/30 z-10 border-r border-indigo-100/50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                            {/* Colonne Site Source vide pour le sous-total */}
+                          </td>
+                          <td className="px-4 py-4 text-right pr-6">
+                            <span className="text-[8px] text-slate-400 uppercase tracking-[0.2em] mr-2">SOUS-TOTAL</span>
+                            <span className="text-[10px] text-indigo-700 font-black uppercase truncate inline-block max-w-[150px] align-middle">{sitName}</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            {/* Colonne Produit vide pour le sous-total */}
+                          </td>
+                          {SANG_GROUPS.map(g => <td key={g} className="px-1 py-4 text-center text-[11px] text-indigo-900">{siteTotals[g]}</td>)}
+                          <td className="px-4 py-4 text-right text-indigo-700 text-[11px]">{siteRendu}</td>
+                          <td className="px-4 py-4 text-right text-indigo-900 bg-indigo-100/20 text-[11px]">{siteGrossTotal}</td>
+                        </tr>
                       </React.Fragment>
+                    );
+                  })}
+                  {/* TOTAL GÉNÉRAL EN BAS DU TABLEAU */}
+                  <tr className="bg-slate-900 text-white font-black">
+                    <td className="px-4 py-6 sticky left-0 bg-slate-900 z-20 border-r border-slate-800"></td>
+                    <td className="px-4 py-6 text-right pr-6" colSpan={2}>
+                      <span className="text-[10px] uppercase tracking-[0.3em]">TOTAL GÉNÉRAL FILTRÉ</span>
+                    </td>
+                    {SANG_GROUPS.map(g => (
+                      <td key={g} className="px-1 py-6 text-center text-[12px]">{totals.groups[g]}</td>
                     ))}
-                    <tr className="bg-blue-50/50 font-black">
-                      <td className="px-4 py-4" colSpan={2}><div className="flex items-center justify-end pr-4 gap-2"><span className="text-[8px] text-slate-500 uppercase tracking-widest">TOTAL</span><span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] uppercase tracking-widest border border-indigo-200">SITE</span></div></td>
-                      <td className="px-4 py-4"></td>
-                      {SANG_GROUPS.map(g => <td key={g} className="px-2 py-4 text-center text-[11px] text-slate-900">{siteTotals[g]}</td>)}
-                      <td className="px-4 py-4 text-right text-indigo-700 text-[11px]">{siteRendu}</td>
-                      <td className="px-4 py-4 text-right text-slate-900 bg-slate-100/30 text-[11px]">{siteGrossTotal}</td>
-                    </tr>
-                  </React.Fragment>
-                );
-              }) : <tr><td colSpan={14} className="py-40 text-center opacity-20"><Box size={64} className="mx-auto mb-4"/><p className="text-xs font-black uppercase tracking-[0.4em]">Aucun enregistrement</p></td></tr>}
+                    <td className="px-4 py-6 text-right text-indigo-400 text-[12px]">{totals.rendu}</td>
+                    <td className="px-4 py-6 text-right text-emerald-400 bg-white/10 text-[14px]">{totals.qty}</td>
+                  </tr>
+                </>
+              ) : (
+                <tr>
+                  <td colSpan={14} className="py-40 text-center opacity-20">
+                    <Box size={64} className="mx-auto mb-4"/>
+                    <p className="text-xs font-black uppercase tracking-[0.4em]">Aucun enregistrement pour cette sélection</p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
