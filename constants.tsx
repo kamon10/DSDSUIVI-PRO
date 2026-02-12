@@ -9,7 +9,7 @@ export const SITES_DATA = [
   { code: "9", name: "CDTS DE BINGERVILLE", region: "PRES ABIDJAN", annualObjective: 4000, manager: "Dr. ABE Nicole", email: "abedkn@yahoo.fr", phone: "01 01 05 07 35", coords: [5.3581, -3.8942] as [number, number] },
   { code: "6", name: "SP HG PORT BOUET", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. ASSOUKPOU Francine", email: "francineass@yahoo.fr", phone: "07 07 70 14 41", coords: [5.2541, -3.9372] as [number, number] },
   { code: "4", name: "SP FSU ABOBO BAOULE", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. AMON épouse BOUKALO Renaude Jani", email: "brenaudeamon@gmail.com", phone: "01 60 57 53 93", coords: [5.4194, -4.0152] as [number, number] },
-  { code: "7", name: "SP HG ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. ANAUD Née YAO Akissi Marie Chantal", email: "akissimariechantaly@gmail.com", phone: "01 60 57 53 93", coords: [5.4947, -4.0519] as [number, number] },
+  { code: "7", name: "SP HG ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99", coords: [5.4947, -4.0519] as [number, number] },
   { code: "5", name: "SP CHU DE COCODY", region: "PRES ABIDJAN", annualObjective: 11000, manager: "M. AKELE Antoine", email: "antoineakele72@gmail.com", phone: "07 47 43 93 39", coords: [5.3484, -3.9875] as [number, number] },
   { code: "2", name: "SP CHU DE YOPOUGON", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. SARAPAHI Zadi Antonin", email: "zadisarapahi83@gmail.com", phone: "05 96 67 56 39", coords: [5.3524, -4.0847] as [number, number] },
   { code: "11", name: "CDTS D'ABOISSO", region: "PRES ABIDJAN", annualObjective: 9000, manager: "Dr. N'GUESSAN Koffi Antoine", email: "antoine_nguessan@yahoo.fr", phone: "07 48 10 08 34", coords: [5.4677, -3.2071] as [number, number] },
@@ -55,7 +55,7 @@ export const SITES_DATA = [
   { code: "27", name: "CDTS DE DUEKOUE", region: "PRES TONPKI", annualObjective: 7000, manager: "Dr. DIOMANDE", email: "dr,manthin@gmail.com", phone: "07 49 95 79 37", coords: [6.7419, -7.3503] as [number, number] },
   
   // PRES KABADOUGOU
-  { code: "24", name: "CRTS DE ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "M. KOUMAN Kouadio Fidèle", email: "koumanfidele@gmail.com", phone: "07 12 07 10 10", coords: [9.5051, -7.5643] as [number, number] }
+  { code: "24", name: "CRTS DE ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95", coords: [9.5051, -7.5643] as [number, number] }
 ];
 
 export const PRES_COORDINATES: Record<string, [number, number]> = {
