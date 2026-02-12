@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants.tsx';
 import { VisualDashboard } from './components/VisualDashboard.tsx';
@@ -95,7 +96,16 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Rafraîchissement initial
   useEffect(() => { handleSync(false, true); }, [handleSync]);
+
+  // Rafraîchissement automatique toutes les 15 secondes
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      handleSync(true, true); // Mode silencieux mais force le refresh
+    }, 15000);
+    return () => clearInterval(refreshInterval);
+  }, [handleSync]);
 
   const filteredData = useMemo(() => {
     if (!currentUser || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') return fullData;
@@ -155,7 +165,7 @@ const App: React.FC = () => {
     { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Cockpit', public: false },
     { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
-    { id: 'hemo-stats', icon: <Truck size={18} />, label: 'Hemo-Stats', public: false },
+    { id: 'hemo-stats', icon: <Truck size={18} />, label: 'Flux', public: false },
     { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
     { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
     { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
@@ -194,7 +204,7 @@ const App: React.FC = () => {
              <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
                <img src={branding.logo} alt="Logo" className="w-full h-full object-contain p-1.5" />
              </div>
-             <span className="font-black text-lg tracking-tighter uppercase text-slate-900">HEMO-STATS</span>
+             <span className="font-black text-lg tracking-tighter uppercase text-slate-900">HS</span>
           </div>
           <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
             {visibleNavItems.map((tab) => (
