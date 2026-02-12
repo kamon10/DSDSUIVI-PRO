@@ -5,57 +5,57 @@ export const WORKING_DAYS_YEAR = 313;
 
 export const SITES_DATA = [
   // PRES ABIDJAN
-  { code: "1", name: "CRTS DE TREICHVILLE", region: "PRES ABIDJAN", annualObjective: 35000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99" },
-  { code: "9", name: "CDTS DE BINGERVILLE", region: "PRES ABIDJAN", annualObjective: 4000, manager: "Dr. ABE Nicole", email: "abedkn@yahoo.fr", phone: "01 01 05 07 35" },
-  { code: "6", name: "SP HG PORT BOUET", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. ASSOUKPOU Francine", email: "francineass@yahoo.fr", phone: "07 07 70 14 41" },
-  { code: "4", name: "SP FSU ABOBO BAOULE", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. AMON épouse BOUKALO Renaude Jani", email: "brenaudeamon@gmail.com", phone: "01 60 57 53 93" },
-  { code: "7", name: "SP HG ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99" },
-  { code: "5", name: "SP CHU DE COCODY", region: "PRES ABIDJAN", annualObjective: 11000, manager: "M. AKELE Antoine", email: "antoineakele72@gmail.com", phone: "07 47 43 93 39" },
-  { code: "2", name: "SP CHU DE YOPOUGON", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. SARAPAHI Zadi Antonin", email: "zadisarapahi83@gmail.com", phone: "05 96 67 56 39" },
-  { code: "11", name: "CDTS D'ABOISSO", region: "PRES ABIDJAN", annualObjective: 9000, manager: "Dr. N'GUESSAN Koffi Antoine", email: "antoine_nguessan@yahoo.fr", phone: "07 48 10 08 34" },
-  { code: "10", name: "CDTS DE BONOUA", region: "PRES ABIDJAN", annualObjective: 6000, manager: "Dr. ACHIEPO Philippe", email: "philippeachiepo@gmail.com", phone: "07 49 76 49 66" },
-  { code: "14", name: "CDTS D'ADZOPE", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. OHOUO Atse Leopold", email: "leopoldatse@gmail.com", phone: "07 07 88 12 00" },
-  { code: "13", name: "CDTS D'AGBOVILLE", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. DAKON Mian Guillaume", email: "dakonmian@yahoo.fr", phone: "05 84 77 31 91" },
-  { code: "12", name: "CDTS DE DABOU", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. KONAN Jocelin", email: "ndjikonan@yahoo.fr", phone: "07 07 52 84 57" },
+  { code: "1", name: "CRTS DE TREICHVILLE", region: "PRES ABIDJAN", annualObjective: 35000, manager: "Dr. KACOU Thierry Olivier", email: "kthierryolivier@yahoo.fr", phone: "07 07 30 94 99", coords: [5.3014, -4.0044] as [number, number] },
+  { code: "9", name: "CDTS DE BINGERVILLE", region: "PRES ABIDJAN", annualObjective: 4000, manager: "Dr. ABE Nicole", email: "abedkn@yahoo.fr", phone: "01 01 05 07 35", coords: [5.3581, -3.8942] as [number, number] },
+  { code: "6", name: "SP HG PORT BOUET", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. ASSOUKPOU Francine", email: "francineass@yahoo.fr", phone: "07 07 70 14 41", coords: [5.2541, -3.9372] as [number, number] },
+  { code: "4", name: "SP FSU ABOBO BAOULE", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. AMON épouse BOUKALO Renaude Jani", email: "brenaudeamon@gmail.com", phone: "01 60 57 53 93", coords: [5.4194, -4.0152] as [number, number] },
+  { code: "7", name: "SP HG ANYAMA", region: "PRES ABIDJAN", annualObjective: 5000, manager: "Dr. ANAUD Née YAO Akissi Marie Chantal", email: "akissimariechantaly@gmail.com", phone: "01 60 57 53 93", coords: [5.4947, -4.0519] as [number, number] },
+  { code: "5", name: "SP CHU DE COCODY", region: "PRES ABIDJAN", annualObjective: 11000, manager: "M. AKELE Antoine", email: "antoineakele72@gmail.com", phone: "07 47 43 93 39", coords: [5.3484, -3.9875] as [number, number] },
+  { code: "2", name: "SP CHU DE YOPOUGON", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. SARAPAHI Zadi Antonin", email: "zadisarapahi83@gmail.com", phone: "05 96 67 56 39", coords: [5.3524, -4.0847] as [number, number] },
+  { code: "11", name: "CDTS D'ABOISSO", region: "PRES ABIDJAN", annualObjective: 9000, manager: "Dr. N'GUESSAN Koffi Antoine", email: "antoine_nguessan@yahoo.fr", phone: "07 48 10 08 34", coords: [5.4677, -3.2071] as [number, number] },
+  { code: "10", name: "CDTS DE BONOUA", region: "PRES ABIDJAN", annualObjective: 6000, manager: "Dr. ACHIEPO Philippe", email: "philippeachiepo@gmail.com", phone: "07 49 76 49 66", coords: [5.2714, -3.5954] as [number, number] },
+  { code: "14", name: "CDTS D'ADZOPE", region: "PRES ABIDJAN", annualObjective: 12000, manager: "M. OHOUO Atse Leopold", email: "leopoldatse@gmail.com", phone: "07 07 88 12 00", coords: [6.1014, -3.8619] as [number, number] },
+  { code: "13", name: "CDTS D'AGBOVILLE", region: "PRES ABIDJAN", annualObjective: 10000, manager: "Dr. DAKON Mian Guillaume", email: "dakonmian@yahoo.fr", phone: "05 84 77 31 91", coords: [5.9277, -4.2181] as [number, number] },
+  { code: "12", name: "CDTS DE DABOU", region: "PRES ABIDJAN", annualObjective: 8000, manager: "Dr. KONAN Jocelin", email: "ndjikonan@yahoo.fr", phone: "07 07 52 84 57", coords: [5.3256, -4.3769] as [number, number] },
   
   // PRES BELIER
-  { code: "30", name: "CRTS DE YAMOUSSOUKRO", region: "PRES BELIER", annualObjective: 15000, manager: "Dr. EBIBA François", email: "francoisebiba2@gmail.com", phone: "07 09 93 53 72" },
-  { code: "31", name: "CDTS DE TOUMODI", region: "PRES BELIER", annualObjective: 6000, manager: "Dr. DEYI Charlotte", email: "deyi.charlotte@yahoo.fr", phone: "07 79 80 25 57" },
-  { code: "32", name: "CDTS DE GAGNOA", region: "PRES BELIER", annualObjective: 11000, manager: "M. KOUAO N'Guetta Louis Jérôme", email: "kouao_jerome@yahoo.fr", phone: "07 58 24 74 65" },
-  { code: "36", name: "CDTS DE DIVO", region: "PRES BELIER", annualObjective: 11000, manager: "Dr. KOUNEYA Olivier", email: "kouneyabdias@gmail.com", phone: "07 09 97 73 50" },
-  { code: "26", name: "CDTS DE BOUAFLE", region: "PRES BELIER", annualObjective: 7000, manager: "Dr. LOBE", email: "ozoua101314@gmail.com", phone: "07 78 41 57 86" },
-  { code: "37", name: "CDTS DE DIMBOKRO", region: "PRES BELIER", annualObjective: 4000, manager: "M. DAUBARD Maxime", email: "daubard164@gmail.com", phone: "07 47 12 54 88" },
+  { code: "30", name: "CRTS DE YAMOUSSOUKRO", region: "PRES BELIER", annualObjective: 15000, manager: "Dr. EBIBA François", email: "francoisebiba2@gmail.com", phone: "07 09 93 53 72", coords: [6.8189, -5.2767] as [number, number] },
+  { code: "31", name: "CDTS DE TOUMODI", region: "PRES BELIER", annualObjective: 6000, manager: "Dr. DEYI Charlotte", email: "deyi.charlotte@yahoo.fr", phone: "07 79 80 25 57", coords: [6.5519, -5.0169] as [number, number] },
+  { code: "32", name: "CDTS DE GAGNOA", region: "PRES BELIER", annualObjective: 11000, manager: "M. KOUAO N'Guetta Louis Jérôme", email: "kouao_jerome@yahoo.fr", phone: "07 58 24 74 65", coords: [6.1319, -5.9503] as [number, number] },
+  { code: "36", name: "CDTS DE DIVO", region: "PRES BELIER", annualObjective: 11000, manager: "Dr. KOUNEYA Olivier", email: "kouneyabdias@gmail.com", phone: "07 09 97 73 50", coords: [5.8369, -5.3572] as [number, number] },
+  { code: "26", name: "CDTS DE BOUAFLE", region: "PRES BELIER", annualObjective: 7000, manager: "Dr. LOBE", email: "ozoua101314@gmail.com", phone: "07 78 41 57 86", coords: [6.9903, -5.7514] as [number, number] },
+  { code: "37", name: "CDTS DE DIMBOKRO", region: "PRES BELIER", annualObjective: 4000, manager: "M. DAUBARD Maxime", email: "daubard164@gmail.com", phone: "07 47 12 54 88", coords: [6.6467, -4.7053] as [number, number] },
   
   // PRES GBEKE
-  { code: "33", name: "CRTS DE BOUAKE", region: "PRES GBEKE", annualObjective: 25000, manager: "Dr. NENE Lou Fleur", email: "nenelou1979@gmail.com", phone: "07 58 46 82 79" },
+  { code: "33", name: "CRTS DE BOUAKE", region: "PRES GBEKE", annualObjective: 25000, manager: "Dr. NENE Lou Fleur", email: "nenelou1979@gmail.com", phone: "07 58 46 82 79", coords: [7.6897, -5.0315] as [number, number] },
   
   // PRES PORO
-  { code: "34", name: "CRTS DE KORHOGO", region: "PRES PORO", annualObjective: 18000, manager: "Dr. N'GUETTA Eby", email: "ngue_eby@yahoo.fr", phone: "07 08 80 85 52" },
-  { code: "35", name: "CDTS DE FERKESSEDOUGOU", region: "PRES PORO", annualObjective: 11000, manager: "M. KOFFI Mondé Eric", email: "ericmonde@gmail.com", phone: "07 09 43 72 06" },
+  { code: "34", name: "CRTS DE KORHOGO", region: "PRES PORO", annualObjective: 18000, manager: "Dr. N'GUETTA Eby", email: "ngue_eby@yahoo.fr", phone: "07 08 80 85 52", coords: [9.4580, -5.6295] as [number, number] },
+  { code: "35", name: "CDTS DE FERKESSEDOUGOU", region: "PRES PORO", annualObjective: 11000, manager: "M. KOFFI Mondé Eric", email: "ericmonde@gmail.com", phone: "07 09 43 72 06", coords: [9.5919, -5.2014] as [number, number] },
   
   // PRES INDENIE DJUABLIN
-  { code: "40", name: "CRTS D'ABENGOUROU", region: "PRES INDENIE DJUABLIN", annualObjective: 12000, manager: "Dr. N'ZI Franck", email: "nzifranck1@gmail.com", phone: "07 07 10 88 04" },
-  { code: "44", name: "CDTS DE DAOUKRO", region: "PRES INDENIE DJUABLIN", annualObjective: 8000, manager: "Dr. GONTO", email: "mariusemmanuelgonto@gmail.com", phone: "01 53 32 27 82" },
-  { code: "43", name: "CDTS DE BONGOUANOU", region: "PRES INDENIE DJUABLIN", annualObjective: 9000, manager: "Dr. DOFFOU Virginie", email: "doffouvirginie54@gmail.com", phone: "07 79 28 48 39" },
+  { code: "40", name: "CRTS D'ABENGOUROU", region: "PRES INDENIE DJUABLIN", annualObjective: 12000, manager: "Dr. N'ZI Franck", email: "nzifranck1@gmail.com", phone: "07 07 10 88 04", coords: [6.7297, -3.4964] as [number, number] },
+  { code: "44", name: "CDTS DE DAOUKRO", region: "PRES INDENIE DJUABLIN", annualObjective: 8000, manager: "Dr. GONTO", email: "mariusemmanuelgonto@gmail.com", phone: "01 53 32 27 82", coords: [7.0592, -3.9631] as [number, number] },
+  { code: "43", name: "CDTS DE BONGOUANOU", region: "PRES INDENIE DJUABLIN", annualObjective: 9000, manager: "Dr. DOFFOU Virginie", email: "doffouvirginie54@gmail.com", phone: "07 79 28 48 39", coords: [6.6481, -4.2042] as [number, number] },
   
   // PRES GONTOUGO
-  { code: "41", name: "CRTS DE BONDOUKOU", region: "PRES GONTOUGO", annualObjective: 11000, manager: "Dr. KIMOU Sylvain", email: "sylvinkimou@gmail.com", phone: "07 57 27 96 11" },
-  { code: "42", name: "CDTS DE BOUNA", region: "PRES GONTOUGO", annualObjective: 4000, manager: "Dr. KONAN BRUNO", email: "konanbruno14@yahoo.fr", phone: "07 77 11 88 66" },
+  { code: "41", name: "CRTS DE BONDOUKOU", region: "PRES GONTOUGO", annualObjective: 11000, manager: "Dr. KIMOU Sylvain", email: "sylvinkimou@gmail.com", phone: "07 57 27 96 11", coords: [8.0402, -2.8000] as [number, number] },
+  { code: "42", name: "CDTS DE BOUNA", region: "PRES GONTOUGO", annualObjective: 4000, manager: "Dr. KONAN BRUNO", email: "konanbruno14@yahoo.fr", phone: "07 77 11 88 66", coords: [9.2619, -2.9903] as [number, number] },
   
   // PRES HAUT SASSANDRA
-  { code: "20", name: "CRTS DE DALOA", region: "PRES HAUT SASSANDRA", annualObjective: 20000, manager: "Dr. BOSSO Jacques", email: "bossojacques@gmail.com", phone: "07 59 32 77 69" },
-  { code: "21", name: "CDTS DE SEGUELA", region: "PRES HAUT SASSANDRA", annualObjective: 7000, manager: "M. ASSI Aboua Ulrich Modeste", email: "modesteassi@yahoo.fr", phone: "07 07 45 92 91" },
+  { code: "20", name: "CRTS DE DALOA", region: "PRES HAUT SASSANDRA", annualObjective: 20000, manager: "Dr. BOSSO Jacques", email: "bossojacques@gmail.com", phone: "07 59 32 77 69", coords: [6.8774, -6.4502] as [number, number] },
+  { code: "21", name: "CDTS DE SEGUELA", region: "PRES HAUT SASSANDRA", annualObjective: 7000, manager: "M. ASSI Aboua Ulrich Modeste", email: "modesteassi@yahoo.fr", phone: "07 07 45 92 91", coords: [7.9619, -6.6731] as [number, number] },
   
   // PRES SAN-PEDRO
-  { code: "22", name: "CRTS DE SAN PEDRO", region: "PRES SAN PEDRO", annualObjective: 15000, manager: "Dr. ASSO Sika Marc", email: "marcoluntch@yahoo.fr", phone: "07 59 42 21 75" },
-  { code: "221", name: "SP DE MEAGUI", region: "PRES SAN PEDRO", annualObjective: 1000, manager: "Dr. ASSO Sika Marc", email: "marcoluntch@yahoo.fr", phone: "07 59 42 21 75" },
+  { code: "22", name: "CRTS DE SAN PEDRO", region: "PRES SAN PEDRO", annualObjective: 15000, manager: "Dr. ASSO Sika Marc", email: "marcoluntch@yahoo.fr", phone: "07 59 42 21 75", coords: [4.7485, -6.6363] as [number, number] },
+  { code: "221", name: "SP DE MEAGUI", region: "PRES SAN PEDRO", annualObjective: 1000, manager: "Dr. ASSO Sika Marc", email: "marcoluntch@yahoo.fr", phone: "07 59 42 21 75", coords: [5.0319, -6.6014] as [number, number] },
   
   // PRES TONPKI
-  { code: "23", name: "CRTS DE MAN", region: "PRES TONPKI", annualObjective: 15000, manager: "Dr. SAFFO Bernard", email: "sabema014@yahoo.fr", phone: "07 07 18 96 06" },
-  { code: "27", name: "CDTS DE DUEKOUE", region: "PRES TONPKI", annualObjective: 7000, manager: "Dr. DIOMANDE", email: "dr,manthin@gmail.com", phone: "07 49 95 79 37" },
+  { code: "23", name: "CRTS DE MAN", region: "PRES TONPKI", annualObjective: 15000, manager: "Dr. SAFFO Bernard", email: "sabema014@yahoo.fr", phone: "07 07 18 96 06", coords: [7.4125, -7.5538] as [number, number] },
+  { code: "27", name: "CDTS DE DUEKOUE", region: "PRES TONPKI", annualObjective: 7000, manager: "Dr. DIOMANDE", email: "dr,manthin@gmail.com", phone: "07 49 95 79 37", coords: [6.7419, -7.3503] as [number, number] },
   
   // PRES KABADOUGOU
-  { code: "24", name: "CRTS DE ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "Dr. TRAORE Yaya", email: "tyaya1664@gmail.com", phone: "07 04 00 57 95" }
+  { code: "24", name: "CRTS DE ODIENNE", region: "PRES KABADOUGOU", annualObjective: 9000, manager: "M. KOUMAN Kouadio Fidèle", email: "koumanfidele@gmail.com", phone: "07 12 07 10 10", coords: [9.5051, -7.5643] as [number, number] }
 ];
 
 export const PRES_COORDINATES: Record<string, [number, number]> = {
