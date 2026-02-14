@@ -1,7 +1,8 @@
 
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { DashboardData, DistributionRecord } from '../types';
-import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User, Truck, Package } from 'lucide-react';
+/* Added User import */
+import { DashboardData, DistributionRecord, User } from '../types';
+import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User as UserIcon, Truck, Package } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { COLORS } from '../constants';
@@ -24,6 +25,8 @@ const getDistColor = (eff: number) => {
 
 interface PulsePerformanceProps {
   data: DashboardData;
+  /* Added user prop to resolve TS error in App.tsx */
+  user?: User | null;
   onLoginClick?: () => void;
   isConnected?: boolean;
 }
@@ -81,6 +84,18 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
     data.dailyHistory.find(h => h.date === selectedDay) || data.dailyHistory[0]
   , [selectedDay, data.dailyHistory]);
 
+  // Calcul des objectifs spécifiques à la journée sélectionnée
+  const dayObjectives = useMemo(() => {
+    if (!dayRecord) return { total: 1137, fixed: 480, mobile: 657 }; // Valeurs par défaut CNTS
+    const total = dayRecord.sites.reduce((acc, s) => acc + (s.objective || 0), 0);
+    // On estime la répartition de l'objectif jour (approximatif si non fourni par site)
+    return {
+      total: total || 1137,
+      fixed: Math.round(total * 0.42), // Ratio historique CNTS
+      mobile: Math.round(total * 0.58)
+    };
+  }, [dayRecord]);
+
   const distDayStats = useMemo(() => {
     if (!data.distributions?.records) return { qty: 0, efficiency: 0, rendu: 0 };
     const dayRecs = data.distributions.records.filter(r => r.date === selectedDay);
@@ -95,11 +110,11 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
   const perfDaily = useMemo(() => {
     if (viewMode === 'donations') {
       const realized = dayRecord?.stats.realized || 0;
-      return (realized / 1137) * 100;
+      return (realized / dayObjectives.total) * 100;
     } else {
       return distDayStats.efficiency;
     }
-  }, [viewMode, dayRecord, distDayStats]);
+  }, [viewMode, dayRecord, dayObjectives, distDayStats]);
 
   const nationalPulseColor = useMemo(() => 
     viewMode === 'donations' ? getDynamicColor(perfDaily) : '#f59e0b'
@@ -212,9 +227,27 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                 {viewMode === 'donations' ? (
                   <>
-                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 text-center"><p className="text-[10px] font-black text-emerald-400 uppercase mb-4 tracking-widest">SITES FIXES</p><p className="text-5xl font-black">{dayRecord?.stats.fixed || 0}</p></div>
-                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 text-center"><p className="text-[10px] font-black text-orange-400 uppercase mb-4 tracking-widest">UNITÉS MOBILES</p><p className="text-5xl font-black">{dayRecord?.stats.mobile || 0}</p></div>
-                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-8 rounded-[3rem] border border-white/20 text-center shadow-xl"><p className="text-[10px] font-black text-white/60 uppercase mb-4 tracking-widest">TOTAL JOUR</p><p className="text-5xl font-black text-white">{(dayRecord?.stats.realized || 0).toLocaleString()}</p></div>
+                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 text-center">
+                      <p className="text-[10px] font-black text-emerald-400 uppercase mb-4 tracking-widest">SITES FIXES</p>
+                      <div className="flex flex-col items-center">
+                        <p className="text-5xl font-black">{dayRecord?.stats.fixed || 0}</p>
+                        <p className="text-[10px] font-bold text-white/20 uppercase mt-2">Cible : {dayObjectives.fixed}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 text-center">
+                      <p className="text-[10px] font-black text-orange-400 uppercase mb-4 tracking-widest">UNITÉS MOBILES</p>
+                      <div className="flex flex-col items-center">
+                        <p className="text-5xl font-black">{dayRecord?.stats.mobile || 0}</p>
+                        <p className="text-[10px] font-bold text-white/20 uppercase mt-2">Cible : {dayObjectives.mobile}</p>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-8 rounded-[3rem] border border-white/20 text-center shadow-xl">
+                      <p className="text-[10px] font-black text-white/60 uppercase mb-4 tracking-widest">TOTAL JOUR</p>
+                      <div className="flex flex-col items-center">
+                        <p className="text-5xl font-black text-white">{(dayRecord?.stats.realized || 0).toLocaleString()}</p>
+                        <p className="text-[10px] font-black text-white/40 uppercase mt-2">Objectif : {dayObjectives.total}</p>
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>

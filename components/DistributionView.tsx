@@ -205,7 +205,7 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
               <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 <th className="px-4 py-6 text-left sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]">Site Source</th>
                 <th className="px-4 py-6 text-left w-[150px]">Structure</th>
-                <th className="px-4 py-6 text-left w-[120px]">Produit</th>
+                <th className="px-4 py-6 text-left w-[125px]">Produit</th>
                 {SANG_GROUPS.map(g => <th key={g} className="px-1 py-6 text-center w-[45px]">{g}</th>)}
                 <th className="px-4 py-6 text-right text-indigo-600 w-[65px]">Rendu</th>
                 <th className="px-4 py-6 text-right bg-slate-100/50 w-[70px]">Total</th>
@@ -238,7 +238,7 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                                   )}
                                   {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top"><span className="text-[10px] font-black text-slate-800 uppercase leading-tight">{destName}</span></td>}
                                   <td className="px-4 py-3">
-                                    <span className="px-2 py-0.5 rounded text-[8px] font-black border uppercase block truncate max-w-[110px]" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
+                                    <span className="px-2 py-1 rounded text-[9px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
                                   </td>
                                   {SANG_GROUPS.map(g => {
                                     const val = prodMetrics.groups[g];
@@ -252,10 +252,8 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                           </React.Fragment>
                         ))}
                         <tr className="bg-indigo-50/30 font-black border-b-2 border-indigo-100">
-                          <td className="px-4 py-4 sticky left-0 bg-indigo-50/30 z-10 border-r border-indigo-100/50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                            {/* Colonne Site Source vide pour le sous-total */}
-                          </td>
-                          <td className="px-4 py-4 text-right pr-6">
+                          {/* PREMIERE CELLULE OMISE CAR COUVERTE PAR ROWSPAN DU SITE SOURCE */}
+                          <td colSpan={2} className="px-4 py-4 text-right pr-6">
                             <span className="text-[8px] text-slate-400 uppercase tracking-[0.2em] mr-2">SOUS-TOTAL</span>
                             <span className="text-[10px] text-indigo-700 font-black uppercase truncate inline-block max-w-[150px] align-middle">{sitName}</span>
                           </td>
@@ -269,7 +267,6 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                       </React.Fragment>
                     );
                   })}
-                  {/* TOTAL GÉNÉRAL EN BAS DU TABLEAU */}
                   <tr className="bg-slate-900 text-white font-black">
                     <td className="px-4 py-6 sticky left-0 bg-slate-900 z-20 border-r border-slate-800"></td>
                     <td className="px-4 py-6 text-right pr-6" colSpan={2}>

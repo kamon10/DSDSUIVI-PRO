@@ -1,5 +1,7 @@
+
 import React, { useState, useMemo, useRef } from 'react';
-import { DashboardData, DistributionRecord, DailyHistoryRecord } from '../types';
+/* Added User import */
+import { DashboardData, DistributionRecord, DailyHistoryRecord, User } from '../types';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine } from 'recharts';
 import { Calendar, Layers, TrendingUp, Filter, Target, Activity, FileImage, FileText, Loader2, Truck, Package, Clock, CalendarDays, Zap, Award } from 'lucide-react';
 import { COLORS } from '../constants';
@@ -8,6 +10,8 @@ import { jsPDF } from 'jspdf';
 
 interface WeeklyViewProps {
   data: DashboardData;
+  /* Added user prop to resolve TS error in App.tsx */
+  user?: User | null;
 }
 
 const MONTHS_FR = [

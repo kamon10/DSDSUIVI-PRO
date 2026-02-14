@@ -1,5 +1,7 @@
+
 import React, { useMemo, useState, useRef } from 'react';
-import { DashboardData, AppTab, DistributionRecord } from '../types';
+/* Added User import */
+import { DashboardData, AppTab, DistributionRecord, User } from '../types';
 import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2, Truck, Package } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -7,6 +9,8 @@ import { COLORS } from '../constants';
 
 interface SummaryViewProps {
   data: DashboardData;
+  /* Added user prop to resolve TS error in App.tsx */
+  user?: User | null;
   setActiveTab: (tab: AppTab) => void;
 }
 

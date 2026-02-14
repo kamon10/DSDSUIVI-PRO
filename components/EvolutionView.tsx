@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { DashboardData, DistributionRecord } from '../types';
+/* Added User import */
+import { DashboardData, DistributionRecord, User } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { TrendingUp, Activity, Truck, FileImage, FileText, Calendar, Clock, CalendarDays, ChevronDown, PieChart as PieIcon, Target } from 'lucide-react';
 import { COLORS, PRODUCT_COLORS } from '../constants';
@@ -9,6 +10,8 @@ import { jsPDF } from 'jspdf';
 
 interface EvolutionViewProps {
   data: DashboardData;
+  /* Added user prop to resolve TS error in App.tsx */
+  user?: User | null;
 }
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -147,10 +150,10 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ data }) => {
       {/* BARRE DE CONTRÔLE SUPÉRIEURE HARMONISÉE */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-2">
         <div className="flex bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] shadow-xl border border-slate-100">
-           <button onClick={() => setViewMode('donations')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:text-slate-600'}`}>
+           <button onClick={() => setViewMode('donations')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-600'}`}>
              Mix Collecte
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:text-slate-600'}`}>
+           <button onClick={() => setViewMode('distribution')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg shadow-orange-100' : 'text-slate-400 hover:bg-slate-600'}`}>
              Mix Sortie
            </button>
         </div>

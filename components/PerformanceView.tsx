@@ -1,5 +1,7 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { DashboardData, DistributionRecord } from '../types';
+/* Added User import */
+import { DashboardData, DistributionRecord, User as UserType } from '../types';
 import { Trophy, TrendingDown, Globe, MapPin, Mail, Phone, X, User, CheckCircle2, AlertTriangle, XCircle, BarChart, ExternalLink, Building2, Truck, Activity, Package, Zap, Filter, Calendar, Clock, Target } from 'lucide-react';
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -16,7 +18,8 @@ const getStatusIcon = (p: number) => {
   return XCircle;
 };
 
-export const PerformanceView: React.FC<{ data: DashboardData; sites: any[] }> = ({ data, sites }) => {
+/* Added user prop to resolve TS error in App.tsx */
+export const PerformanceView: React.FC<{ data: DashboardData; sites: any[]; user?: UserType | null }> = ({ data, sites, user }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [selectedRegionName, setSelectedRegionName] = useState<string | null>(null);
   
@@ -152,7 +155,7 @@ export const PerformanceView: React.FC<{ data: DashboardData; sites: any[] }> = 
     if (viewMode === 'donations') {
       return [...allSitesDonations].sort((a, b) => a.achievement - b.achievement).slice(0, 5);
     } else {
-      return [...distributionData.allSites].sort((a, b) => a.total - b.total).slice(0, 5);
+      return [...distributionData.allSites].sort((a, b) => b.total - a.total).slice(0, 5);
     }
   }, [viewMode, allSitesDonations, distributionData]);
 

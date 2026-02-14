@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DashboardData, User, DistributionRecord } from '../types.ts';
-import { getSiteObjectives, PRODUCT_COLORS } from '../constants.tsx';
+import { getSiteObjectives, PRODUCT_COLORS, GROUP_COLORS } from '../constants.tsx';
 import { 
   Building2, User as UserIcon, Phone, MapPin, Target, Activity, Award, 
   History, Calendar, PieChart, MessageSquare,
@@ -8,9 +9,10 @@ import {
   ArrowRight, Clock, CalendarDays, ChevronDown, Globe, Layers,
   FileImage, FileText, Loader2, Hospital, Zap
 } from 'lucide-react';
+// Added Legend to the recharts imports
 import { 
   BarChart as ReBarChart, Bar, XAxis, YAxis, Tooltip, 
-  ResponsiveContainer, CartesianGrid, Cell, PieChart as RePieChart, Pie, LabelList
+  ResponsiveContainer, CartesianGrid, Cell, PieChart as RePieChart, Pie, LabelList, Legend
 } from 'recharts';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -183,10 +185,10 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     });
 
     const productChart = Array.from(prodMap.entries()).map(([name, value]) => ({ name, value, fill: PRODUCT_COLORS[name] || '#f59e0b' })).sort((a,b) => b.value - a.value);
-    const groupMap = Array.from(grpMap.entries()).sort((a,b) => b[1] - a[1]);
+    const groupChart = Array.from(grpMap.entries()).map(([name, value]) => ({ name, value, fill: GROUP_COLORS[name] || '#64748b' })).sort((a,b) => b.value - a.value);
     const topFacilities = Array.from(facilityMap.entries()).sort((a, b) => b[1].total - a[1].total).slice(0, 8).map(([name, stats]) => ({ name, ...stats }));
 
-    return { totalQty: tq, totalRendu: tr, efficiency: tq > 0 ? ((tq - tr) / tq) * 100 : 0, productChart, groupMap, topFacilities };
+    return { totalQty: tq, totalRendu: tr, efficiency: tq > 0 ? ((tq - tr) / tq) * 100 : 0, productChart, groupChart, topFacilities };
   }, [data.distributions, timeScale, selYear, selMonth, selDate, availableSites, isNational, isRegion, selectedValue, selectionInfo]);
 
   const presAggregatedData = useMemo(() => {
@@ -257,7 +259,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
              {viewMode === 'donations' ? <Building2 size={28} /> : <Truck size={28} />}
            </div>
            <div>
-             <h2 className="text-2xl font-black uppercase tracking-tighter">Focus Analyse</h2>
+             <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Focus Analyse</h2>
              <div className="flex bg-white/5 p-1 rounded-xl mt-2">
                <button onClick={() => setViewMode('donations')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase ${viewMode === 'donations' ? 'bg-emerald-600' : 'text-white/40'}`}>Prélèvements</button>
                <button onClick={() => setViewMode('distribution')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase ${viewMode === 'distribution' ? 'bg-orange-600' : 'text-white/40'}`}>Distribution</button>
@@ -300,8 +302,9 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-white ${isNational ? 'bg-slate-900' : isRegion ? 'bg-blue-600' : 'bg-red-600'}`}>
              {isNational ? <Globe size={32} /> : isRegion ? <MapPin size={32} /> : <Building2 size={32} />}
            </div>
-           <h3 className="text-xl font-black uppercase leading-tight mb-2">{selectionInfo.name}</h3>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b pb-4">{selectionInfo.region}</p>
+           {/* Mise en évidence de la sélection principale */}
+           <h3 className="text-2xl font-[950] uppercase leading-tight mb-2 text-slate-900 tracking-tighter">{selectionInfo.name}</h3>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b pb-4">{selectionInfo.region}</p>
            
            {(isNational || isRegion) ? (
              <div className="space-y-3">
@@ -310,26 +313,30 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                  <div key={i} className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-md transition-shadow group">
                    <div className="flex items-center gap-4 mb-3">
                      <div className="flex-1">
+                       {/* NOM AVANT LE TOTAL */}
+                       <p className="text-sm font-[950] uppercase text-slate-900 tracking-tighter leading-none group-hover:text-blue-600 transition-colors mb-2">
+                          {p.name.toUpperCase().startsWith("PRES ") ? p.name : `PRES ${p.name}`}
+                       </p>
                        <div className="flex items-baseline gap-2">
                          <span className="text-xl font-black text-slate-900">{p.total.toLocaleString()}</span>
                          <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Poches</span>
                        </div>
-                       <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.15em] leading-tight truncate">{p.name.replace('PRES ', '')}</p>
                      </div>
                    </div>
 
                    {viewMode === 'distribution' && (
                      <div className="grid grid-cols-3 gap-1.5 mt-4">
                         <div className="text-center bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
-                           <p className="text-[6px] font-black text-slate-400 uppercase mb-0.5">CGR</p>
+                           {/* Augmentation taille label produit */}
+                           <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">CGR</p>
                            <p className="text-[11px] font-black text-red-500">{p.cgr}</p>
                         </div>
                         <div className="text-center bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
-                           <p className="text-[6px] font-black text-slate-400 uppercase mb-0.5">PLASMA</p>
+                           <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">PLASMA</p>
                            <p className="text-[11px] font-black text-blue-500">{p.plasma}</p>
                         </div>
                         <div className="text-center bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
-                           <p className="text-[6px] font-black text-slate-400 uppercase mb-0.5">PLAT.</p>
+                           <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">PLAT.</p>
                            <p className="text-[11px] font-black text-emerald-500">{p.platelets}</p>
                         </div>
                      </div>
@@ -341,11 +348,11 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
              <div className="space-y-4">
                <div className="p-4 bg-slate-50 rounded-2xl flex items-center gap-3">
                  <Award size={18} className="text-slate-400"/>
-                 <div><p className="text-[8px] font-black text-slate-400 uppercase">Responsable</p><p className="text-[11px] font-black uppercase">{selectionInfo.manager || 'Non assigné'}</p></div>
+                 <div><p className="text-[8px] font-black text-slate-400 uppercase">Responsable</p><p className="text-[11px] font-black uppercase text-slate-900">{selectionInfo.manager || 'Non assigné'}</p></div>
                </div>
                <div className="flex gap-2">
                  {selectionInfo.phone && <a href={`tel:${selectionInfo.phone}`} className="flex-1 p-3 bg-emerald-500 text-white rounded-xl text-center text-[9px] font-black uppercase">Appeler</a>}
-                 <button className="flex-1 p-3 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase">Email</button>
+                 <button className="flex-1 p-3 bg-slate-900 text-white rounded-xl text-center text-[9px] font-black uppercase">Email</button>
                </div>
              </div>
            )}
@@ -420,11 +427,13 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                                 <ReBarChart data={distributionStats.productChart} layout="vertical" margin={{ left: -10, right: 40 }}>
                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#94a3b8'}} />
-                                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 8, fontWeight: 900, fill: '#64748b'}} width={100} />
+                                   {/* Augmentation police YAxis pour le type de produit */}
+                                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#1e293b'}} width={120} />
                                    <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1rem' }} />
                                    <Bar dataKey="value" radius={[0, 10, 10, 0]} name="Poches">
                                       {distributionStats.productChart.map((entry, index) => <Cell key={`cell-p-${index}`} fill={entry.fill} />)}
-                                      <LabelList dataKey="value" position="right" style={{ fill: '#475569', fontSize: '11px', fontWeight: '900' }} />
+                                      {/* Augmentation LabelList */}
+                                      <LabelList dataKey="value" position="right" style={{ fill: '#0f172a', fontSize: '13px', fontWeight: '950' }} />
                                    </Bar>
                                 </ReBarChart>
                              </ResponsiveContainer>
@@ -435,20 +444,36 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                           <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
                              <ClipboardList size={16} className="text-orange-500" /> Repartition par groupe sanguin
                           </p>
-                          <div className="grid grid-cols-2 gap-3">
-                             {distributionStats.groupMap.map((entry, i) => (
-                               <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-orange-50 transition-colors border border-transparent hover:border-orange-100 group">
-                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm text-[11px] font-black text-slate-700">{entry[0]}</div>
-                                 </div>
-                                 <div className="flex items-center gap-3">
-                                    <span className="text-base font-black text-orange-600">{entry[1].toLocaleString()}</span>
-                                    <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                       <div className="h-full bg-orange-500" style={{ width: `${Math.min((entry[1] / (distributionStats.totalQty || 1)) * 100, 100)}%` }} />
-                                    </div>
-                                 </div>
-                               </div>
-                             ))}
+                          <div className="h-[300px] w-full bg-slate-50/50 rounded-3xl p-6 relative">
+                             <ResponsiveContainer width="100%" height="100%">
+                                <RePieChart>
+                                   <Pie
+                                      data={distributionStats.groupChart}
+                                      cx="50%"
+                                      cy="50%"
+                                      innerRadius="50%"
+                                      outerRadius="80%"
+                                      paddingAngle={4}
+                                      dataKey="value"
+                                      stroke="none"
+                                      cornerRadius={8}
+                                      animationDuration={1500}
+                                   >
+                                      {distributionStats.groupChart.map((entry, index) => (
+                                         <Cell key={`cell-g-${index}`} fill={entry.fill} />
+                                      ))}
+                                   </Pie>
+                                   <Tooltip 
+                                      contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', padding: '1rem', fontWeight: '900' }}
+                                   />
+                                   <Legend 
+                                      verticalAlign="bottom" 
+                                      height={36} 
+                                      iconType="circle" 
+                                      wrapperStyle={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.5px' }} 
+                                   />
+                                </RePieChart>
+                             </ResponsiveContainer>
                           </div>
                        </div>
                     </div>
@@ -471,26 +496,30 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                              <div className="flex items-center gap-6 mb-4 md:mb-0">
                                 <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm text-[12px] font-black text-indigo-600 border border-slate-100">#{idx+1}</div>
                                 <div>
+                                   {/* NOM AVANT LE TOTAL */}
+                                   <p className="text-sm font-[950] text-slate-900 uppercase leading-none tracking-tight truncate max-w-[350px] group-hover:text-indigo-600 transition-colors mb-2">
+                                      {fac.name}
+                                   </p>
                                    <div className="flex items-baseline gap-2">
                                       <span className="text-xl font-black text-indigo-600">{fac.total.toLocaleString()}</span>
                                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Poches</span>
                                    </div>
-                                   <p className="text-[11px] font-bold text-slate-500 uppercase leading-tight truncate max-w-[250px]">{fac.name}</p>
                                 </div>
                              </div>
                              
                              <div className="flex items-center gap-6">
                                 <div className="grid grid-cols-3 gap-2">
                                    <div className="text-center px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm min-w-[70px]">
-                                      <p className="text-[7px] font-black text-slate-400 uppercase mb-0.5">CGR</p>
+                                      {/* Augmentation label produit top etablissement */}
+                                      <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">CGR</p>
                                       <p className="text-[13px] font-black text-red-500">{fac.cgr}</p>
                                    </div>
                                    <div className="text-center px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm min-w-[70px]">
-                                      <p className="text-[7px] font-black text-slate-400 uppercase mb-0.5">PLASMA</p>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">PLASMA</p>
                                       <p className="text-[13px] font-black text-amber-500">{fac.plasma}</p>
                                    </div>
                                    <div className="text-center px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm min-w-[70px]">
-                                      <p className="text-[7px] font-black text-slate-400 uppercase mb-0.5">PLAT.</p>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">PLAT.</p>
                                       <p className="text-[13px] font-black text-indigo-500">{fac.platelets}</p>
                                    </div>
                                 </div>
