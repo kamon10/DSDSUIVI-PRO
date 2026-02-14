@@ -11,14 +11,13 @@ import { WeeklyView } from './components/WeeklyView.tsx';
 import { SiteSynthesisView } from './components/SiteSynthesisView.tsx';
 import { DataEntryForm } from './components/DataEntryForm.tsx';
 import { ContactsView } from './components/ContactsView.tsx';
-import { DistributionView } from './components/DistributionView.tsx';
 import { DistributionMapView } from './components/DistributionMapView.tsx';
 import { LoginView } from './components/LoginView.tsx';
 import { AdminUserManagement } from './components/AdminUserManagement.tsx';
 import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { AppTab, DashboardData, User } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -102,7 +101,7 @@ const App: React.FC = () => {
   // Rafraîchissement automatique toutes les 15 secondes
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      handleSync(true, true); // Mode silencieux mais force le refresh
+      handleSync(true, true);
     }, 15000);
     return () => clearInterval(refreshInterval);
   }, [handleSync]);
@@ -114,7 +113,6 @@ const App: React.FC = () => {
     const regionName = currentUser.region || "";
     const siteName = currentUser.site || "";
 
-    // Filtrage pour PRES
     if (currentUser.role === 'PRES' && regionName.toUpperCase() !== "TOUS LES PRES") {
       filtered.regions = fullData.regions.filter(r => r.name.toUpperCase() === regionName.toUpperCase());
       filtered.dailyHistory = fullData.dailyHistory.map(h => ({
@@ -133,7 +131,6 @@ const App: React.FC = () => {
         };
       }
     } 
-    // Filtrage pour AGENT
     else if (currentUser.role === 'AGENT') {
       filtered.regions = fullData.regions.map(r => ({
         ...r,
@@ -165,12 +162,12 @@ const App: React.FC = () => {
     { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Cockpit', public: false },
     { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
-    { id: 'hemo-stats', icon: <Truck size={18} />, label: 'Flux', public: false },
+    { id: 'recap', icon: <FileText size={18} />, label: 'Récap Coll.', public: false },
+    { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
     { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
     { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
     { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
     { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
-    { id: 'recap', icon: <FileText size={18} />, label: 'Récap', public: false },
     { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
     { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
@@ -208,7 +205,7 @@ const App: React.FC = () => {
           </div>
           <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
             {visibleNavItems.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id as AppTab)} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id as AppTab)} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === tab.id || (activeTab === 'recap-dist' && tab.id === 'recap-dist') ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}>
                 {tab.icon} <span className="text-[10px] font-black uppercase">{tab.label}</span>
               </button>
             ))}
@@ -254,12 +251,12 @@ const App: React.FC = () => {
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'hemo-stats' && <DistributionView data={filteredData} user={currentUser} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
-                {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
+                {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
                 {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
               </>

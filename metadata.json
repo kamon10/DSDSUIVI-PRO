@@ -1,5 +1,5 @@
 {
-  "name": "HEMO-STATS",
-  "description": "Application professionnelle de suivi des prélèvements de sang du CNTS Côte d'Ivoire.",
+  "name": "HS",
+  "description": "Système professionnel de suivi des flux de prélèvements.",
   "requestFramePermissions": []
 }
