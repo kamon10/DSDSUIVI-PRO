@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData, User as UserType } from '../types';
 import { WORKING_DAYS_YEAR } from '../constants';
-import { MapPin, User, Mail, Phone, Calendar, Search, Building2, Target, History, Globe, BarChart3 } from 'lucide-react';
+import { MapPin, User, Mail, Phone, Calendar, Search, Building2, Target, History, Globe, BarChart3, Clock } from 'lucide-react';
 
 interface DetailedHistoryViewProps {
   data: DashboardData;
@@ -40,6 +41,13 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
   const [selectedMonth, setSelectedMonth] = useState<number>(
     availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()
   );
+
+  // Synchroniser le mois si l'année change et que le mois actuel n'est plus dispo
+  useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
+      setSelectedMonth(availableMonths[availableMonths.length - 1]);
+    }
+  }, [availableMonths]);
 
   // Restriction des Régions
   const regions = useMemo(() => {
@@ -152,28 +160,40 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
               <h2 className="text-2xl font-black uppercase tracking-tighter">
                 {selectionInfo.isConsolidated ? "Cockpit de Consolidation" : "Historique de Site"}
               </h2>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Registre Temporel des Activités</p>
             </div>
           </div>
 
           <div className="flex flex-wrap justify-center lg:justify-end gap-3 w-full lg:w-auto">
+            {/* SÉLECTEUR ANNÉE */}
             <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
               <Calendar size={14} className="text-slate-400" />
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer">
-                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
+                {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
               </select>
             </div>
+            
+            {/* SÉLECTEUR MOIS */}
+            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
+              <Clock size={14} className="text-slate-400" />
+              <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
+                {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
+              </select>
+            </div>
+
             {user?.role !== 'AGENT' && (
               <div className={`border rounded-xl px-4 py-2 flex items-center gap-2 transition-all ${selectedRegion === "TOUS LES SITES" ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20' : 'bg-white/5 border-white/10'}`}>
                 <MapPin size={14} className={selectedRegion === "TOUS LES SITES" ? "text-white" : "text-slate-400"} />
                 <select value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)} disabled={user?.role === 'PRES'} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
-                  {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                  {regions.map(r => <option key={r} value={r} className="text-slate-900">{r}</option>)}
                 </select>
               </div>
             )}
+
             <div className="bg-red-600 border border-red-500 rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg shadow-red-900/40">
               <Building2 size={14} className="text-white" />
               <select value={selectedSiteCode} onChange={(e) => setSelectedSiteCode(e.target.value)} disabled={user?.role === 'AGENT'} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white max-w-[150px] lg:max-w-none">
-                {sitesInRegion.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
+                {sitesInRegion.map(s => <option key={s.code} value={s.code} className="text-slate-900">{s.name}</option>)}
               </select>
             </div>
           </div>
@@ -181,10 +201,16 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
       </div>
 
       <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-        <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+        <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
            <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">
              Journal de collecte : {MONTHS_FR[selectedMonth]} {selectedYear}
            </h3>
+           <div className="flex items-center gap-4">
+              <div className="text-center px-6 py-2 bg-white rounded-xl border shadow-sm">
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Période</p>
+                 <p className="text-lg font-black text-slate-900">{historyData.reduce((acc, curr) => acc + curr.total, 0).toLocaleString()}</p>
+              </div>
+           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -197,14 +223,20 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {historyData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/80 transition-all">
-                  <td className="px-10 py-5 font-black text-slate-800">{row.date}</td>
+              {historyData.length > 0 ? historyData.map((row, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/80 transition-all group">
+                  <td className="px-10 py-5 font-black text-slate-800 group-hover:text-red-600 transition-colors">{row.date}</td>
                   <td className="px-6 py-5 text-center text-emerald-600 font-bold">{row.fixe}</td>
                   <td className="px-6 py-5 text-center text-orange-600 font-bold">{row.mobile}</td>
                   <td className="px-6 py-5 text-center text-slate-900 font-black">{row.total}</td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4} className="py-20 text-center opacity-30 italic text-sm uppercase font-black tracking-widest">
+                    Aucune donnée pour cette sélection
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
