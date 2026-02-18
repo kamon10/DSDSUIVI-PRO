@@ -17,14 +17,14 @@ import { AdminUserManagement } from './components/AdminUserManagement.tsx';
 import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { AppTab, DashboardData, User } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'stale'>('synced');
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   
@@ -65,6 +65,8 @@ const App: React.FC = () => {
     if (isSyncingRef.current) return;
     const currentInput = sheetInputRef.current;
     isSyncingRef.current = true;
+    
+    // Si c'est une mise à jour silencieuse (arrière-plan), on ne déclenche pas le loader principal
     if (!isSilent) setLoading(true);
     setSyncStatus('syncing');
 
@@ -73,21 +75,29 @@ const App: React.FC = () => {
         fetchDynamicSites(DEFAULT_SCRIPT_URL),
         fetchBrandingConfig(DEFAULT_SCRIPT_URL)
       ]);
+      
       if (dynSitesResult) setDynamicSites(dynSitesResult);
+      
+      // Récupération des données métiers
       const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || []);
+      
+      // On ne met à jour l'état que si des données ont réellement changé ou si c'est forcé
       if (dataResult) {
         setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
       }
+      
       if (brandingResult) {
         setBranding(brandingResult);
         localStorage.setItem('hemo_branding', JSON.stringify(brandingResult));
       }
+      
       setLastSync(new Date());
       setSyncStatus('synced');
       setError(null);
     } catch (err: any) {
       setSyncStatus('error');
+      // On n'affiche l'erreur que si l'utilisateur a initié l'action (non silencieux)
       if (!isSilent) setError(err.message || "Échec de synchronisation.");
     } finally {
       setLoading(false);
@@ -95,14 +105,14 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Rafraîchissement initial
+  // Chargement initial
   useEffect(() => { handleSync(false, true); }, [handleSync]);
 
-  // Rafraîchissement automatique toutes les 15 secondes
+  // Rafraîchissement automatique strict en arrière-plan toutes les 30 secondes
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      handleSync(true, true);
-    }, 15000);
+      handleSync(true, false);
+    }, 30000);
     return () => clearInterval(refreshInterval);
   }, [handleSync]);
 
@@ -201,7 +211,14 @@ const App: React.FC = () => {
              <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
                <img src={branding.logo} alt="Logo" className="w-full h-full object-contain p-1.5" />
              </div>
-             <span className="font-black text-lg tracking-tighter uppercase text-slate-900">HS</span>
+             <div className="flex flex-col">
+                <span className="font-black text-lg tracking-tighter uppercase text-slate-900 leading-none">HS</span>
+                {/* INDICATEUR LIVE ARRIERE-PLAN */}
+                <div className="flex items-center gap-1.5 mt-1">
+                   <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                   <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
+                </div>
+             </div>
           </div>
           <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
             {visibleNavItems.map((tab) => (
