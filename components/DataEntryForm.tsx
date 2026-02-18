@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle } from 'lucide-react';
+import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle, CloudUpload, Loader2 } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { DashboardData, User } from '../types';
 
@@ -109,39 +109,45 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
     if (!selectedSite || !scriptUrl) return;
     
     setStatus('submitting');
-    try {
-      const [y, m, d] = formData.date.split('-');
-      const payload = {
-        type: 'DATA_ENTRY',
-        "Date Collecte": `${d}/${m}/${y}`,
-        "Code site": selectedSite.code.toString(),
-        "Libelle site": selectedSite.name,
-        "Date fin mois": calculatedFields.endOfMonth,
-        "NombreFixe": Number(formData.fixe) || 0,
-        "NombreMobile": totalMobile,
-        "Total poches": totalPoches,
-        "Mois": calculatedFields.monthName,
-        "Mode": isEditing ? "UPDATE" : "APPEND",
-        "Auteur": user ? `${user.prenoms} ${user.nom}` : "Système",
-        "AuteurEmail": user?.email || ""
-      };
+    
+    // On prépare le payload
+    const [y, m, d] = formData.date.split('-');
+    const payload = {
+      type: 'DATA_ENTRY',
+      "Date Collecte": `${d}/${m}/${y}`,
+      "Code site": selectedSite.code.toString(),
+      "Libelle site": selectedSite.name,
+      "Date fin mois": calculatedFields.endOfMonth,
+      "NombreFixe": Number(formData.fixe) || 0,
+      "NombreMobile": totalMobile,
+      "Total poches": totalPoches,
+      "Mois": calculatedFields.monthName,
+      "Mode": isEditing ? "UPDATE" : "APPEND",
+      "Auteur": user ? `${user.prenoms} ${user.nom}` : "Système",
+      "AuteurEmail": user?.email || ""
+    };
 
-      await saveRecordToSheet(scriptUrl, payload);
+    // EXECUTION EN ARRIÈRE-PLAN : 
+    // On lance la promesse sans l'attendre immédiatement pour libérer l'UI
+    (async () => {
+       try {
+         await saveRecordToSheet(scriptUrl, payload);
+         await saveRecordToSheet(scriptUrl, {
+           type: 'LOG_EVENT',
+           action: isEditing ? 'MISE_A_JOUR' : 'SAISIE',
+           user: user ? `${user.prenoms} ${user.nom}` : "Système",
+           email: user?.email || "",
+           details: `${isEditing ? 'Modification' : 'Nouvelle saisie'} pour ${selectedSite.name} le ${d}/${m}/${y} : ${totalPoches} poches`
+         });
+       } catch (err) {
+         console.error("Background save failed:", err);
+       }
+    })();
 
-      // Enregistrer le log d'audit
-      await saveRecordToSheet(scriptUrl, {
-        type: 'LOG_EVENT',
-        action: isEditing ? 'MISE_A_JOUR' : 'SAISIE',
-        user: user ? `${user.prenoms} ${user.nom}` : "Système",
-        email: user?.email || "",
-        details: `${isEditing ? 'Modification' : 'Nouvelle saisie'} pour ${selectedSite.name} le ${d}/${m}/${y} : ${totalPoches} poches`
-      });
-
+    // On bascule tout de suite sur un état de succès "Pris en compte"
+    setTimeout(() => {
       setStatus('success');
-    } catch (err: any) {
-      setStatus('error');
-      setErrorMessage(err.message || "Erreur de transmission.");
-    }
+    }, 800);
   };
 
   const handleReset = () => {
@@ -161,15 +167,17 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
     return (
       <div className="max-w-xl mx-auto py-10 text-center animate-in zoom-in duration-300">
         <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-green-100 flex flex-col items-center">
-          <div className="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-green-100">
-            <CheckCircle2 size={40} />
+          <div className="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-green-100">
+            <CloudUpload size={40} className="animate-bounce" />
           </div>
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">
-            {isEditing ? "Mise à jour Réussie" : "Transmission Réussie"}
+            Mise à jour en cours...
           </h2>
-          <p className="text-slate-500 text-sm mb-10 font-medium">Les données ont été injectées avec succès.</p>
+          <p className="text-slate-500 text-sm mb-10 font-medium px-6 leading-relaxed">
+            Vos données ont été envoyées au serveur et sont en cours d'intégration dans la base de données. Vous pouvez continuer vos saisies.
+          </p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
-            <RefreshCw size={18} /> Nouvelle saisie
+            <RefreshCw size={18} /> Continuer les saisies
           </button>
         </div>
       </div>
@@ -189,7 +197,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                 {isEditing ? "Modification de Saisie" : "Nouveau Relevé"}
               </h2>
               <p className={`text-[9px] font-black uppercase tracking-[0.3em] mt-1 italic ${isEditing ? 'text-blue-600' : 'text-slate-400'}`}>
-                {isEditing ? "Modification d'une ligne existante" : "Ajout d'une nouvelle ligne dans DATABASE1"}
+                Mise à jour directe de la base de données
               </p>
             </div>
           </div>
@@ -246,8 +254,8 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
           {status === 'error' && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3"><AlertCircle size={20} /><p>{errorMessage}</p></div>}
           
           <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-blue-600 shadow-blue-200' : 'bg-red-600 shadow-red-200'} text-white py-8 rounded-[2.5rem] font-black text-lg uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95`}>
-            {status === 'submitting' ? <RefreshCw className="animate-spin" size={28} /> : (isEditing ? <Save size={28} /> : <Plus size={28} />)}
-            {status === 'submitting' ? "Envoi en cours..." : (isEditing ? "Enregistrer les modifications" : "Injecter dans DATABASE1")}
+            {status === 'submitting' ? <Loader2 className="animate-spin" size={28} /> : (isEditing ? <Save size={28} /> : <Plus size={28} />)}
+            {status === 'submitting' ? "Transmission en arrière-plan..." : (isEditing ? "Enregistrer les modifications" : "Injecter dans DATABASE1")}
           </button>
         </form>
       </div>

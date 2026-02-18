@@ -9,7 +9,6 @@ import {
   ArrowRight, Clock, CalendarDays, ChevronDown, Globe, Layers,
   FileImage, FileText, Loader2, Hospital, Zap
 } from 'lucide-react';
-// Added Legend to the recharts imports
 import { 
   BarChart as ReBarChart, Bar, XAxis, YAxis, Tooltip, 
   ResponsiveContainer, CartesianGrid, Cell, PieChart as RePieChart, Pie, LabelList, Legend
@@ -32,7 +31,6 @@ const getStatusColor = (percentage: number) => {
 };
 
 export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user, sites }) => {
-  // selectedValue peut être "ALL", "REGION:NomRegion" ou "SITE:CodeSite"
   const [selectedValue, setSelectedValue] = useState("ALL");
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -42,7 +40,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
   const [selMonth, setSelMonth] = useState<string>("");
   const [selDate, setSelDate] = useState<string>("");
 
-  // Restriction des sites et régions disponibles selon le rôle
   const availableSites = useMemo(() => {
     if (!user || user.role === 'ADMIN' || user.role === 'SUPERADMIN') return sites;
     if (user.role === 'PRES') return sites.filter(s => s.region.toUpperCase() === user.region?.toUpperCase());
@@ -111,8 +108,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
 
   const stats = useMemo(() => {
     let r = 0, f = 0, m = 0, o = 0;
-    
-    // Déterminer les sites concernés par la sélection
     const targetedSites = availableSites.filter(s => {
       if (isNational) return true;
       if (isRegion) return s.region === selectionInfo.region;
@@ -126,7 +121,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       m += filteredSites.reduce((acc: number, s: any) => acc + s.mobile, 0);
     });
 
-    // Calcul de l'objectif
     const totalAnnualObj = targetedSites.reduce((acc, s) => acc + s.annualObjective, 0);
     if (timeScale === 'day') o = Math.round(totalAnnualObj / 313);
     else if (timeScale === 'year') o = totalAnnualObj;
@@ -147,7 +141,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
 
   const distributionStats = useMemo(() => {
     if (!data.distributions?.records) return null;
-    
     const targetedSites = availableSites.filter(s => {
       if (isNational) return true;
       if (isRegion) return s.region === selectionInfo.region;
@@ -163,7 +156,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     });
 
     if (filtered.length === 0) return null;
-    
     let tq = 0, tr = 0;
     const prodMap = new Map<string, number>(), grpMap = new Map<string, number>();
     const facilityMap = new Map<string, { total: number, cgr: number, plasma: number, platelets: number }>();
@@ -173,7 +165,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       const prodName = r.typeProduit || "AUTRES";
       prodMap.set(prodName, (prodMap.get(prodName) || 0) + r.quantite);
       grpMap.set(r.groupeSanguin, (grpMap.get(r.groupeSanguin) || 0) + r.quantite);
-
       const facName = r.etablissement || "INCONNU";
       if (!facilityMap.has(facName)) facilityMap.set(facName, { total: 0, cgr: 0, plasma: 0, platelets: 0 });
       const f = facilityMap.get(facName)!;
@@ -184,22 +175,22 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       else if (p.includes("PLAQUETTE") || p.includes("PLATELET")) f.platelets += r.quantite;
     });
 
-    const productChart = Array.from(prodMap.entries()).map(([name, value]) => ({ name, value, fill: PRODUCT_COLORS[name] || '#f59e0b' })).sort((a,b) => b.value - a.value);
-    const groupChart = Array.from(grpMap.entries()).map(([name, value]) => ({ name, value, fill: GROUP_COLORS[name] || '#64748b' })).sort((a,b) => b.value - a.value);
-    const topFacilities = Array.from(facilityMap.entries()).sort((a, b) => b[1].total - a[1].total).slice(0, 8).map(([name, stats]) => ({ name, ...stats }));
-
-    return { totalQty: tq, totalRendu: tr, efficiency: tq > 0 ? ((tq - tr) / tq) * 100 : 0, productChart, groupChart, topFacilities };
+    return { 
+      totalQty: tq, totalRendu: tr, efficiency: tq > 0 ? ((tq - tr) / tq) * 100 : 0, 
+      productChart: Array.from(prodMap.entries()).map(([name, value]) => ({ name, value, fill: PRODUCT_COLORS[name] || '#f59e0b' })).sort((a,b) => b.value - a.value),
+      groupChart: Array.from(grpMap.entries()).map(([name, value]) => ({ name, value, fill: GROUP_COLORS[name] || '#64748b' })).sort((a,b) => b.value - a.value),
+      topFacilities: Array.from(facilityMap.entries()).sort((a, b) => b[1].total - a[1].total).slice(0, 8).map(([name, stats]) => ({ name, ...stats }))
+    };
   }, [data.distributions, timeScale, selYear, selMonth, selDate, availableSites, isNational, isRegion, selectedValue, selectionInfo]);
 
   const presAggregatedData = useMemo(() => {
     const targetedSites = availableSites.filter(s => {
       if (isNational) return true;
       if (isRegion) return s.region === selectionInfo.region;
-      return false; // Pas d'agrégation de liste si un site unique est choisi
+      return false;
     });
 
     if (targetedSites.length === 0 || isSite) return [];
-
     const presMap = new Map<string, any>();
     if (viewMode === 'donations') {
       relevantHistory.forEach((h: any) => {
@@ -266,7 +257,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
              </div>
            </div>
         </div>
-        
         {user?.role !== 'AGENT' ? (
           <select value={selectedValue} onChange={(e) => setSelectedValue(e.target.value)} className="w-full lg:w-72 bg-white/5 border border-white/10 p-4 rounded-xl text-xs font-black outline-none cursor-pointer">
             <option value="ALL" className="bg-slate-900">{user?.role === 'PRES' ? `CUMUL ${user.region}` : "CONSOLIDATION NATIONALE"}</option>
@@ -302,7 +292,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-white ${isNational ? 'bg-slate-900' : isRegion ? 'bg-blue-600' : 'bg-red-600'}`}>
              {isNational ? <Globe size={32} /> : isRegion ? <MapPin size={32} /> : <Building2 size={32} />}
            </div>
-           {/* Mise en évidence de la sélection principale */}
            <h3 className="text-2xl font-[950] uppercase leading-tight mb-2 text-slate-900 tracking-tighter">{selectionInfo.name}</h3>
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 border-b pb-4">{selectionInfo.region}</p>
            
@@ -311,23 +300,19 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">{isNational ? "Rapport par PRES" : "Détail du PRES"}</p>
                {presAggregatedData.map((p, i) => (
                  <div key={i} className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-md transition-shadow group">
-                   <div className="flex items-center gap-4 mb-3">
-                     <div className="flex-1">
-                       {/* NOM AVANT LE TOTAL */}
-                       <p className="text-sm font-[950] uppercase text-slate-900 tracking-tighter leading-none group-hover:text-blue-600 transition-colors mb-2">
-                          {p.name.toUpperCase().startsWith("PRES ") ? p.name : `PRES ${p.name}`}
-                       </p>
-                       <div className="flex items-baseline gap-2">
-                         <span className="text-xl font-black text-slate-900">{p.total.toLocaleString()}</span>
-                         <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Poches</span>
-                       </div>
+                   <div className="flex flex-col gap-2 mb-3">
+                     {/* NOM AVANT LE TOTAL */}
+                     <p className="text-sm font-[950] uppercase text-slate-900 tracking-tighter leading-none group-hover:text-blue-600 transition-colors">
+                        {p.name.toUpperCase().startsWith("PRES ") ? p.name : `PRES ${p.name}`}
+                     </p>
+                     <div className="flex items-baseline gap-2">
+                       <span className="text-xl font-black text-slate-900">{p.total.toLocaleString()}</span>
+                       <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Poches</span>
                      </div>
                    </div>
-
                    {viewMode === 'distribution' && (
                      <div className="grid grid-cols-3 gap-1.5 mt-4">
                         <div className="text-center bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
-                           {/* Augmentation taille label produit */}
                            <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">CGR</p>
                            <p className="text-[11px] font-black text-red-500">{p.cgr}</p>
                         </div>
@@ -427,13 +412,13 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                                 <ReBarChart data={distributionStats.productChart} layout="vertical" margin={{ left: -10, right: 40 }}>
                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#94a3b8'}} />
-                                   {/* Augmentation police YAxis pour le type de produit */}
-                                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#1e293b'}} width={120} />
+                                   {/* Augmentation POLICE axe Y pour PNG */}
+                                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 950, fill: '#1e293b'}} width={130} />
                                    <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', padding: '1rem' }} />
                                    <Bar dataKey="value" radius={[0, 10, 10, 0]} name="Poches">
                                       {distributionStats.productChart.map((entry, index) => <Cell key={`cell-p-${index}`} fill={entry.fill} />)}
-                                      {/* Augmentation LabelList */}
-                                      <LabelList dataKey="value" position="right" style={{ fill: '#0f172a', fontSize: '13px', fontWeight: '950' }} />
+                                      {/* Augmentation POLICE étiquette droite */}
+                                      <LabelList dataKey="value" position="right" style={{ fill: '#0f172a', fontSize: '15px', fontWeight: '950' }} />
                                    </Bar>
                                 </ReBarChart>
                              </ResponsiveContainer>
@@ -479,7 +464,6 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                     </div>
                  </div>
 
-                 {/* TOP ÉTABLISSEMENTS - Affiché si au moins niveau région ou national */}
                  {(isNational || isRegion) && (
                    <div className="bg-white rounded-[3rem] p-10 shadow-warm border border-slate-100">
                       <div className="flex items-center gap-5 mb-10">
@@ -489,28 +473,22 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Palmarès par volume & mix produits</p>
                         </div>
                       </div>
-                      
                       <div className="grid grid-cols-1 gap-4">
                         {distributionStats.topFacilities.map((fac, idx) => (
                           <div key={idx} className="flex flex-col md:flex-row items-center justify-between p-6 bg-slate-50 rounded-3xl hover:bg-white hover:shadow-xl transition-all group border border-transparent hover:border-indigo-100">
-                             <div className="flex items-center gap-6 mb-4 md:mb-0">
-                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm text-[12px] font-black text-indigo-600 border border-slate-100">#{idx+1}</div>
-                                <div>
-                                   {/* NOM AVANT LE TOTAL */}
-                                   <p className="text-sm font-[950] text-slate-900 uppercase leading-none tracking-tight truncate max-w-[350px] group-hover:text-indigo-600 transition-colors mb-2">
-                                      {fac.name}
-                                   </p>
-                                   <div className="flex items-baseline gap-2">
-                                      <span className="text-xl font-black text-indigo-600">{fac.total.toLocaleString()}</span>
-                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Poches</span>
-                                   </div>
+                             <div className="flex flex-col gap-1 mb-4 md:mb-0">
+                                {/* NOM AVANT LE TOTAL */}
+                                <p className="text-sm font-[950] text-slate-900 uppercase leading-none tracking-tight truncate max-w-[350px] group-hover:text-indigo-600 transition-colors mb-2">
+                                   {fac.name}
+                                </p>
+                                <div className="flex items-baseline gap-2">
+                                   <span className="text-xl font-black text-indigo-600">{fac.total.toLocaleString()}</span>
+                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Poches</span>
                                 </div>
                              </div>
-                             
                              <div className="flex items-center gap-6">
                                 <div className="grid grid-cols-3 gap-2">
                                    <div className="text-center px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm min-w-[70px]">
-                                      {/* Augmentation label produit top etablissement */}
                                       <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">CGR</p>
                                       <p className="text-[13px] font-black text-red-500">{fac.cgr}</p>
                                    </div>
