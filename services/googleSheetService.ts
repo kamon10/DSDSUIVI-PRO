@@ -76,8 +76,12 @@ const cleanNum = (val: any): number => {
 export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
   if (!scriptUrl) return [];
   try {
-    const response = await fetch(`${scriptUrl}?action=getUsers&_t=${Date.now()}`);
-    if (!response.ok) throw new Error("Erreur script utilisateurs");
+    const response = await fetch(`${scriptUrl}?action=getUsers&_t=${Date.now()}`, {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store'
+    });
+    if (!response.ok) return [];
     const text = await response.text();
     try {
       const users = JSON.parse(text);
@@ -91,11 +95,9 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
         region: cleanStr(u.region)
       }));
     } catch (e) {
-      console.error("fetchUsers parse error:", text);
       return [];
     }
   } catch (err) {
-    console.error("fetchUsers error:", err);
     return [];
   }
 };
@@ -103,7 +105,10 @@ export const fetchUsers = async (scriptUrl: string): Promise<User[]> => {
 export const fetchLogs = async (scriptUrl: string): Promise<ActivityLog[]> => {
   if (!scriptUrl) return [];
   try {
-    const response = await fetch(`${scriptUrl}?action=getLogs&_t=${Date.now()}`);
+    const response = await fetch(`${scriptUrl}?action=getLogs&_t=${Date.now()}`, {
+      method: 'GET',
+      mode: 'cors'
+    });
     if (!response.ok) return [];
     const text = await response.text();
     try {
@@ -119,7 +124,10 @@ export const fetchLogs = async (scriptUrl: string): Promise<ActivityLog[]> => {
 export const fetchDynamicSites = async (scriptUrl: string): Promise<any[]> => {
   if (!scriptUrl) return [];
   try {
-    const response = await fetch(`${scriptUrl}?action=getSites&_t=${Date.now()}`);
+    const response = await fetch(`${scriptUrl}?action=getSites&_t=${Date.now()}`, {
+      method: 'GET',
+      mode: 'cors'
+    });
     if (!response.ok) return [];
     const text = await response.text();
     try {
@@ -135,7 +143,10 @@ export const fetchDynamicSites = async (scriptUrl: string): Promise<any[]> => {
 export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: string, hashtag: string} | null> => {
   if (!scriptUrl) return null;
   try {
-    const response = await fetch(`${scriptUrl}?action=getBranding&_t=${Date.now()}`);
+    const response = await fetch(`${scriptUrl}?action=getBranding&_t=${Date.now()}`, {
+      method: 'GET',
+      mode: 'cors'
+    });
     if (!response.ok) return null;
     const text = await response.text();
     
@@ -153,7 +164,6 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
       return null;
     }
   } catch (err) {
-    console.error("fetchBrandingConfig error:", err);
     return null;
   }
 };
@@ -224,7 +234,6 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
       }
     };
   } catch (e) {
-    console.error("fetchDistributions failure:", e);
     return null;
   }
 };
@@ -273,15 +282,16 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       const mobile = cleanNum(row[col.mobile]);
       const total = cleanNum(row[col.total]);
 
+      // CRITICAL: On identifie le site "officiel" via son code ou son nom approximatif
       const siteInfo = getSiteByInput(code) || getSiteByInput(siteName);
-      const dynSite = dynamicSites.find(ds => ds.code === code || ds.name === siteName);
+      const canonicalName = siteInfo ? siteInfo.name.toUpperCase() : siteName.toUpperCase();
       
-      const objs = getSiteObjectives(siteName);
+      const dynSite = dynamicSites.find(ds => ds.code === code || ds.name === siteName);
+      const objs = getSiteObjectives(canonicalName);
 
       if (y === targetYear && (m - 1) === targetMonth) {
-        const key = siteName.toUpperCase();
-        const existing = siteAgg.get(key) || { f: 0, m: 0, t: 0, mf: 0, mm: 0 };
-        siteAgg.set(key, {
+        const existing = siteAgg.get(canonicalName) || { f: 0, m: 0, t: 0, mf: 0, mm: 0 };
+        siteAgg.set(canonicalName, {
           f: dateStr === latestDateStr ? fixe : existing.f,
           m: dateStr === latestDateStr ? mobile : existing.m,
           t: existing.t + total,
@@ -301,17 +311,26 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       dayRec.stats.realized += total;
       dayRec.stats.fixed += fixe;
       dayRec.stats.mobile += mobile;
-      dayRec.sites.push({
-        name: siteName,
-        fixe,
-        mobile,
-        total,
-        objective: objs.daily,
-        region: siteInfo?.region,
-        manager: dynSite?.manager || siteInfo?.manager,
-        email: dynSite?.email || siteInfo?.email,
-        phone: dynSite?.phone || siteInfo?.phone
-      });
+      
+      // On regroupe aussi au sein de dailyHistory par nom canonique pour éviter les doublons
+      let existingSiteEntry = dayRec.sites.find(s => s.name.toUpperCase() === canonicalName);
+      if (existingSiteEntry) {
+        existingSiteEntry.fixe += fixe;
+        existingSiteEntry.mobile += mobile;
+        existingSiteEntry.total += total;
+      } else {
+        dayRec.sites.push({
+          name: siteInfo?.name || siteName,
+          fixe,
+          mobile,
+          total,
+          objective: objs.daily,
+          region: siteInfo?.region,
+          manager: dynSite?.manager || siteInfo?.manager,
+          email: dynSite?.email || siteInfo?.email,
+          phone: dynSite?.phone || siteInfo?.phone
+        });
+      }
     });
 
     const dailyHistory = Array.from(historyMap.values()).sort((a, b) => {
@@ -384,18 +403,31 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       distributions: distributions || undefined
     };
   } catch (err) {
-    console.error("fetchSheetData error:", err);
     return null;
   }
 };
 
+/**
+ * Sauvegarde un enregistrement vers le Google Sheet via le script GAS.
+ * On utilise mode: 'no-cors' et Content-Type: 'text/plain' pour transformer 
+ * la requête en "Simple Request", ce qui évite les erreurs CORS Preflight 
+ * avec les services Google Script.
+ */
 export const saveRecordToSheet = async (scriptUrl: string, payload: any): Promise<void> => {
   if (!scriptUrl) throw new Error("URL du script manquante");
-  await fetch(scriptUrl, {
-    method: 'POST',
-    mode: 'no-cors',
-    cache: 'no-cache',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors', // Empêche le preflight OPTIONS qui échoue souvent sur GAS
+      cache: 'no-cache',
+      headers: { 
+        'Content-Type': 'text/plain' // Simple Request : pas de preflight requis
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("Erreur persistante lors de la sauvegarde Sheet:", err);
+    throw err;
+  }
 };
