@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA } from './constants.tsx';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from './constants.tsx';
 import { VisualDashboard } from './components/VisualDashboard.tsx';
 import { PerformanceView } from './components/PerformanceView.tsx';
 import { RecapView } from './components/RecapView.tsx';
@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
+  const lastOptimisticUpdateRef = useRef<number>(0);
   
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
@@ -63,6 +64,12 @@ const App: React.FC = () => {
 
   const handleSync = useCallback(async (isSilent = false, force = false) => {
     if (isSyncingRef.current) return;
+    
+    // Garde-fou réduit à 60s pour plus de réactivité si le cache Google est à jour
+    if (isSilent && !force && (Date.now() - lastOptimisticUpdateRef.current < 60000)) {
+       return;
+    }
+
     const currentInput = sheetInputRef.current;
     isSyncingRef.current = true;
     
@@ -101,6 +108,81 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const injectOptimisticData = useCallback((newData: any) => {
+    lastOptimisticUpdateRef.current = Date.now();
+    setFullData(prev => {
+      const updated = { ...prev };
+      const dateSaisie = newData["Date Collecte"];
+      const siteRawName = newData["Libelle site"];
+      const siteCode = newData["Code site"];
+      
+      // On identifie le site canonique
+      const siteInfo = getSiteByInput(siteCode) || getSiteByInput(siteRawName);
+      const canonicalName = siteInfo ? siteInfo.name.toUpperCase() : siteRawName.toUpperCase();
+      
+      const nFixe = Number(newData["NombreFixe"]);
+      const nMobile = Number(newData["NombreMobile"]);
+      const nTotal = Number(newData["Total poches"]);
+
+      let historyDay = updated.dailyHistory.find(h => h.date === dateSaisie);
+      if (historyDay) {
+         let siteEntry = historyDay.sites.find(s => s.name.toUpperCase() === canonicalName);
+         if (siteEntry) {
+            const diffFixe = nFixe - siteEntry.fixe;
+            const diffMobile = nMobile - siteEntry.mobile;
+            const diffTotal = nTotal - siteEntry.total;
+            
+            siteEntry.fixe = nFixe;
+            siteEntry.mobile = nMobile;
+            siteEntry.total = nTotal;
+            
+            historyDay.stats.fixed += diffFixe;
+            historyDay.stats.mobile += diffMobile;
+            historyDay.stats.realized += diffTotal;
+         } else {
+            historyDay.sites.push({
+               name: siteInfo?.name || siteRawName,
+               fixe: nFixe,
+               mobile: nMobile,
+               total: nTotal,
+               objective: Math.round((SITES_DATA.find(s => s.name.toUpperCase() === canonicalName)?.annualObjective || 1200) / WORKING_DAYS_YEAR)
+            });
+            historyDay.stats.fixed += nFixe;
+            historyDay.stats.mobile += nMobile;
+            historyDay.stats.realized += nTotal;
+         }
+      }
+
+      if (dateSaisie === updated.date) {
+         const oldDayRecord = prev.dailyHistory.find(h => h.date === updated.date);
+         const oldSite = oldDayRecord?.sites.find(s => s.name.toUpperCase() === canonicalName);
+         const oldVal = oldSite?.total || 0;
+         const diff = nTotal - oldVal;
+         
+         updated.daily = {
+            ...updated.daily,
+            realized: updated.daily.realized + diff,
+            fixed: updated.daily.fixed + (nFixe - (oldSite?.fixe || 0)),
+            mobile: updated.daily.mobile + (nMobile - (oldSite?.mobile || 0)),
+            percentage: ((updated.daily.realized + diff) / (updated.daily.objective || 1)) * 100
+         };
+      }
+
+      // Mise à jour simplifiée du mensuel
+      const monthParts = dateSaisie.split('/');
+      if (monthParts[1] === updated.date.split('/')[1]) {
+         const isUpdate = newData.Mode === "UPDATE";
+         const oldDayRecord = prev.dailyHistory.find(h => h.date === dateSaisie);
+         const oldSiteVal = oldDayRecord?.sites.find(s => s.name.toUpperCase() === canonicalName)?.total || 0;
+         
+         updated.monthly.realized += (nTotal - (isUpdate ? oldSiteVal : 0));
+         updated.monthly.percentage = (updated.monthly.realized / (updated.monthly.objective || 1)) * 100;
+      }
+
+      return updated;
+    });
+  }, []);
+
   useEffect(() => { handleSync(false, true); }, [handleSync]);
 
   useEffect(() => {
@@ -128,12 +210,6 @@ const App: React.FC = () => {
           mobile: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
         }
       }));
-      if (filtered.distributions) {
-        filtered.distributions = {
-          ...filtered.distributions,
-          records: filtered.distributions.records.filter(r => r.region.toUpperCase() === regionName.toUpperCase())
-        };
-      }
     } 
     else if (currentUser.role === 'AGENT') {
       filtered.regions = fullData.regions.map(r => ({
@@ -150,12 +226,6 @@ const App: React.FC = () => {
           mobile: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
         }
       }));
-      if (filtered.distributions) {
-        filtered.distributions = {
-          ...filtered.distributions,
-          records: filtered.distributions.records.filter(r => r.site.toUpperCase() === siteName.toUpperCase())
-        };
-      }
     }
     return filtered;
   }, [fullData, currentUser]);
@@ -260,7 +330,7 @@ const App: React.FC = () => {
                 {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
+                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
