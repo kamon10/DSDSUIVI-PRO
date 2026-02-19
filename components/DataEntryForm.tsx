@@ -9,6 +9,7 @@ interface DataEntryFormProps {
   data: DashboardData;
   user: User | null;
   sites: any[];
+  onSyncRequest?: () => void;
 }
 
 const MONTHS_FR_UPPER = [
@@ -16,7 +17,7 @@ const MONTHS_FR_UPPER = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "Novembre", "DECEMBRE"
 ];
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites, onSyncRequest }) => {
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
@@ -110,7 +111,6 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
     
     setStatus('submitting');
     
-    // On prépare le payload
     const [y, m, d] = formData.date.split('-');
     const payload = {
       type: 'DATA_ENTRY',
@@ -127,10 +127,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
       "AuteurEmail": user?.email || ""
     };
 
-    // EXECUTION EN ARRIÈRE-PLAN : 
-    // On lance la promesse sans l'attendre immédiatement pour libérer l'UI
+    // EXECUTION ET RAFRAICHISSEMENT INSTANTANÉ
     (async () => {
        try {
+         // 1. Envoi des données
          await saveRecordToSheet(scriptUrl, payload);
          await saveRecordToSheet(scriptUrl, {
            type: 'LOG_EVENT',
@@ -139,12 +139,17 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
            email: user?.email || "",
            details: `${isEditing ? 'Modification' : 'Nouvelle saisie'} pour ${selectedSite.name} le ${d}/${m}/${y} : ${totalPoches} poches`
          });
+         
+         // 2. Déclenchement de la synchronisation instantanée du cockpit
+         if (onSyncRequest) {
+           onSyncRequest();
+         }
        } catch (err) {
          console.error("Background save failed:", err);
        }
     })();
 
-    // On bascule tout de suite sur un état de succès "Pris en compte"
+    // On bascule tout de suite sur un état de succès visuel
     setTimeout(() => {
       setStatus('success');
     }, 800);
@@ -174,7 +179,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
             Mise à jour en cours...
           </h2>
           <p className="text-slate-500 text-sm mb-10 font-medium px-6 leading-relaxed">
-            Vos données ont été envoyées au serveur et sont en cours d'intégration dans la base de données. Vous pouvez continuer vos saisies.
+            Vos données ont été envoyées. L'application se synchronise automatiquement en arrière-plan pour refléter vos modifications dans tous les menus.
           </p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
             <RefreshCw size={18} /> Continuer les saisies
@@ -197,7 +202,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                 {isEditing ? "Modification de Saisie" : "Nouveau Relevé"}
               </h2>
               <p className={`text-[9px] font-black uppercase tracking-[0.3em] mt-1 italic ${isEditing ? 'text-blue-600' : 'text-slate-400'}`}>
-                Mise à jour directe de la base de données
+                Mise à jour instantanée de la base globale
               </p>
             </div>
           </div>
@@ -255,7 +260,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
           
           <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-blue-600 shadow-blue-200' : 'bg-red-600 shadow-red-200'} text-white py-8 rounded-[2.5rem] font-black text-lg uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95`}>
             {status === 'submitting' ? <Loader2 className="animate-spin" size={28} /> : (isEditing ? <Save size={28} /> : <Plus size={28} />)}
-            {status === 'submitting' ? "Transmission en arrière-plan..." : (isEditing ? "Enregistrer les modifications" : "Injecter dans DATABASE1")}
+            {status === 'submitting' ? "Transmission en cours..." : (isEditing ? "Enregistrer les modifications" : "Injecter dans DATABASE1")}
           </button>
         </form>
       </div>
