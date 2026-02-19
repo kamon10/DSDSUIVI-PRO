@@ -10,6 +10,7 @@ interface DataEntryFormProps {
   user: User | null;
   sites: any[];
   onSyncRequest?: () => void;
+  onOptimisticUpdate?: (payload: any) => void;
 }
 
 const MONTHS_FR_UPPER = [
@@ -17,7 +18,7 @@ const MONTHS_FR_UPPER = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "Novembre", "DECEMBRE"
 ];
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites, onSyncRequest }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites, onSyncRequest, onOptimisticUpdate }) => {
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
@@ -127,10 +128,14 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
       "AuteurEmail": user?.email || ""
     };
 
-    // EXECUTION ET RAFRAICHISSEMENT INSTANTANÉ
+    // 1. MISE À JOUR OPTIMISTE LOCALE (INSTANTANÉE)
+    if (onOptimisticUpdate) {
+       onOptimisticUpdate(payload);
+    }
+
+    // 2. SAUVEGARDE RÉELLE EN ARRIÈRE-PLAN
     (async () => {
        try {
-         // 1. Envoi des données
          await saveRecordToSheet(scriptUrl, payload);
          await saveRecordToSheet(scriptUrl, {
            type: 'LOG_EVENT',
@@ -140,19 +145,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
            details: `${isEditing ? 'Modification' : 'Nouvelle saisie'} pour ${selectedSite.name} le ${d}/${m}/${y} : ${totalPoches} poches`
          });
          
-         // 2. Déclenchement de la synchronisation instantanée du cockpit
-         if (onSyncRequest) {
-           onSyncRequest();
-         }
+         // On attend un peu que Google traite avant de rafraîchir silencieusement
+         setTimeout(() => {
+            if (onSyncRequest) onSyncRequest();
+         }, 5000);
        } catch (err) {
          console.error("Background save failed:", err);
        }
     })();
 
-    // On bascule tout de suite sur un état de succès visuel
+    // On bascule tout de suite sur un état de succès visuel (UI fluide)
     setTimeout(() => {
       setStatus('success');
-    }, 800);
+    }, 400);
   };
 
   const handleReset = () => {
@@ -173,16 +178,16 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
       <div className="max-w-xl mx-auto py-10 text-center animate-in zoom-in duration-300">
         <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-green-100 flex flex-col items-center">
           <div className="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-green-100">
-            <CloudUpload size={40} className="animate-bounce" />
+            <CheckCircle2 size={40} className="animate-in zoom-in duration-500" />
           </div>
           <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">
-            Mise à jour en cours...
+            Mise à jour Réussie !
           </h2>
           <p className="text-slate-500 text-sm mb-10 font-medium px-6 leading-relaxed">
-            Vos données ont été envoyées. L'application se synchronise automatiquement en arrière-plan pour refléter vos modifications dans tous les menus.
+            Vos données ont été injectées localement. Tous les menus de l'application (Cockpit, Pulse, Résumé) affichent désormais les nouveaux totaux. La base de données distante est synchronisée en tâche de fond.
           </p>
           <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
-            <RefreshCw size={18} /> Continuer les saisies
+            <RefreshCw size={18} /> Faire une autre saisie
           </button>
         </div>
       </div>
@@ -202,7 +207,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                 {isEditing ? "Modification de Saisie" : "Nouveau Relevé"}
               </h2>
               <p className={`text-[9px] font-black uppercase tracking-[0.3em] mt-1 italic ${isEditing ? 'text-blue-600' : 'text-slate-400'}`}>
-                Mise à jour instantanée de la base globale
+                Mise à jour instantanée des tableaux de bord
               </p>
             </div>
           </div>
@@ -213,7 +218,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                </button>
              )}
              <div className="bg-slate-900 px-8 py-5 rounded-[2rem] text-center shadow-xl">
-                <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Total à injecter</p>
+                <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Poches détectées</p>
                 <p className="text-3xl font-black text-white leading-none">{totalPoches}</p>
              </div>
           </div>
@@ -225,7 +230,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Structure de prélèvement</label>
                 <div className="relative">
-                  <select required value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none appearance-none transition-all focus:ring-4 ring-blue-50">
+                  <select required disabled={isEditing && status === 'submitting'} value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none appearance-none transition-all focus:ring-4 ring-blue-50">
                     <option value="">Sélectionner un site...</option>
                     {sites.map((s, idx) => <option key={idx} value={idx}>{s.name}</option>)}
                   </select>
@@ -260,7 +265,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
           
           <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-blue-600 shadow-blue-200' : 'bg-red-600 shadow-red-200'} text-white py-8 rounded-[2.5rem] font-black text-lg uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95`}>
             {status === 'submitting' ? <Loader2 className="animate-spin" size={28} /> : (isEditing ? <Save size={28} /> : <Plus size={28} />)}
-            {status === 'submitting' ? "Transmission en cours..." : (isEditing ? "Enregistrer les modifications" : "Injecter dans DATABASE1")}
+            {status === 'submitting' ? "Synchronisation Locale..." : (isEditing ? "Valider la modification" : "Injecter dans DATABASE1")}
           </button>
         </form>
       </div>
