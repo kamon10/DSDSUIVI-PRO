@@ -66,7 +66,6 @@ const App: React.FC = () => {
     const currentInput = sheetInputRef.current;
     isSyncingRef.current = true;
     
-    // Si c'est une mise à jour silencieuse (arrière-plan), on ne déclenche pas le loader principal
     if (!isSilent) setLoading(true);
     setSyncStatus('syncing');
 
@@ -78,10 +77,8 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      // Récupération des données métiers
       const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || []);
       
-      // On ne met à jour l'état que si des données ont réellement changé ou si c'est forcé
       if (dataResult) {
         setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
@@ -97,7 +94,6 @@ const App: React.FC = () => {
       setError(null);
     } catch (err: any) {
       setSyncStatus('error');
-      // On n'affiche l'erreur que si l'utilisateur a initié l'action (non silencieux)
       if (!isSilent) setError(err.message || "Échec de synchronisation.");
     } finally {
       setLoading(false);
@@ -105,10 +101,8 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Chargement initial
   useEffect(() => { handleSync(false, true); }, [handleSync]);
 
-  // Rafraîchissement automatique strict en arrière-plan toutes les 30 secondes
   useEffect(() => {
     const refreshInterval = setInterval(() => {
       handleSync(true, false);
@@ -213,7 +207,6 @@ const App: React.FC = () => {
              </div>
              <div className="flex flex-col">
                 <span className="font-black text-lg tracking-tighter uppercase text-slate-900 leading-none">HS</span>
-                {/* INDICATEUR LIVE ARRIERE-PLAN */}
                 <div className="flex items-center gap-1.5 mt-1">
                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
                    <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
@@ -267,7 +260,7 @@ const App: React.FC = () => {
                 {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} />}
                 {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
                 {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
