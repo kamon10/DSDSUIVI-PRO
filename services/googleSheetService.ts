@@ -1,5 +1,5 @@
 
-import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats, ActivityLog } from "../types.ts";
+import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats, ActivityLog, StockRecord } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
 const MONTHS_FR = [
@@ -238,7 +238,41 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
   }
 };
 
-export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = []): Promise<DashboardData | null> => {
+export const fetchStock = async (url: string): Promise<StockRecord[] | null> => {
+  if (!url || !url.startsWith('http')) return null;
+  try {
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const text = await response.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) return null;
+
+    const headers = rows[0].map(h => cleanStr(h).toUpperCase());
+    const idxPres = headers.findIndex(h => h.includes('PRES') || h.includes('POLE') || h.includes('COORDINATION'));
+    const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE') || h.includes('ETABLISSEMENT') || h.includes('POINT'));
+    const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL'));
+    const idxGroup = headers.findIndex(h => h.includes('GROUPE') || h.includes('SANGUIN') || h.includes('GS'));
+    const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('STOCK') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
+
+    const records: StockRecord[] = [];
+    rows.slice(1).forEach(row => {
+      const pres = cleanStr(row[idxPres >= 0 ? idxPres : 0]);
+      const site = cleanStr(row[idxSite >= 0 ? idxSite : 1]);
+      const typeProduit = cleanStr(row[idxProd >= 0 ? idxProd : 2]);
+      const groupeSanguin = cleanStr(row[idxGroup >= 0 ? idxGroup : 3]);
+      const quantite = cleanNum(row[idxQty >= 0 ? idxQty : 4]);
+
+      if (site && typeProduit && groupeSanguin) {
+        records.push({ pres, site, typeProduit, groupeSanguin, quantite });
+      }
+    });
+    return records;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
@@ -372,6 +406,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const aObjective = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
 
     const distributions = distributionUrl ? await fetchDistributions(distributionUrl) : undefined;
+    const stock = stockUrl ? await fetchStock(stockUrl) : undefined;
 
     return {
       date: latestDateStr,
@@ -400,7 +435,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       },
       dailyHistory,
       regions,
-      distributions: distributions || undefined
+      distributions: distributions || undefined,
+      stock: stock || undefined
     };
   } catch (err) {
     return null;
