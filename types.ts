@@ -35,6 +35,14 @@ export interface DistributionStats {
   lastUpdate: string;
 }
 
+export interface StockRecord {
+  pres: string;
+  site: string;
+  typeProduit: string;
+  groupeSanguin: string;
+  quantite: number;
+}
+
 export interface SiteRecord {
   name: string;
   region?: string;
@@ -103,7 +111,8 @@ export interface DashboardData {
     records: DistributionRecord[];
     stats: DistributionStats;
   };
+  stock?: StockRecord[];
 }
 
 // Added 'recap-dist' to support the separate flux summary view
-export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats';
+export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'stock' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats';

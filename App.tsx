@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_SCRIPT_URL, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from './constants.tsx';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_LINK_STOCK, DEFAULT_SCRIPT_URL, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from './constants.tsx';
 import { VisualDashboard } from './components/VisualDashboard.tsx';
 import { PerformanceView } from './components/PerformanceView.tsx';
 import { RecapView } from './components/RecapView.tsx';
@@ -15,9 +15,10 @@ import { DistributionMapView } from './components/DistributionMapView.tsx';
 import { LoginView } from './components/LoginView.tsx';
 import { AdminUserManagement } from './components/AdminUserManagement.tsx';
 import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
+import { StockView } from './components/StockView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { AppTab, DashboardData, User } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package } from 'lucide-react';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   };
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
+  const [stockInput, setStockInput] = useState(localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -71,6 +73,7 @@ const App: React.FC = () => {
     }
 
     const currentInput = sheetInputRef.current;
+    const currentStockInput = localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK;
     isSyncingRef.current = true;
     
     if (!isSilent) setLoading(true);
@@ -84,7 +87,7 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || []);
+      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], currentStockInput.trim());
       
       if (dataResult) {
         setFullData(dataResult);
@@ -238,6 +241,7 @@ const App: React.FC = () => {
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
     { id: 'recap', icon: <FileText size={18} />, label: 'Récap Coll.', public: false },
     { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
+    { id: 'stock', icon: <Package size={18} />, label: 'Stock', public: false },
     { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
     { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
     { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
@@ -337,6 +341,7 @@ const App: React.FC = () => {
                 {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
                 {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
                 {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
+                {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} />}
                 {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                 {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
               </>
@@ -354,11 +359,28 @@ const App: React.FC = () => {
       {showSettings && (
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-3xl">
-             <h3 className="text-xl font-black uppercase mb-6">Source Core-DB</h3>
-             <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold mb-8 outline-none" />
+             <h3 className="text-xl font-black uppercase mb-6">Paramètres des Sources</h3>
+             
+             <div className="space-y-4 mb-8">
+               <div>
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Collecte (CSV)</label>
+                 <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
+               </div>
+               
+               <div>
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Stock (CSV)</label>
+                 <input value={stockInput} onChange={(e) => setStockInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
+               </div>
+             </div>
+
              <div className="flex gap-4">
                <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
-               <button onClick={() => { localStorage.setItem('gsheet_input_1', sheetInput.trim()); setShowSettings(false); handleSync(false, true); }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
+               <button onClick={() => { 
+                 localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
+                 localStorage.setItem('gsheet_input_stock', stockInput.trim());
+                 setShowSettings(false); 
+                 handleSync(false, true); 
+               }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
              </div>
           </div>
         </div>
