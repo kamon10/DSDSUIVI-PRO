@@ -5,10 +5,12 @@ import { PRODUCT_COLORS } from '../constants.tsx';
 import { 
   FileImage, FileText, Loader2, TableProperties, Printer, 
   Calendar, Filter, Truck, Activity, ClipboardList, Search, 
-  X, MapPin, Building2, Package, Layers, CalendarDays, Clock, Target, ArrowRight
+  X, MapPin, Building2, Package, Layers, CalendarDays, Clock, Target, ArrowRight,
+  FileSpreadsheet
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { utils, writeFile } from 'xlsx';
 
 interface RecapViewProps {
   data: DashboardData;
@@ -80,7 +82,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
   const [filterGroup, setFilterGroup] = useState("ALL");
   const [filterRegion, setFilterRegion] = useState("ALL"); // Optionnel mais utile pour dégrossir
 
-  const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
+  const [exporting, setExporting] = useState<'image' | 'pdf' | 'excel' | null>(null);
   const recapRef = useRef<HTMLDivElement>(null);
 
   // Initialisation intelligente des dates
@@ -292,14 +294,118 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
     }), { fixe: 0, mobile: 0, jour: 0, mois: 0, objectif: 0 });
   }, [formattedCollecteData]);
 
-  const handleExport = async (type: 'image' | 'pdf') => {
+  const handleExport = async (type: 'image' | 'pdf' | 'excel') => {
     if (!recapRef.current) return;
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 800));
     try {
       const filename = `RECAP_HS_${viewMode.toUpperCase()}_${selectedDate.replace(/\//g, '-') || 'BILAN'}`;
       const element = recapRef.current;
-      if (type === 'image') {
+      
+      if (type === 'excel') {
+        const excelData: any[] = [];
+        
+        if (viewMode === 'collecte') {
+          // Headers
+          excelData.push(["PRES / RÉGION", "LIBELLÉ SITE", "FIXE", "MOB.", isPeriodMode ? "TOTAL" : "JOUR", "MOIS", "OBJECTIF/M", "TAUX/M"]);
+          
+          formattedCollecteData.forEach((region: any) => {
+            region.sites.forEach((site: any) => {
+              excelData.push([
+                region.name,
+                site.name,
+                site.fixe,
+                site.mobile,
+                site.totalJour,
+                site.totalMois,
+                site.objMensuel,
+                `${site.achievement.toFixed(0)}%`
+              ]);
+            });
+            // Region Total
+            const regTaux = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
+            excelData.push([
+              `TOTAL ${region.name}`,
+              "",
+              region.fixePres,
+              region.mobilePres,
+              region.totalJourPres,
+              region.totalMoisPres,
+              region.objMensPres,
+              `${regTaux.toFixed(0)}%`
+            ]);
+            excelData.push([]); // Empty row
+          });
+          
+          // National Total
+          const natTaux = nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0;
+          excelData.push([
+            "TOTAL NATIONAL",
+            "",
+            nationalTotals.fixe,
+            nationalTotals.mobile,
+            nationalTotals.jour,
+            nationalTotals.mois,
+            nationalTotals.objectif,
+            `${natTaux.toFixed(1)}%`
+          ]);
+        } else {
+          // Distribution Excel
+          excelData.push(["Site Source", "Structure Servie", "Produit", ...SANG_GROUPS, "Rendu", "Total"]);
+          
+          Object.entries(registerData).forEach(([sitName, sitData]: [string, any]) => {
+            Object.entries(sitData.destinations).forEach(([destName, destData]: [string, any]) => {
+              Object.entries(destData.products).forEach(([prodName, prodMetrics]: [string, any]) => {
+                const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
+                const row = [
+                  sitName,
+                  destName,
+                  prodName,
+                  ...SANG_GROUPS.map(g => prodMetrics.groups[g] || 0),
+                  prodMetrics.rendu || 0,
+                  rowGrossTotal
+                ];
+                excelData.push(row);
+              });
+            });
+            
+            // Site Sub-total
+            const siteTotals = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
+            let siteRendu = 0, siteGrossTotal = 0;
+            Object.values(sitData.destinations).forEach((dest: any) => {
+              Object.values(dest.products).forEach((prod: any) => {
+                SANG_GROUPS.forEach(g => { siteTotals[g] += prod.groups[g]; siteGrossTotal += prod.groups[g]; });
+                siteRendu += prod.rendu;
+              });
+            });
+            
+            excelData.push([
+              `SOUS-TOTAL ${sitName}`,
+              "",
+              "",
+              ...SANG_GROUPS.map(g => siteTotals[g]),
+              siteRendu,
+              siteGrossTotal
+            ]);
+            excelData.push([]);
+          });
+          
+          // Global Total
+          excelData.push([
+            "TOTAL GÉNÉRAL CONSOLIDÉ",
+            "",
+            "",
+            ...SANG_GROUPS.map(g => distTotals.groups[g]),
+            distTotals.rendu,
+            distTotals.qty
+          ]);
+        }
+
+        const ws = utils.aoa_to_sheet(excelData);
+        const wb = utils.book_new();
+        utils.book_append_sheet(wb, ws, "Recap");
+        writeFile(wb, `${filename}.xlsx`);
+      } else if (type === 'image') {
         const canvas = await html2canvas(element, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff' });
         const link = document.createElement('a'); link.download = `${filename}.png`; link.href = canvas.toDataURL('image/png', 1.0); link.click();
       } else {
@@ -437,6 +543,9 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           <div className="flex gap-2">
             <button onClick={() => handleExport('image')} disabled={!!exporting} className="px-5 py-3 bg-slate-100 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all border border-slate-200">
               {exporting === 'image' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={16} />} PNG
+            </button>
+            <button onClick={() => handleExport('excel')} disabled={!!exporting} className="px-5 py-3 bg-emerald-50 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-100 transition-all border border-emerald-200">
+              {exporting === 'excel' ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={16} />} EXCEL
             </button>
             <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`px-5 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${viewMode === 'collecte' ? 'bg-[#0f172a]' : 'bg-orange-600'}`}>
               {exporting === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={16} />} PDF
