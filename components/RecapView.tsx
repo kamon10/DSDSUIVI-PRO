@@ -43,6 +43,12 @@ const getPerfColor = (perc: number) => {
   return 'text-red-600';
 };
 
+const parseDate = (dateStr: string) => {
+  if (!dateStr || dateStr === "---") return new Date(0);
+  const [d, m, y] = dateStr.split('/').map(Number);
+  return new Date(y, m - 1, d);
+};
+
 export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user }) => {
   const viewMode = initialMode;
   // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
@@ -62,6 +68,11 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
   const [selectedMonth, setSelectedMonth] = useState<number>(-1);
   const [selectedDate, setSelectedDate] = useState<string>("");
   
+  // --- ÉTATS PÉRIODE (NOUVEAU) ---
+  const [isPeriodMode, setIsPeriodMode] = useState(false);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
   // --- ÉTATS FILTRES DE RECHERCHE (DEMANDÉS) ---
   const [filterSite, setFilterSite] = useState("ALL");
   const [filterFacility, setFilterFacility] = useState("");
@@ -80,9 +91,15 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         if (!selectedYear) setSelectedYear(parts[2]);
         if (selectedMonth === -1) setSelectedMonth(parseInt(parts[1]) - 1);
         if (!selectedDate) setSelectedDate(data.date);
+        if (!startDate) setStartDate(data.date);
+        if (!endDate) setEndDate(data.date);
       }
     }
   }, [data]);
+
+  const allDates = useMemo(() => {
+    return data.dailyHistory.map(h => h.date).sort((a, b) => parseDate(b).getTime() - parseDate(a).getTime());
+  }, [data.dailyHistory]);
 
   // Options dynamiques pour les listes
   const regionsList = useMemo(() => Array.from(new Set(sites.map(s => s.region))).sort(), [sites]);
@@ -183,9 +200,31 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
     };
   }, [filteredDistRecords]);
 
-  // LOGIQUE COLLECTE (Inchangée)
+  // LOGIQUE COLLECTE (Mise à jour pour gérer les périodes)
   const formattedCollecteData = useMemo(() => {
-    if (!selectedDate || viewMode !== 'collecte') return [];
+    if (viewMode !== 'collecte') return [];
+
+    let activeDates: string[] = [];
+    if (isPeriodMode) {
+      if (!startDate || !endDate) return [];
+      const startT = parseDate(startDate).getTime();
+      const endT = parseDate(endDate).getTime();
+      const minT = Math.min(startT, endT);
+      const maxT = Math.max(startT, endT);
+
+      activeDates = data.dailyHistory
+        .filter(h => {
+          const t = parseDate(h.date).getTime();
+          return t >= minT && t <= maxT;
+        })
+        .map(h => h.date);
+    } else {
+      if (!selectedDate) return [];
+      activeDates = [selectedDate];
+    }
+
+    if (activeDates.length === 0) return [];
+
     return data.regions.map(region => {
       const filteredSites = region.sites.filter(s => {
          if (filterRegion !== "ALL" && region.name !== filterRegion) return false;
@@ -193,10 +232,24 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
          return true;
       });
       if (filteredSites.length === 0) return null;
+      
       const sitesWithDayData = filteredSites.map(s => {
-        const historyForDay = data.dailyHistory.find(h => h.date === selectedDate);
-        const daySiteData = historyForDay?.sites.find(ds => ds.name.toUpperCase() === s.name.toUpperCase());
-        const parts = selectedDate.split('/').map(Number);
+        let totalFixe = 0;
+        let totalMobile = 0;
+        let totalJour = 0;
+
+        activeDates.forEach(date => {
+          const historyForDay = data.dailyHistory.find(h => h.date === date);
+          const daySiteData = historyForDay?.sites.find(ds => ds.name.toUpperCase() === s.name.toUpperCase());
+          totalFixe += (daySiteData?.fixe || 0);
+          totalMobile += (daySiteData?.mobile || 0);
+          totalJour += (daySiteData?.total || 0);
+        });
+
+        // Pour le cumul mois, on prend la date la plus récente de la sélection
+        const referenceDate = activeDates.sort((a, b) => parseDate(b).getTime() - parseDate(a).getTime())[0];
+        const parts = referenceDate.split('/').map(Number);
+        
         const cumulMois = data.dailyHistory
           .filter(h => {
             const hParts = h.date.split('/').map(Number);
@@ -206,9 +259,17 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
             const hs = h.sites.find(siteH => siteH.name.toUpperCase() === s.name.toUpperCase());
             return acc + (hs?.total || 0);
           }, 0);
-        const dayTotal = (daySiteData?.fixe || 0) + (daySiteData?.mobile || 0);
-        return { ...s, fixe: daySiteData?.fixe || 0, mobile: daySiteData?.mobile || 0, totalJour: dayTotal, totalMois: cumulMois, achievement: s.objMensuel > 0 ? (cumulMois / s.objMensuel) * 100 : 0 };
+
+        return { 
+          ...s, 
+          fixe: totalFixe, 
+          mobile: totalMobile, 
+          totalJour: totalJour, 
+          totalMois: cumulMois, 
+          achievement: s.objMensuel > 0 ? (cumulMois / s.objMensuel) * 100 : 0 
+        };
       });
+
       return {
         ...region,
         sites: sitesWithDayData,
@@ -219,7 +280,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         mobilePres: sitesWithDayData.reduce((acc, s) => acc + s.mobile, 0)
       };
     }).filter(r => r !== null);
-  }, [data, filterRegion, filterSite, selectedDate, viewMode]);
+  }, [data, filterRegion, filterSite, selectedDate, startDate, endDate, isPeriodMode, viewMode]);
 
   const nationalTotals = useMemo(() => {
     return formattedCollecteData.reduce((acc, r: any) => ({
@@ -258,14 +319,17 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
   };
 
   const currentPeriodLabel = useMemo(() => {
-    if (viewMode === 'collecte') return selectedDate || '---';
+    if (viewMode === 'collecte') {
+      if (isPeriodMode) return `DU ${startDate} AU ${endDate}`;
+      return selectedDate || '---';
+    }
     if (distTimeScale === 'day') return selectedDate || '---';
     if (distTimeScale === 'month') {
         const monthName = selectedMonth >= 0 && selectedMonth < 12 ? MONTHS_FR[selectedMonth] : '---';
         return `${monthName.toUpperCase()} ${selectedYear || '---'}`;
     }
     return selectedYear || '---';
-  }, [viewMode, distTimeScale, selectedDate, selectedMonth, selectedYear]);
+  }, [viewMode, distTimeScale, selectedDate, selectedMonth, selectedYear, isPeriodMode, startDate, endDate]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
@@ -304,28 +368,68 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                </div>
              )}
 
-             <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-               <Calendar size={14} className="text-slate-400" />
-               <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
-                 {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-               </select>
-             </div>
-
-             {(viewMode === 'collecte' || distTimeScale !== 'year') && (
-               <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-                 <Filter size={14} className="text-slate-400" />
-                 <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
-                   {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
-                 </select>
+             {/* TOGGLE PÉRIODE (Uniquement COLLECTE) */}
+             {viewMode === 'collecte' && (
+               <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 mr-2">
+                 <button 
+                  onClick={() => setIsPeriodMode(false)}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${!isPeriodMode ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400'}`}
+                 >
+                   Jour Unique
+                 </button>
+                 <button 
+                  onClick={() => setIsPeriodMode(true)}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${isPeriodMode ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400'}`}
+                 >
+                   Période
+                 </button>
                </div>
              )}
 
-             {(viewMode === 'collecte' || distTimeScale === 'day') && (
-               <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-sm ${viewMode === 'collecte' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
-                 <CalendarDays size={14} className={viewMode === 'collecte' ? 'text-blue-500' : 'text-orange-500'} />
-                 <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
-                   {filteredDates.map(d => <option key={d} value={d}>{d}</option>)}
-                 </select>
+             {!isPeriodMode && (
+               <>
+                 <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+                   <Calendar size={14} className="text-slate-400" />
+                   <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
+                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                   </select>
+                 </div>
+
+                 {(viewMode === 'collecte' || distTimeScale !== 'year') && (
+                   <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+                     <Filter size={14} className="text-slate-400" />
+                     <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
+                       {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
+                     </select>
+                   </div>
+                 )}
+
+                 {(viewMode === 'collecte' || distTimeScale === 'day') && (
+                   <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-sm ${viewMode === 'collecte' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
+                     <CalendarDays size={14} className={viewMode === 'collecte' ? 'text-blue-500' : 'text-orange-500'} />
+                     <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
+                       {filteredDates.map(d => <option key={d} value={d}>{d}</option>)}
+                     </select>
+                   </div>
+                 )}
+               </>
+             )}
+
+             {isPeriodMode && viewMode === 'collecte' && (
+               <div className="flex items-center gap-3">
+                 <div className="flex items-center gap-2 bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 shadow-sm">
+                   <span className="text-[8px] font-black uppercase text-blue-400">Du</span>
+                   <select value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
+                     {allDates.map(d => <option key={d} value={d}>{d}</option>)}
+                   </select>
+                 </div>
+                 <ArrowRight size={14} className="text-slate-300" />
+                 <div className="flex items-center gap-2 bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 shadow-sm">
+                   <span className="text-[8px] font-black uppercase text-blue-400">Au</span>
+                   <select value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
+                     {allDates.map(d => <option key={d} value={d}>{d}</option>)}
+                   </select>
+                 </div>
                </div>
              )}
           </div>
@@ -442,7 +546,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           <div className="grid grid-cols-3 gap-6 mb-10">
              <div className="border-2 border-[#0f172a] p-6 rounded-xl flex flex-col items-center justify-center bg-white text-center">
                 <div className="flex items-center gap-2 mb-2 text-[#0f172a]">
-                   <CalendarDays size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">FLUX TOTAL PÉRIODE</span>
+                   <CalendarDays size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{isPeriodMode ? 'TOTAL PÉRIODE' : 'FLUX JOUR'}</span>
                 </div>
                 <p className="text-5xl font-[900] text-[#0f172a] tracking-tighter">
                   {viewMode === 'collecte' ? nationalTotals.jour.toLocaleString() : distTotals.qty.toLocaleString()}
@@ -475,7 +579,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-left">LIBELLÉ SITE</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[70px]">FIXE</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[70px]">MOB.</th>
-                  <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">JOUR</th>
+                  <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">{isPeriodMode ? 'TOTAL' : 'JOUR'}</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[90px]">MOIS</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[100px]">OBJECTIF/M</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">TAUX/M</th>
