@@ -15,6 +15,8 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
   const [filterProduct, setFilterProduct] = useState('TOUS');
   const [filterGroup, setFilterGroup] = useState('TOUS');
   const [sortConfig, setSortConfig] = useState<{ key: keyof StockRecord; direction: 'asc' | 'desc' } | null>(null);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const stock = data.stock || [];
 
@@ -23,7 +25,7 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
   const groupList = useMemo(() => ['TOUS', ...Array.from(new Set(stock.map(s => s.groupeSanguin))).sort()], [stock]);
 
   const filteredStock = useMemo(() => {
-    return stock.filter(item => {
+    const filtered = stock.filter(item => {
       const matchesSearch = 
         item.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.pres.toLowerCase().includes(searchTerm.toLowerCase());
@@ -32,14 +34,26 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
       const matchesGroup = filterGroup === 'TOUS' || item.groupeSanguin === filterGroup;
       
       return matchesSearch && matchesPres && matchesProduct && matchesGroup;
-    }).sort((a, b) => {
-      if (!sortConfig) return 0;
-      const { key, direction } = sortConfig;
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-      return 0;
     });
+
+    if (sortConfig) {
+      filtered.sort((a, b) => {
+        const { key, direction } = sortConfig;
+        if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+        if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
   }, [stock, searchTerm, filterPres, filterProduct, filterGroup, sortConfig]);
+
+  const paginatedStock = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredStock.slice(start, start + itemsPerPage);
+  }, [filteredStock, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredStock.length / itemsPerPage);
 
   const stats = useMemo(() => {
     const total = filteredStock.reduce((acc, s) => acc + s.quantite, 0);
@@ -56,6 +70,7 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
       key,
       direction: prev?.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
+    setCurrentPage(1);
   };
 
   return (
@@ -152,8 +167,8 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredStock.length > 0 ? (
-                filteredStock.map((item, idx) => (
+              {paginatedStock.length > 0 ? (
+                paginatedStock.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <span className="text-[10px] font-black uppercase text-slate-400">{item.pres}</span>
@@ -200,6 +215,30 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase text-slate-400">
+              Page {currentPage} sur {totalPages} ({filteredStock.length} résultats)
+            </span>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase disabled:opacity-50 transition-all active:scale-95"
+              >
+                Précédent
+              </button>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase disabled:opacity-50 transition-all active:scale-95"
+              >
+                Suivant
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -259,6 +259,12 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: viewMode === 'donations' ? THEME.fixed : THEME.net }}></div>
                     <span className="text-[10px] font-black text-slate-600 uppercase">{viewMode === 'donations' ? 'Fixe' : 'Net'}</span>
                  </div>
+                 {viewMode === 'donations' && (
+                   <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border shadow-sm">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: THEME.mobile }}></div>
+                      <span className="text-[10px] font-black text-slate-600 uppercase">Mobile</span>
+                   </div>
+                 )}
               </div>
            </div>
            <div className="w-full h-[550px]">
@@ -276,7 +282,10 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
                     <Tooltip contentStyle={{ borderRadius: '2.5rem', border: 'none', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.15)', padding: '2rem', fontWeight: '900' }} />
                     <Area type="monotone" dataKey={viewMode === 'donations' ? 'total' : 'expedie'} stroke={viewMode === 'donations' ? THEME.total : THEME.expedie} strokeWidth={5} fillOpacity={1} fill="url(#colorMain)" animationDuration={2500} />
                     {viewMode === 'donations' ? (
-                       <Area type="monotone" dataKey="fixe" stroke={THEME.fixed} strokeWidth={3} strokeDasharray="10 5" fill="none" animationDuration={2000} />
+                       <>
+                          <Area type="monotone" dataKey="fixe" stroke={THEME.fixed} strokeWidth={3} strokeDasharray="10 5" fill="none" animationDuration={2000} />
+                          <Area type="monotone" dataKey="mobile" stroke={THEME.mobile} strokeWidth={3} strokeDasharray="5 5" fill="none" animationDuration={2000} />
+                       </>
                     ) : (
                        <Area type="monotone" dataKey="net" stroke={THEME.net} strokeWidth={3} strokeDasharray="10 5" fill="none" animationDuration={2000} />
                     )}

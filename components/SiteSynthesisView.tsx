@@ -126,7 +126,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     else if (timeScale === 'year') o = totalAnnualObj;
     else o = Math.round(totalAnnualObj / 12);
     
-    const chartData = relevantHistory.slice(0, 7).reverse().map((h: any) => {
+    const chartData = relevantHistory.slice().reverse().map((h: any) => {
       const filteredSites = h.sites.filter((s: any) => targetedSites.some(as => as.name.toUpperCase() === s.name.toUpperCase()));
       return { 
         date: h.date, 
@@ -363,7 +363,7 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
                    </div>
                 </div>
                 <div className="bg-white rounded-[2.5rem] p-8 border shadow-sm">
-                   <p className="text-[10px] font-black uppercase text-slate-400 mb-8">Derniers 7 jours d'Activité</p>
+                   <p className="text-[10px] font-black uppercase text-slate-400 mb-8">Historique d'Activité de la Période</p>
                    <div className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
                          <ReBarChart data={stats.chartData}>
