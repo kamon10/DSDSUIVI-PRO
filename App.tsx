@@ -47,6 +47,7 @@ const App: React.FC = () => {
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
   const [distInput, setDistInput] = useState(localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION);
+
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -91,7 +92,7 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim(), dynSitesResult || [], currentDistInput.trim());
+      const dataResult = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim(), dynSitesResult || [], DEFAULT_LINK_STOCK);
       
       if (dataResult) {
         setFullData(dataResult);
@@ -423,16 +424,19 @@ const App: React.FC = () => {
                </div>
                
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Distribution & Stock (CSV)</label>
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Distribution (CSV)</label>
                  <input value={distInput} onChange={(e) => setDistInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
                </div>
+               
+
              </div>
 
              <div className="flex gap-4">
                <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
                <button onClick={() => { 
                  localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
-                  localStorage.setItem('gsheet_input_dist', distInput.trim());
+                 localStorage.setItem('gsheet_input_dist', distInput.trim());
+
                  setShowSettings(false); 
                  handleSync(false, true); 
                }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
