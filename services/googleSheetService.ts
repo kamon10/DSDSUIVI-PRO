@@ -7,7 +7,7 @@ const MONTHS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-let lastRawContent = "";
+let lastRawContent: Record<string, string> = {};
 
 const cleanStr = (s: any): string => {
   if (s === null || s === undefined) return "";
@@ -168,29 +168,36 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
   }
 };
 
-export const fetchDistributions = async (url: string): Promise<{records: DistributionRecord[], stats: DistributionStats} | null> => {
-  if (!url || !url.startsWith('http')) return null;
+export const parseDistributions = (text: string): {records: DistributionRecord[], stats: DistributionStats} | null => {
   try {
-    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
-    if (!response.ok) return null;
-    const text = await response.text();
     const rows = parseCSV(text);
     if (rows.length < 2) return null;
+
+    const headers = rows[0].map(h => cleanStr(h).toUpperCase());
+    const idxCode = headers.findIndex(h => h.includes('CODE') || h.includes('ID'));
+    const idxDate = headers.findIndex(h => h.includes('DATE'));
+    const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE'));
+    const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
+    const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL'));
+    const idxGroup = headers.findIndex(h => h.includes('GROUPE') || h.includes('SANGUIN') || h.includes('GS'));
+    const idxFacility = headers.findIndex(h => h.includes('ETABLISSEMENT') || h.includes('DESTINATION') || h.includes('CLIENT'));
+    const idxRendu = headers.findIndex(h => h.includes('RENDU') || h.includes('PERIME') || h.includes('RETOUR'));
 
     const records: DistributionRecord[] = [];
     let total = 0;
     let totalRendu = 0;
     
     rows.slice(1).forEach(row => {
-      if (row.length < 10 || row[1].toLowerCase().includes('date')) return;
+      const dateStr = cleanStr(row[idxDate >= 0 ? idxDate : 1]);
+      if (!dateStr || dateStr.toLowerCase().includes('date')) return;
 
-      const date = normalizeDate(row[1]);
-      const siCode = cleanStr(row[0]);
-      const qty = cleanNum(row[3]);
-      const product = cleanStr(row[5]);
-      const group = cleanStr(row[6]);
-      const facility = cleanStr(row[8]);
-      const rendu = cleanNum(row[9]);
+      const date = normalizeDate(dateStr);
+      const siCode = cleanStr(row[idxCode >= 0 ? idxCode : 0]);
+      const qty = cleanNum(row[idxQty >= 0 ? idxQty : 3]);
+      const product = cleanStr(row[idxProd >= 0 ? idxProd : 5]);
+      const group = cleanStr(row[idxGroup >= 0 ? idxGroup : 6]);
+      const facility = cleanStr(row[idxFacility >= 0 ? idxFacility : 8]);
+      const rendu = cleanNum(row[idxRendu >= 0 ? idxRendu : 9]);
       
       if (date && (qty > 0 || rendu > 0)) {
         let searchCode = siCode;
@@ -199,7 +206,7 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
           searchCode = (codeNum * 1000).toString();
         }
         
-        const siteInfo = getSiteByInput(searchCode) || getSiteByInput(cleanStr(row[2]));
+        const siteInfo = getSiteByInput(searchCode) || getSiteByInput(cleanStr(row[idxSite >= 0 ? idxSite : 2]));
         
         total += qty;
         totalRendu += rendu;
@@ -207,7 +214,7 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
         records.push({
           date,
           codeSite: siCode,
-          site: siteInfo?.name || cleanStr(row[2]) || "SITE INCONNU",
+          site: siteInfo?.name || cleanStr(row[idxSite >= 0 ? idxSite : 2]) || "SITE INCONNU",
           region: siteInfo?.region || "AUTRES",
           etablissement: facility || "ÉTABLISSEMENT INCONNU",
           typeProduit: product || "AUTRES",
@@ -238,12 +245,20 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
   }
 };
 
-export const fetchStock = async (url: string): Promise<StockRecord[] | null> => {
+export const fetchDistributions = async (url: string): Promise<{records: DistributionRecord[], stats: DistributionStats} | null> => {
   if (!url || !url.startsWith('http')) return null;
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) return null;
     const text = await response.text();
+    return parseDistributions(text);
+  } catch (e) {
+    return null;
+  }
+};
+
+export const parseStock = (text: string): StockRecord[] | null => {
+  try {
     const rows = parseCSV(text);
     if (rows.length < 2) return null;
 
@@ -254,15 +269,20 @@ export const fetchStock = async (url: string): Promise<StockRecord[] | null> => 
     const idxGroup = headers.findIndex(h => h.includes('GROUPE') || h.includes('SANGUIN') || h.includes('GS'));
     const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('STOCK') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
 
+    // Si on ne trouve pas les colonnes essentielles, on considère que ce n'est pas un fichier de stock
+    if (idxSite === -1 || idxProd === -1 || idxGroup === -1 || idxQty === -1) {
+      return null;
+    }
+
     const records: StockRecord[] = [];
     rows.slice(1).forEach(row => {
       const pres = cleanStr(row[idxPres >= 0 ? idxPres : 0]);
-      const site = cleanStr(row[idxSite >= 0 ? idxSite : 1]);
-      const typeProduit = cleanStr(row[idxProd >= 0 ? idxProd : 2]);
-      const groupeSanguin = cleanStr(row[idxGroup >= 0 ? idxGroup : 3]);
-      const quantite = cleanNum(row[idxQty >= 0 ? idxQty : 4]);
+      const site = cleanStr(row[idxSite]);
+      const typeProduit = cleanStr(row[idxProd]);
+      const groupeSanguin = cleanStr(row[idxGroup]);
+      const quantite = cleanNum(row[idxQty]);
 
-      if (site && typeProduit && groupeSanguin) {
+      if (site && typeProduit && groupeSanguin && !site.toLowerCase().includes('site')) {
         records.push({ pres, site, typeProduit, groupeSanguin, quantite });
       }
     });
@@ -272,16 +292,76 @@ export const fetchStock = async (url: string): Promise<StockRecord[] | null> => 
   }
 };
 
-export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string): Promise<DashboardData | null> => {
+export const fetchStock = async (url: string): Promise<StockRecord[] | null> => {
+  if (!url || !url.startsWith('http')) return null;
   try {
     const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
-    if (!response.ok) throw new Error(`Source inaccessible (Code ${response.status})`);
+    if (!response.ok) return null;
     const text = await response.text();
-    if (!force && text === lastRawContent) return null;
-    lastRawContent = text;
+    return parseStock(text);
+  } catch (e) {
+    return null;
+  }
+};
 
-    const rows = parseCSV(text);
-    if (rows.length < 2) throw new Error("Fichier source vide ou mal formaté.");
+export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string): Promise<DashboardData | null> => {
+  try {
+    const fetchWithRetry = async (targetUrl: string, key: string, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
+      if (!targetUrl || !targetUrl.startsWith('http')) {
+        return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+      }
+      
+      for (let i = 0; i <= retries; i++) {
+        try {
+          // Utilisation d'un fetch plus simple pour éviter les problèmes de CORS/Preflight
+          // Les headers Cache-Control peuvent parfois bloquer sur certains serveurs Google si non configurés
+          const response = await fetch(targetUrl, { 
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-store'
+          });
+          
+          if (!response.ok) {
+            console.warn(`Source ${key} inaccessible (Code ${response.status}) - Tentative ${i + 1}/${retries + 1}`);
+            if (i === retries) return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+            await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
+            continue;
+          }
+          const text = await response.text();
+          const hasChanged = force || text !== lastRawContent[key];
+          lastRawContent[key] = text;
+          return { text, hasChanged, error: false };
+        } catch (e) {
+          console.error(`Erreur lors du fetch de ${key} (Tentative ${i + 1}/${retries + 1}):`, e);
+          if (i === retries) return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+          await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
+        }
+      }
+      return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+    };
+
+    const [collecteResult, distResult, stockResult] = await Promise.all([
+      fetchWithRetry(url, 'collecte'),
+      distributionUrl ? fetchWithRetry(distributionUrl, 'distribution') : Promise.resolve({ text: '', hasChanged: false, error: false }),
+      stockUrl ? fetchWithRetry(stockUrl, 'stock') : Promise.resolve({ text: '', hasChanged: false, error: false })
+    ]);
+
+    // Si la collecte échoue et qu'on n'a rien en cache, on ne peut rien faire
+    if (collecteResult.error && !collecteResult.text) {
+      throw new Error("Impossible de charger la source principale (Collecte)");
+    }
+
+    if (!force && !collecteResult.hasChanged && !distResult.hasChanged && !stockResult.hasChanged) {
+      return null;
+    }
+
+    const rows = parseCSV(collecteResult.text);
+    if (rows.length < 2) {
+      if (collecteResult.text.includes("<!DOCTYPE")) {
+        throw new Error("La source Collecte semble être une page HTML (vérifiez que le lien est bien un export CSV)");
+      }
+      throw new Error("Fichier source Collecte vide ou mal formaté.");
+    }
 
     const col = { date: 0, code: 1, site: 2, fixe: 5, mobile: 7, total: 8 };
     let latestDateObj = new Date(2000, 0, 1);
@@ -405,8 +485,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const mObjective = regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.objMensuel, 0), 0);
     const aObjective = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
 
-    const distributions = distributionUrl ? await fetchDistributions(distributionUrl) : undefined;
-    const stock = stockUrl ? await fetchStock(stockUrl) : undefined;
+    const distributions = distResult.text ? parseDistributions(distResult.text) : undefined;
+    const stock = stockResult.text ? parseStock(stockResult.text) : undefined;
 
     return {
       date: latestDateStr,
