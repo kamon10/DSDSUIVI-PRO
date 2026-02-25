@@ -17,8 +17,10 @@ import { AdminUserManagement } from './components/AdminUserManagement.tsx';
 import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
 import { StockView } from './components/StockView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
-import { AppTab, DashboardData, User } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package } from 'lucide-react';
+import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CommandPalette } from './components/CommandPalette.tsx';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
@@ -40,10 +42,11 @@ const App: React.FC = () => {
   const updateBranding = (newBranding: {logo: string, hashtag: string}) => {
     setBranding(newBranding);
     localStorage.setItem('hemo_branding', JSON.stringify(newBranding));
+    handleSync(true, true); // Force a re-sync after branding update
   };
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [stockInput, setStockInput] = useState(localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK);
+  const [distInput, setDistInput] = useState(localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -52,6 +55,7 @@ const App: React.FC = () => {
     try { return JSON.parse(saved); } catch (e) { return null; }
   });
   const [error, setError] = useState<string | null>(null);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const scriptUrl = DEFAULT_SCRIPT_URL;
   const isSyncingRef = useRef(false);
@@ -73,7 +77,7 @@ const App: React.FC = () => {
     }
 
     const currentInput = sheetInputRef.current;
-    const currentStockInput = localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK;
+    const currentDistInput = localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION;
     isSyncingRef.current = true;
     
     if (!isSilent) setLoading(true);
@@ -87,7 +91,7 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], currentStockInput.trim());
+      const dataResult = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim(), dynSitesResult || [], currentDistInput.trim());
       
       if (dataResult) {
         setFullData(dataResult);
@@ -110,6 +114,21 @@ const App: React.FC = () => {
       isSyncingRef.current = false;
     }
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSiteSelect = (siteName: string) => {
+    setActiveTab('site-focus');
+  };
 
   const injectOptimisticData = useCallback((newData: any) => {
     lastOptimisticUpdateRef.current = Date.now();
@@ -289,12 +308,27 @@ const App: React.FC = () => {
           </div>
           <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
             {visibleNavItems.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id as AppTab)} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === tab.id || (activeTab === 'recap-dist' && tab.id === 'recap-dist') ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}>
+              <button 
+                key={tab.id} 
+                onClick={() => setActiveTab(tab.id as AppTab)} 
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 ${activeTab === tab.id || (activeTab === 'recap-dist' && tab.id === 'recap-dist') ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'}`}
+              >
                 {tab.icon} <span className="text-[10px] font-black uppercase">{tab.label}</span>
               </button>
             ))}
           </nav>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl text-slate-500 transition-all group"
+            >
+              <Search size={16} className="group-hover:text-slate-900" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Rechercher...</span>
+              <div className="flex items-center gap-1 ml-4">
+                <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">⌘</span>
+                <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">K</span>
+              </div>
+            </button>
             {currentUser ? (
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4">
@@ -326,32 +360,53 @@ const App: React.FC = () => {
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
           </div>
         ) : (
-          <div className="page-transition">
-            {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
-            {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
-            {currentUser && (
-              <>
-                {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} />}
-                {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
-                {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
-                {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
-                {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
-                {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
-                {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} />}
-                {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
-              </>
-            )}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="page-transition"
+            >
+              {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
+              {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
+              {currentUser && (
+                <>
+                  {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} />}
+                  {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
+                  {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
+                  {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
+                  {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
+                  {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
+                  {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} />}
+                  {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
         )}
       </main>
+
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onClose={() => setIsCommandPaletteOpen(false)} 
+        onNavigate={setActiveTab}
+        sites={effectiveSitesList}
+        onSiteSelect={handleSiteSelect}
+      />
       <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] glass-nav rounded-3xl p-2 flex justify-between items-center shadow-2xl overflow-x-auto no-scrollbar gap-2">
            {visibleNavItems.map((tab) => (
-             <button key={tab.id} onClick={() => setActiveTab(tab.id as AppTab)} className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl shrink-0 min-w-[60px] ${activeTab === tab.id ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>
+             <button 
+               key={tab.id} 
+               onClick={() => setActiveTab(tab.id as AppTab)} 
+               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl shrink-0 min-w-[60px] transition-all duration-300 active:scale-90 ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100/50'}`}
+             >
                {tab.icon} <span className="text-[8px] font-black uppercase">{tab.label}</span>
              </button>
            ))}
@@ -368,8 +423,8 @@ const App: React.FC = () => {
                </div>
                
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Stock (CSV)</label>
-                 <input value={stockInput} onChange={(e) => setStockInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Distribution & Stock (CSV)</label>
+                 <input value={distInput} onChange={(e) => setDistInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
                </div>
              </div>
 
@@ -377,7 +432,7 @@ const App: React.FC = () => {
                <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
                <button onClick={() => { 
                  localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
-                 localStorage.setItem('gsheet_input_stock', stockInput.trim());
+                  localStorage.setItem('gsheet_input_dist', distInput.trim());
                  setShowSettings(false); 
                  handleSync(false, true); 
                }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>

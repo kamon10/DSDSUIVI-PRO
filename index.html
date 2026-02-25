@@ -15,6 +15,7 @@
             --accent-primary: #3b82f6;
             --accent-secondary: #6366f1;
             --accent-warm: #f43f5e;
+            --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -29,21 +30,42 @@
             color: #0f172a;
             min-height: 100vh;
             margin: 0;
+            scroll-behavior: smooth;
         }
         ::-webkit-scrollbar { display: none; }
+        
         .glass-nav {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            box-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.12);
+            transition: var(--transition-smooth);
         }
+
         .page-transition {
-            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: slideUpFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); filter: blur(4px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
+
+        button, a, .card, .interactive {
+            transition: var(--transition-smooth);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script type="importmap">
