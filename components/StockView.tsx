@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { DashboardData, User, StockRecord, DistributionRecord } from '../types.ts';
+import { DashboardData, User, StockRecord } from '../types.ts';
 import { Package, Search, Filter, Database, TrendingUp, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { PRODUCT_COLORS, GROUP_COLORS } from '../constants.tsx';
 
@@ -17,7 +17,6 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
   const [sortConfig, setSortConfig] = useState<{ key: keyof StockRecord; direction: 'asc' | 'desc' } | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showComparison, setShowComparison] = useState(false);
 
   const stock = data.stock || [];
 
@@ -66,39 +65,6 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
     return { total, byProduct };
   }, [filteredStock]);
 
-  const aggregatedDistributions = useMemo(() => {
-    const agg = new Map<string, number>();
-    if (!data.distributions) return agg;
-
-    data.distributions.records.forEach(dist => {
-      const key = `${dist.site}|${dist.typeProduit}|${dist.groupeSanguin}`.toUpperCase();
-      agg.set(key, (agg.get(key) || 0) + dist.quantite);
-    });
-    return agg;
-  }, [data.distributions]);
-
-  const comparisonResults = useMemo(() => {
-    const results: { stockItem: StockRecord; distributedQty: number; discrepancy: number; status: string }[] = [];
-
-    filteredStock.forEach(stockItem => {
-      const key = `${stockItem.site}|${stockItem.typeProduit}|${stockItem.groupeSanguin}`.toUpperCase();
-      const distributedQty = aggregatedDistributions.get(key) || 0;
-      const discrepancy = stockItem.quantite - distributedQty;
-      let status = '';
-
-      if (discrepancy > 0) {
-        status = 'Surplus';
-      } else if (discrepancy < 0) {
-        status = 'Manque';
-      } else {
-        status = 'Conforme';
-      }
-
-      results.push({ stockItem, distributedQty, discrepancy, status });
-    });
-    return results;
-  }, [filteredStock, aggregatedDistributions]);
-
   const handleSort = (key: keyof StockRecord) => {
     setSortConfig(prev => ({
       key,
@@ -121,12 +87,6 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowComparison(prev => !prev)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-colors ${showComparison ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            {showComparison ? 'Voir Stock Réel' : 'Comparer Distribution'}
-          </button>
           <div className="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
             <span className="text-[10px] font-black uppercase text-emerald-600 block">Total Poches</span>
             <span className="text-xl font-black text-emerald-700">{stats.total.toLocaleString()}</span>
@@ -184,77 +144,9 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
         </div>
       </div>
 
-      {showComparison ? (
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">PRES</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Site / Structure</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Type Produit</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Groupe</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Stock Réel</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Distribué</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Écart</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {comparisonResults.length > 0 ? (
-                  comparisonResults.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4"><span className="text-[10px] font-black uppercase text-slate-400">{item.stockItem.pres}</span></td>
-                      <td className="px-6 py-4"><span className="text-xs font-bold text-slate-900">{item.stockItem.site}</span></td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PRODUCT_COLORS[item.stockItem.typeProduit] || '#cbd5e1' }}></div>
-                          <span className="text-[10px] font-black uppercase text-slate-600">{item.stockItem.typeProduit}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-block px-3 py-1 rounded-lg text-[10px] font-black text-white shadow-sm" style={{ backgroundColor: GROUP_COLORS[item.stockItem.groupeSanguin] || '#64748b' }}>
-                          {item.stockItem.groupeSanguin}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className={`text-sm font-black ${item.stockItem.quantite <= 5 ? 'text-rose-600' : 'text-slate-900'}`}>
-                          {item.stockItem.quantite}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-black text-slate-900">{item.distributedQty}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className={`text-sm font-black ${item.discrepancy !== 0 ? (item.discrepancy > 0 ? 'text-green-600' : 'text-red-600') : 'text-slate-900'}`}>
-                          {item.discrepancy}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black text-white shadow-sm ${item.status === 'Conforme' ? 'bg-emerald-500' : item.status === 'Surplus' ? 'bg-orange-500' : 'bg-rose-500'}`}>
-                          {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-24 text-center">
-                      <div className="flex flex-col items-center gap-4">
-                        <Database size={48} className="text-slate-200" />
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aucun résultat de comparaison trouvé</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th onClick={() => handleSort('pres')} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-900 transition-colors">
@@ -348,6 +240,6 @@ export const StockView: React.FC<StockViewProps> = ({ data, user }) => {
           </div>
         )}
       </div>
-      )}
+    </div>
   );
 };
