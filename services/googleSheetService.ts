@@ -263,31 +263,31 @@ export const parseStock = (text: string): StockRecord[] | null => {
     if (rows.length < 2) return null;
 
     const headers = rows[0].map(h => cleanStr(h).toUpperCase());
+
     const idxPres = headers.findIndex(h => h.includes('PRES') || h.includes('POLE') || h.includes('COORDINATION'));
     const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE') || h.includes('ETABLISSEMENT') || h.includes('POINT'));
     const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL'));
     const idxGroup = headers.findIndex(h => h.includes('GROUPE') || h.includes('SANGUIN') || h.includes('GS'));
     const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('STOCK') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
 
-    // Si on ne trouve pas les colonnes essentielles, on considère que ce n'est pas un fichier de stock
-    if (idxSite === -1 || idxProd === -1 || idxGroup === -1 || idxQty === -1) {
-      return null;
-    }
 
     const records: StockRecord[] = [];
     rows.slice(1).forEach(row => {
-      const pres = cleanStr(row[idxPres >= 0 ? idxPres : 0]);
-      const site = cleanStr(row[idxSite]);
-      const typeProduit = cleanStr(row[idxProd]);
-      const groupeSanguin = cleanStr(row[idxGroup]);
-      const quantite = cleanNum(row[idxQty]);
+      // Use fallback indices if headers are not found, but prioritize found headers
+      const pres = cleanStr(row[idxPres !== -1 ? idxPres : 0]);
+      const site = cleanStr(row[idxSite !== -1 ? idxSite : 1]);
+      const typeProduit = cleanStr(row[idxProd !== -1 ? idxProd : 2]);
+      const groupeSanguin = cleanStr(row[idxGroup !== -1 ? idxGroup : 3]);
+      const quantite = cleanNum(row[idxQty !== -1 ? idxQty : 4]);
 
-      if (site && typeProduit && groupeSanguin && !site.toLowerCase().includes('site')) {
+      // Basic validation: ensure essential fields are present
+      if (site && typeProduit && groupeSanguin && quantite !== null && quantite !== undefined) {
         records.push({ pres, site, typeProduit, groupeSanguin, quantite });
       }
     });
     return records;
   } catch (e) {
+    console.error("Error parsing stock data:", e);
     return null;
   }
 };
@@ -308,21 +308,21 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
   try {
     const fetchWithRetry = async (targetUrl: string, key: string, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
       if (!targetUrl || !targetUrl.startsWith('http')) {
+        console.warn(`Source ${key} URL invalide ou manquante. Utilisation des données en cache si disponibles.`);
         return { text: lastRawContent[key] || '', hasChanged: false, error: true };
       }
       
       for (let i = 0; i <= retries; i++) {
         try {
-          // Utilisation d'un fetch plus simple pour éviter les problèmes de CORS/Preflight
-          // Les headers Cache-Control peuvent parfois bloquer sur certains serveurs Google si non configurés
-          const response = await fetch(targetUrl, { 
+          const response = await fetch(targetUrl, {
             method: 'GET',
             mode: 'cors',
             cache: 'no-store'
           });
           
           if (!response.ok) {
-            console.warn(`Source ${key} inaccessible (Code ${response.status}) - Tentative ${i + 1}/${retries + 1}`);
+            const errorDetail = response.statusText || `Code ${response.status}`;
+            console.warn(`Source ${key} inaccessible (${errorDetail}) - Tentative ${i + 1}/${retries + 1}`);
             if (i === retries) return { text: lastRawContent[key] || '', hasChanged: false, error: true };
             await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
             continue;
@@ -331,8 +331,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
           const hasChanged = force || text !== lastRawContent[key];
           lastRawContent[key] = text;
           return { text, hasChanged, error: false };
-        } catch (e) {
-          console.error(`Erreur lors du fetch de ${key} (Tentative ${i + 1}/${retries + 1}):`, e);
+        } catch (e: any) {
+          console.error(`Erreur lors du fetch de ${key} (Tentative ${i + 1}/${retries + 1}):`, e.message || e);
           if (i === retries) return { text: lastRawContent[key] || '', hasChanged: false, error: true };
           await new Promise(r => setTimeout(r, 1000 * (i + 1))); 
         }
@@ -518,7 +518,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       distributions: distributions || undefined,
       stock: stock || undefined
     };
-  } catch (err) {
+  } catch (err: any) {
+    console.error("Erreur fatale lors du chargement des données du tableau de bord:", err.message || err);
     return null;
   }
 };
