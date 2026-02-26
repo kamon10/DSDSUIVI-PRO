@@ -168,38 +168,51 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
   }
 };
 
+const normalizeHeader = (s: string): string => {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+};
+
 export const parseDistributions = (text: string): {records: DistributionRecord[], stats: DistributionStats} | null => {
   try {
     const rows = parseCSV(text);
-    if (rows.length < 2) return null;
+    if (rows.length < 2) {
+      console.warn("[Parser] BASE: Pas assez de lignes dans le CSV");
+      return null;
+    }
 
-    const headers = rows[0].map(h => cleanStr(h).toUpperCase());
+    const headers = rows[0].map(h => normalizeHeader(h));
+    console.log("[Parser] BASE Headers détectés:", headers);
+
     const idxCode = headers.findIndex(h => h.includes('CODE') || h.includes('ID'));
-    const idxDate = headers.findIndex(h => h.includes('DATE'));
-    const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE'));
+    const idxDate = headers.findIndex(h => h.includes('DATE') || h.includes('JOUR') || h.includes('DATE DIST') || h.includes('DATE_DIST'));
+    const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE') || h.includes('SOURCE') || h.includes('SITE SOURCE'));
     const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
     const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL'));
     const idxGroup = headers.findIndex(h => h.includes('GROUPE') || h.includes('SANGUIN') || h.includes('GS'));
-    const idxFacility = headers.findIndex(h => h.includes('ETABLISSEMENT') || h.includes('DESTINATION') || h.includes('CLIENT'));
+    const idxFacility = headers.findIndex(h => h.includes('ETABLISSEMENT') || h.includes('DESTINATION') || h.includes('CLIENT') || h.includes('STRUCTURE SERVIE'));
     const idxRendu = headers.findIndex(h => h.includes('RENDU') || h.includes('PERIME') || h.includes('RETOUR'));
 
     const records: DistributionRecord[] = [];
     let total = 0;
     let totalRendu = 0;
     
-    rows.slice(1).forEach(row => {
+    rows.slice(1).forEach((row, rowIndex) => {
       const dateStr = cleanStr(row[idxDate >= 0 ? idxDate : 1]);
       if (!dateStr || dateStr.toLowerCase().includes('date')) return;
 
       const date = normalizeDate(dateStr);
       const siCode = cleanStr(row[idxCode >= 0 ? idxCode : 0]);
-      const qty = cleanNum(row[idxQty >= 0 ? idxQty : 3]);
+      
+      // Si "Le stock equivaut au nombre de produit", alors chaque ligne = 1 unité
+      // Sauf si une quantité explicite est présente et > 1 ? 
+      // Pour être cohérent avec Stock, on va compter chaque ligne comme 1 unité distribuée.
+      const qty = 1; 
       const product = cleanStr(row[idxProd >= 0 ? idxProd : 5]);
       const group = cleanStr(row[idxGroup >= 0 ? idxGroup : 6]);
       const facility = cleanStr(row[idxFacility >= 0 ? idxFacility : 8]);
       const rendu = cleanNum(row[idxRendu >= 0 ? idxRendu : 9]);
       
-      if (date && (qty > 0 || rendu > 0)) {
+      if (date) {
         let searchCode = siCode;
         const codeNum = parseInt(siCode);
         if (!isNaN(codeNum) && siCode.length <= 2) {
@@ -224,6 +237,8 @@ export const parseDistributions = (text: string): {records: DistributionRecord[]
         });
       }
     });
+
+    console.log(`[Parser] BASE: ${records.length} enregistrements chargés.`);
 
     records.sort((a, b) => {
         const [da, ma, ya] = a.date.split('/').map(Number);
@@ -257,34 +272,102 @@ export const fetchDistributions = async (url: string): Promise<{records: Distrib
   }
 };
 
+const normalizeGroup = (g: string): string => {
+  const s = cleanStr(g).toUpperCase();
+  if (!s) return "N/A";
+  if (s.includes('A') && s.includes('B')) {
+    if (s.includes('+') || s.includes('POS')) return "AB+";
+    if (s.includes('-') || s.includes('NEG')) return "AB-";
+    return "AB+"; // Default to + if ambiguous
+  }
+  if (s.includes('A')) {
+    if (s.includes('+') || s.includes('POS')) return "A+";
+    if (s.includes('-') || s.includes('NEG')) return "A-";
+    return "A+";
+  }
+  if (s.includes('B')) {
+    if (s.includes('+') || s.includes('POS')) return "B+";
+    if (s.includes('-') || s.includes('NEG')) return "B-";
+    return "B+";
+  }
+  if (s.includes('O') || s === '0') {
+    if (s.includes('+') || s.includes('POS')) return "O+";
+    if (s.includes('-') || s.includes('NEG')) return "O-";
+    return "O+";
+  }
+  return s;
+};
+
 export const parseStock = (text: string): StockRecord[] | null => {
   try {
+    if (!text || text.includes("<!DOCTYPE")) {
+      console.error("[Parser] STOCK: Le contenu semble être du HTML ou est vide.");
+      return null;
+    }
+
     const rows = parseCSV(text);
-    if (rows.length < 2) return null;
+    if (rows.length < 2) {
+      console.warn("[Parser] STOCK: Pas assez de lignes dans le CSV");
+      return null;
+    }
 
-    const headers = rows[0].map(h => cleanStr(h).toUpperCase());
+    const headers = rows[0].map(h => normalizeHeader(h));
+    console.log("[Parser] STOCK Headers détectés:", headers);
 
-    const idxPres = headers.findIndex(h => h.includes('PRES') || h.includes('POLE') || h.includes('COORDINATION'));
-    const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE') || h.includes('ETABLISSEMENT') || h.includes('POINT'));
-    const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL'));
+    const idxPres = headers.findIndex(h => h.includes('PRES') || h.includes('POLE') || h.includes('COORDINATION') || h.includes('REGION'));
+    const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE') || h.includes('ETABLISSEMENT') || h.includes('POINT') || h.includes('DEPOT'));
+    const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL') || h.includes('ARTICLE'));
     const idxGroup = headers.findIndex(h => h.includes('GROUPE') || h.includes('SANGUIN') || h.includes('GS'));
-    const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('STOCK') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
+    const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE') || h.includes('STOCK'));
+    
+    // On utilise une Map pour agréger les produits
+    const aggregationMap = new Map<string, StockRecord>();
 
-
-    const records: StockRecord[] = [];
-    rows.slice(1).forEach(row => {
-      // Use fallback indices if headers are not found, but prioritize found headers
-      const pres = cleanStr(row[idxPres !== -1 ? idxPres : 0]);
+    rows.slice(1).forEach((row, rowIndex) => {
+      // Fallback sur les index par défaut si non trouvés
+      let pres = cleanStr(row[idxPres !== -1 ? idxPres : 0]);
       const site = cleanStr(row[idxSite !== -1 ? idxSite : 1]);
       const typeProduit = cleanStr(row[idxProd !== -1 ? idxProd : 2]);
-      const groupeSanguin = cleanStr(row[idxGroup !== -1 ? idxGroup : 3]);
-      const quantite = cleanNum(row[idxQty !== -1 ? idxQty : 4]);
+      const groupeSanguin = normalizeGroup(row[idxGroup !== -1 ? idxGroup : 3]);
+      
+      // Si une colonne quantité existe, on l'utilise, sinon on compte 1 par ligne
+      const qVal = idxQty !== -1 ? cleanNum(row[idxQty]) : 1;
+      const quantite = qVal > 0 ? qVal : 1;
 
-      // Basic validation: ensure essential fields are present
-      if (site && typeProduit && groupeSanguin && quantite !== null && quantite !== undefined) {
-        records.push({ pres, site, typeProduit, groupeSanguin, quantite });
+      // Validation de base : on ignore les lignes vides ou incomplètes
+      if (site && typeProduit && groupeSanguin && groupeSanguin !== "N/A") {
+        // Tentative de récupération de la région si PRES est vide
+        if (!pres || pres === "N/A") {
+          const siteInfo = getSiteByInput(site);
+          if (siteInfo && siteInfo.region) {
+            pres = siteInfo.region;
+          } else {
+            pres = "DIRECTION NATIONALE";
+          }
+        }
+
+        const key = `${pres}|${site}|${typeProduit}|${groupeSanguin}`;
+        const existing = aggregationMap.get(key);
+        
+        if (existing) {
+          existing.quantite += quantite;
+        } else {
+          aggregationMap.set(key, { 
+            pres, 
+            site, 
+            typeProduit, 
+            groupeSanguin, 
+            quantite 
+          });
+        }
+      } else if (rowIndex < 5) {
+        // Log seulement pour les premières lignes pour aider au debug
+        console.log(`[Parser] STOCK: Ligne ${rowIndex + 1} ignorée car incomplète: site="${site}", produit="${typeProduit}", groupe="${groupeSanguin}"`);
       }
     });
+
+    const records = Array.from(aggregationMap.values());
+    console.log(`[Parser] STOCK: ${records.length} groupes de produits chargés.`);
     return records;
   } catch (e) {
     console.error("Error parsing stock data:", e);
@@ -312,12 +395,18 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
         return { text: lastRawContent[key] || '', hasChanged: false, error: true };
       }
       
+      // Ajout du cache-busting
+      const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+      
       for (let i = 0; i <= retries; i++) {
         try {
-          const response = await fetch(targetUrl, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-store'
+          console.log(`[Sync] Tentative de récupération de ${key}...`);
+          
+          // Première tentative : Directe
+          let response = await fetch(urlWithCacheBusting).catch(err => {
+            console.warn(`[Sync] Échec direct pour ${key}, tentative via proxy...`);
+            // Deuxième tentative : Via proxy CORS si l'accès direct échoue
+            return fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`);
           });
           
           if (!response.ok) {
@@ -342,8 +431,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
 
     const [collecteResult, distResult, stockResult] = await Promise.all([
       fetchWithRetry(url, 'collecte'),
-      distributionUrl ? fetchWithRetry(distributionUrl, 'distribution') : Promise.resolve({ text: '', hasChanged: false, error: false }),
-      stockUrl ? fetchWithRetry(stockUrl, 'stock') : Promise.resolve({ text: '', hasChanged: false, error: false })
+      distributionUrl ? fetchWithRetry(distributionUrl, 'BASE') : Promise.resolve({ text: '', hasChanged: false, error: false }),
+      stockUrl ? fetchWithRetry(stockUrl, 'STOCK') : Promise.resolve({ text: '', hasChanged: false, error: false })
     ]);
 
     // Si la collecte échoue et qu'on n'a rien en cache, on ne peut rien faire
