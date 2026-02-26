@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { DashboardData, User } from '../types';
 import { PRES_COORDINATES, SITES_DATA } from '../constants';
-import { Globe, Plus, Minus, Maximize2, Activity, Truck } from 'lucide-react';
+import { Globe, Plus, Minus, Maximize2, Activity, Truck, Package } from 'lucide-react';
 
 interface DistributionMapViewProps {
   data: DashboardData;
@@ -18,7 +18,7 @@ const CI_BOUNDS: [[number, number], [number, number]] = [
 ];
 
 export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, user, sites }) => {
-  const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('distribution');
+  const [viewMode, setViewMode] = useState<'donations' | 'distribution' | 'stock'>('distribution');
   const [selectedDate, setSelectedDate] = useState(data.date);
   const [isDrilledDown, setIsDrilledDown] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -34,12 +34,14 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     Object.keys(PRES_COORDINATES).forEach(pres => {
         presMap.set(pres, { 
           name: pres, realized: 0, fixed: 0, mobile: 0,
-          distribution: { cgr: 0, plasma: 0, platelets: 0, total: 0 }
+          distribution: { cgr: 0, plasma: 0, platelets: 0, total: 0 },
+          stock: { total: 0, cgr: 0, plasma: 0, platelets: 0 }
         });
     });
 
     const dayData = data.dailyHistory.find(h => h.date === selectedDate);
     const dayDist = data.distributions?.records.filter(r => r.date === selectedDate) || [];
+    const stockData = data.stock || [];
 
     dayData?.sites.forEach(site => {
       const region = site.region || "AUTRES";
@@ -63,6 +65,18 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
       }
     });
 
+    stockData.forEach(s => {
+      const region = s.pres || "AUTRES";
+      if (presMap.has(region)) {
+        const stats = presMap.get(region);
+        stats.stock.total += s.quantite;
+        const prod = s.typeProduit.toUpperCase();
+        if (prod.includes("CGR")) stats.stock.cgr += s.quantite;
+        else if (prod.includes("PLASMA")) stats.stock.plasma += s.quantite;
+        else if (prod.includes("PLAQUETTE") || prod.includes("PLATELET")) stats.stock.platelets += s.quantite;
+      }
+    });
+
     return Array.from(presMap.values()).filter(p => PRES_COORDINATES[p.name]);
   }, [data, selectedDate]);
 
@@ -72,10 +86,12 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     
     const dayData = data.dailyHistory.find(h => h.date === selectedDate);
     const dayDist = data.distributions?.records.filter(r => r.date === selectedDate) || [];
+    const stockData = data.stock || [];
     
     return SITES_DATA.filter(s => s.region === selectedRegion).map(siteBase => {
       const dSite = dayData?.sites.find(s => s.name.toUpperCase() === siteBase.name.toUpperCase());
       const distSite = dayDist.filter(r => r.site.toUpperCase() === siteBase.name.toUpperCase());
+      const stockSite = stockData.filter(s => s.site.toUpperCase() === siteBase.name.toUpperCase());
       
       const distribution = {
         total: distSite.reduce((acc, r) => acc + r.quantite, 0),
@@ -84,13 +100,21 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
         platelets: distSite.filter(r => r.typeProduit.toUpperCase().includes("PLAQUETTE") || r.typeProduit.toUpperCase().includes("PLATELET")).reduce((acc, r) => acc + r.quantite, 0)
       };
 
+      const stock = {
+        total: stockSite.reduce((acc, s) => acc + s.quantite, 0),
+        cgr: stockSite.filter(s => s.typeProduit.toUpperCase().includes("CGR")).reduce((acc, s) => acc + s.quantite, 0),
+        plasma: stockSite.filter(s => s.typeProduit.toUpperCase().includes("PLASMA")).reduce((acc, s) => acc + s.quantite, 0),
+        platelets: stockSite.filter(s => s.typeProduit.toUpperCase().includes("PLAQUETTE") || s.typeProduit.toUpperCase().includes("PLATELET")).reduce((acc, s) => acc + s.quantite, 0)
+      };
+
       return {
         name: siteBase.name,
         coords: siteBase.coords,
         realized: dSite?.total || 0,
         fixed: dSite?.fixe || 0,
         mobile: dSite?.mobile || 0,
-        distribution
+        distribution,
+        stock
       };
     });
   }, [selectedRegion, data, selectedDate]);
@@ -131,11 +155,26 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
       const coords = isDrilledDown ? item.coords : PRES_COORDINATES[item.name];
       if (!coords) return;
 
-      const val = viewMode === 'donations' ? item.realized : item.distribution.total;
+      let val = 0;
+      let mainColor = '#10b981';
+      let subLabel = 'Poches';
+
+      if (viewMode === 'donations') {
+        val = item.realized;
+        mainColor = '#10b981';
+        subLabel = 'Poches';
+      } else if (viewMode === 'distribution') {
+        val = item.distribution.total;
+        mainColor = '#f59e0b';
+        subLabel = 'Sorties';
+      } else if (viewMode === 'stock') {
+        val = isDrilledDown ? item.stock.total : item.stock.total;
+        mainColor = '#8b5cf6'; // Violet pour le stock
+        subLabel = 'Stock';
+      }
       
       if (val === 0 && !isDrilledDown) return;
 
-      const mainColor = viewMode === 'donations' ? '#10b981' : '#f59e0b';
       const label = isDrilledDown ? item.name.replace('CDTS DE ', '').replace('CRTS DE ', '').replace('SP ', '').substring(0, 10) + '.' : item.name.replace('PRES ', '');
 
       const icon = (window as any).L.divIcon({
@@ -145,7 +184,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
             <div class="relative group cursor-pointer scale-90 lg:scale-100">
               <div class="w-14 h-14 rounded-full flex flex-col items-center justify-center text-white font-black shadow-2xl transition-all hover:scale-110 border-2 border-white" style="background-color: ${mainColor}; box-shadow: 0 8px 20px -4px ${mainColor}80">
                 <span class="text-[13px] leading-none">${val}</span>
-                <span class="text-[5px] uppercase tracking-tighter opacity-70">${viewMode === 'donations' ? 'Poches' : 'Sorties'}</span>
+                <span class="text-[5px] uppercase tracking-tighter opacity-70">${subLabel}</span>
                 
                 ${viewMode === 'distribution' && val > 0 ? `
                   <div class="absolute -top-3 -right-3 flex flex-col gap-0.5 pointer-events-none z-50">
@@ -159,6 +198,14 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
                   <div class="absolute -top-3 -right-3 flex flex-col gap-0.5 pointer-events-none z-50">
                     <div class="bg-emerald-700 text-[6px] px-1.5 py-0.5 rounded-full border border-white font-black shadow-sm">F:${item.fixed}</div>
                     <div class="bg-orange-500 text-[6px] px-1.5 py-0.5 rounded-full border border-white font-black shadow-sm">M:${item.mobile}</div>
+                  </div>
+                ` : ''}
+
+                ${viewMode === 'stock' && val > 0 ? `
+                  <div class="absolute -top-3 -right-3 flex flex-col gap-0.5 pointer-events-none z-50">
+                    <div class="bg-red-600 text-[6px] px-1.5 py-0.5 rounded-full border border-white font-black shadow-sm">CGR:${isDrilledDown ? item.stock.cgr : item.stock.cgr}</div>
+                    <div class="bg-blue-600 text-[6px] px-1.5 py-0.5 rounded-full border border-white font-black shadow-sm">P:${isDrilledDown ? item.stock.plasma : item.stock.plasma}</div>
+                    <div class="bg-purple-600 text-[6px] px-1.5 py-0.5 rounded-full border border-white font-black shadow-sm">PLT:${isDrilledDown ? item.stock.platelets : item.stock.platelets}</div>
                   </div>
                 ` : ''}
               </div>
@@ -230,6 +277,9 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
              </button>
              <button onClick={() => setViewMode('distribution')} className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'distribution' ? 'bg-orange-600 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}>
                <Truck size={14}/> Distribution
+             </button>
+             <button onClick={() => setViewMode('stock')} className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'stock' ? 'bg-purple-600 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}>
+               <Package size={14}/> Stock
              </button>
           </div>
         </div>

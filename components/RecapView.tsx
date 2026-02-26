@@ -63,8 +63,14 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
       const parts = h.date.split('/');
       if (parts.length === 3) years.add(parts[2]);
     });
+    if (data.distributions?.records) {
+      data.distributions.records.forEach(r => {
+        const parts = r.date.split('/');
+        if (parts.length === 3) years.add(parts[2]);
+      });
+    }
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data.dailyHistory]);
+  }, [data.dailyHistory, data.distributions]);
 
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<number>(-1);
@@ -122,8 +128,16 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
       const parts = h.date.split('/');
       if (parts[2] === selectedYear) months.add(parseInt(parts[1]) - 1);
     });
+    if (data.distributions?.records) {
+      data.distributions.records.forEach(r => {
+        const parts = r.date.split('/');
+        if (parts.length === 3 && parts[2] === selectedYear) {
+          months.add(parseInt(parts[1]) - 1);
+        }
+      });
+    }
     return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, selectedYear]);
+  }, [data.dailyHistory, data.distributions, selectedYear]);
 
   const filteredDates = useMemo(() => {
     if (!selectedYear || selectedMonth === -1) return [];
@@ -505,7 +519,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
                      <Filter size={14} className="text-slate-400" />
                      <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
-                       {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
+                        {viewMode === 'distribution' && <option value={-1}>Tous les mois</option>}
+                        {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
                      </select>
                    </div>
                  )}
