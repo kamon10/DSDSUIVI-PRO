@@ -46,8 +46,6 @@ const App: React.FC = () => {
   };
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [distInput, setDistInput] = useState(localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION);
-
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -78,7 +76,6 @@ const App: React.FC = () => {
     }
 
     const currentInput = sheetInputRef.current;
-    const currentDistInput = localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION;
     isSyncingRef.current = true;
     
     if (!isSilent) setLoading(true);
@@ -92,7 +89,7 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, currentDistInput.trim(), dynSitesResult || [], DEFAULT_LINK_STOCK);
+      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK);
       
       if (dataResult) {
         setFullData(dataResult);
@@ -233,6 +230,15 @@ const App: React.FC = () => {
           mobile: h.sites.filter(s => s.region?.toUpperCase() === regionName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
         }
       }));
+      if (fullData.stock) {
+        filtered.stock = fullData.stock.filter(s => s.pres.toUpperCase() === regionName.toUpperCase());
+      }
+      if (fullData.distributions) {
+        filtered.distributions = {
+          ...fullData.distributions,
+          records: fullData.distributions.records.filter(r => r.region.toUpperCase() === regionName.toUpperCase())
+        };
+      }
     } 
     else if (currentUser.role === 'AGENT') {
       filtered.regions = fullData.regions.map(r => ({
@@ -249,6 +255,16 @@ const App: React.FC = () => {
           mobile: h.sites.filter(s => s.name.toUpperCase() === siteName.toUpperCase()).reduce((acc, s) => acc + s.mobile, 0),
         }
       }));
+
+      if (fullData.stock) {
+        filtered.stock = fullData.stock.filter(s => s.site.toUpperCase() === siteName.toUpperCase());
+      }
+      if (fullData.distributions) {
+        filtered.distributions = {
+          ...fullData.distributions,
+          records: fullData.distributions.records.filter(r => r.site.toUpperCase() === siteName.toUpperCase())
+        };
+      }
     }
     return filtered;
   }, [fullData, currentUser]);
@@ -384,7 +400,7 @@ const App: React.FC = () => {
                   {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
                   {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
                   {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
-                  {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} />}
+                  {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} />}
                   {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
                 </>
@@ -424,22 +440,36 @@ const App: React.FC = () => {
                </div>
                
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Distribution (CSV)</label>
-                 <input value={distInput} onChange={(e) => setDistInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source BASE (Distribution) - Lecture seule</label>
+                 <input value={DEFAULT_LINK_DISTRIBUTION} readOnly className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none opacity-60 cursor-not-allowed" />
                </div>
-               
 
+               <div>
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source STOCK (Stock) - Lecture seule</label>
+                 <input value={DEFAULT_LINK_STOCK} readOnly className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none opacity-60 cursor-not-allowed" />
+               </div>
              </div>
 
-             <div className="flex gap-4">
-               <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
-               <button onClick={() => { 
-                 localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
-                 localStorage.setItem('gsheet_input_dist', distInput.trim());
-
-                 setShowSettings(false); 
-                 handleSync(false, true); 
-               }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
+             <div className="flex flex-col gap-4">
+               <div className="flex gap-4">
+                 <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
+                 <button onClick={() => { 
+                   localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
+                   setShowSettings(false); 
+                   handleSync(false, true); 
+                 }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
+               </div>
+               <button 
+                 onClick={() => {
+                   localStorage.removeItem('gsheet_input_1');
+                   localStorage.removeItem('gsheet_input_dist');
+                   localStorage.removeItem('gsheet_input_stock');
+                   window.location.reload();
+                 }}
+                 className="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 rounded-xl font-black text-[9px] uppercase transition-all"
+               >
+                 Réinitialiser tous les liens par défaut
+               </button>
              </div>
           </div>
         </div>
