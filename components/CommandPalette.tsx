@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Command, X, ArrowRight, Activity, LayoutDashboard, Map, PlusSquare, Package, UserCheck, History, BarChart3, Settings } from 'lucide-react';
+import { Search, Command, X, ArrowRight, Activity, LayoutDashboard, Map, PlusSquare, Package, UserCheck, History, BarChart3, Settings, TrendingUp, Zap, ShieldCheck } from 'lucide-react';
 import { AppTab, SiteRecord } from '../types';
 
 interface CommandPaletteProps {
@@ -43,6 +43,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     { id: 'map', label: 'Carte - Distribution Géographique', icon: <Map size={16} /> },
     { id: 'entry', label: 'Saisie - Nouveau Rapport', icon: <PlusSquare size={16} /> },
     { id: 'stock', label: 'Stock - Inventaire National', icon: <Package size={16} /> },
+    { id: 'stock-synthesis', label: 'Synthèse Stock - Vision Prévisionnelle', icon: <TrendingUp size={16} /> },
+    { id: 'stock-planning', label: 'Planning Stock - Autonomie par Site', icon: <ShieldCheck size={16} /> },
+    { id: 'capacity-planning', label: 'Capacité - Prévisions de Prélèvement', icon: <Zap size={16} /> },
     { id: 'site-focus', label: 'Focus - Analyse par Site', icon: <UserCheck size={16} /> },
     { id: 'history', label: 'Historique - Rapports Passés', icon: <History size={16} /> },
     { id: 'performance', label: 'Performance - Classement', icon: <BarChart3 size={16} /> },

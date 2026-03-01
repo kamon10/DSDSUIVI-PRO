@@ -31,6 +31,22 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
   const regionStats = useMemo(() => {
     const presMap = new Map<string, any>();
     
+    const normalizeRegion = (r: string) => {
+      const s = r.toUpperCase().trim();
+      if (s.startsWith("PRES ")) return s;
+      if (s === "ABIDJAN") return "PRES ABIDJAN";
+      if (s === "BELIER") return "PRES BELIER";
+      if (s === "GBEKE") return "PRES GBEKE";
+      if (s === "PORO") return "PRES PORO";
+      if (s === "INDENIE DJUABLIN") return "PRES INDENIE DJUABLIN";
+      if (s === "GONTOUGO") return "PRES GONTOUGO";
+      if (s === "HAUT SASSANDRA") return "PRES HAUT SASSANDRA";
+      if (s === "SAN PEDRO") return "PRES SAN PEDRO";
+      if (s === "TONPKI") return "PRES TONPKI";
+      if (s === "KABADOUGOU") return "PRES KABADOUGOU";
+      return s;
+    };
+
     Object.keys(PRES_COORDINATES).forEach(pres => {
         presMap.set(pres, { 
           name: pres, realized: 0, fixed: 0, mobile: 0,
@@ -44,7 +60,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     const stockData = data.stock || [];
 
     dayData?.sites.forEach(site => {
-      const region = site.region || "AUTRES";
+      const region = normalizeRegion(site.region || "AUTRES");
       if (presMap.has(region)) {
         const stats = presMap.get(region);
         stats.realized += site.total;
@@ -54,7 +70,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     });
 
     dayDist.forEach(r => {
-      const region = r.region || "AUTRES";
+      const region = normalizeRegion(r.region || "AUTRES");
       if (presMap.has(region)) {
         const stats = presMap.get(region);
         stats.distribution.total += r.quantite;
@@ -66,7 +82,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
     });
 
     stockData.forEach(s => {
-      const region = s.pres || "AUTRES";
+      const region = normalizeRegion(s.pres || "AUTRES");
       if (presMap.has(region)) {
         const stats = presMap.get(region);
         stats.stock.total += s.quantite;
@@ -168,7 +184,7 @@ export const DistributionMapView: React.FC<DistributionMapViewProps> = ({ data, 
         mainColor = '#f59e0b';
         subLabel = 'Sorties';
       } else if (viewMode === 'stock') {
-        val = isDrilledDown ? item.stock.total : item.stock.total;
+        val = item.stock.total;
         mainColor = '#8b5cf6'; // Violet pour le stock
         subLabel = 'Stock';
       }

@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { DashboardData, User, StockRecord } from '../types.ts';
-import { Package, Search, Filter, Database, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, List, LayoutGrid, HeartPulse } from 'lucide-react';
-import { PRODUCT_COLORS, GROUP_COLORS } from '../constants.tsx';
+import { Package, Search, Filter, Database, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, List, LayoutGrid, HeartPulse, Clock, Info } from 'lucide-react';
+import { PRODUCT_COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants.tsx';
 
 interface StockViewProps {
   data: DashboardData;
@@ -129,12 +129,46 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
       return acc;
     }, 0);
 
+    // Calcul de l'autonomie (Consommation moyenne journalière)
+    const distributions = data.distributions || [];
+    const consumptionMap: Record<string, number> = {}; // key: "Produit|Groupe"
+    
+    // On initialise avec les prévisions nationales par défaut pour les CGR
+    const isAbidjan = filterPres === 'PRES ABIDJAN';
+    const forecastSource = isAbidjan ? STOCK_FORECASTS["ABIDJAN"] : STOCK_FORECASTS["NATIONALE"];
+    
+    SANG_GROUPS.forEach(g => {
+      // Les prévisions concernent principalement les CGR (Globules)
+      consumptionMap[`CGR|${g}`] = forecastSource[g] || 0;
+      consumptionMap[`CGR ADULTE|${g}`] = (forecastSource[g] || 0) * 0.8; // Estimation répartition
+      consumptionMap[`CGR PEDIATRIQUE|${g}`] = (forecastSource[g] || 0) * 0.15;
+      consumptionMap[`CGR NOURRISON|${g}`] = (forecastSource[g] || 0) * 0.05;
+    });
+
+    if (distributions.length > 0) {
+      // Trouver la plage de dates
+      const dates = distributions.map(d => new Date(d.date).getTime()).filter(t => !isNaN(t));
+      const minDate = Math.min(...dates);
+      const maxDate = Math.max(...dates);
+      const diffDays = Math.max(1, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)));
+      
+      distributions.forEach(d => {
+        const key = `${d.produit}|${d.groupeSanguin}`;
+        consumptionMap[key] = (consumptionMap[key] || 0) + d.quantite;
+      });
+
+      // Moyenne journalière
+      Object.keys(consumptionMap).forEach(key => {
+        consumptionMap[key] = consumptionMap[key] / diffDays;
+      });
+    }
+
     const topRegions = (Object.entries(byPres) as [string, number][])
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
     
-    return { total, criticalCount, criticalVolume, byProduct, byPres, byGroup, topRegions, totalCGR };
-  }, [filteredStock]);
+    return { total, criticalCount, criticalVolume, byProduct, byPres, byGroup, topRegions, totalCGR, consumptionMap };
+  }, [filteredStock, data.distributions]);
 
   const handleSort = (key: keyof StockRecord) => {
     setSortConfig(prev => ({
@@ -236,6 +270,40 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
               ></div>
             </div>
           </div>
+        </div>
+
+        {/* KPI Autonomie */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Clock size={80} className="text-blue-500" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 block mb-2">Autonomie Moyenne</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-5xl font-black text-blue-600 tracking-tighter">
+              {(() => {
+                const normalize = (str: string) => 
+                  str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+
+                const pres = normalize(filterPres || "");
+                const isAbidjan = pres.includes('ABIDJAN');
+                const excludedKeywords = ["BONOUA", "ABOISSO", "ADZOPE", "AGBOVILLE", "DABOU"];
+                
+                const stockForAutonomy = isAbidjan 
+                  ? filteredStock.filter(s => !excludedKeywords.some(kw => normalize(s.site || "").includes(kw))).reduce((acc, s) => acc + s.quantite, 0)
+                  : stats.total;
+
+                const totalDaily = (Object.values(stats.consumptionMap) as number[]).reduce((a, b) => a + b, 0);
+                const referenceDaily = isAbidjan ? STOCK_FORECASTS["ABIDJAN"]["TOTAL"] : STOCK_FORECASTS["NATIONALE"]["TOTAL"];
+                const daily = totalDaily > 0 ? totalDaily : referenceDaily;
+                
+                return daily > 0 ? Math.round(stockForAutonomy / daily) : '∞';
+              })()}
+            </span>
+            <span className="text-xs font-bold text-blue-400 uppercase">Jours</span>
+          </div>
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-blue-400">
+            {filterPres === 'PRES ABIDJAN' ? 'Basé sur prévisions Abidjan' : 'Basé sur prévisions Nationales'}
+          </p>
         </div>
 
         {/* KPI Santé du Stock */}
@@ -347,6 +415,15 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
         </div>
       </div>
 
+      {filterPres === 'PRES ABIDJAN' && (
+        <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 duration-300">
+          <Info size={16} className="text-orange-600 shrink-0" />
+          <p className="text-[10px] font-bold text-orange-800 uppercase tracking-wide">
+            Le périmètre Abidjan inclut : Treichville, Cocody, Yopougon, Abobo, Port-Bouët, Anyama, Bingerville. (Sont exclus de cette vision : Bonoua, Aboisso, Adzopé, Agboville, Dabou)
+          </p>
+        </div>
+      )}
+
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1200px]">
@@ -377,6 +454,12 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                                 rowGroups[r.groupeSanguin] += r.quantite;
                               }
                             });
+
+                            // Calcul autonomie pour ce produit sur ce site
+                            const productDaily = SANG_GROUPS.reduce((acc, g) => {
+                              return acc + (stats.consumptionMap[`${productType}|${g}`] || 0);
+                            }, 0);
+                            const autonomy = productDaily > 0 ? productData.total / productDaily : Infinity;
 
                             return (
                               <tr key={productType} className="hover:bg-slate-50 transition-colors group">

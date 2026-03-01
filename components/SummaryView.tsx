@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 /* Added User import */
 import { DashboardData, AppTab, DistributionRecord, User } from '../types';
-import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2, Truck, Package } from 'lucide-react';
+import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2, Truck, Package, ShieldCheck, Zap } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { COLORS } from '../constants';
@@ -166,6 +166,102 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
             </div>
           </div>
         </div>
+
+        {viewMode === 'donations' && (
+          <div 
+            onClick={() => setActiveTab('capacity-planning')}
+            className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
+          >
+            <div className="flex items-center gap-8">
+              <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-blue-500 flex items-center justify-center text-white shadow-2xl">
+                <Zap size={48} />
+              </div>
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-blue-400">Capacité & Prévisions</h2>
+                <div className="flex items-baseline gap-4">
+                  <span className="text-6xl lg:text-8xl font-black tracking-tighter text-white leading-none">
+                    Planning
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-center lg:items-end text-center lg:text-right">
+              <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white mb-4">
+                <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Target size={14} className="text-blue-400" /> Optimisation Collecte
+                </p>
+              </div>
+              <p className="text-sm font-bold text-white/60 leading-relaxed max-w-[280px]">
+                Analysez la capacité de chaque site pour prévoir les prélèvements nationaux et d'Abidjan.
+                <span className="text-white font-black block mt-1">Ouvrir le planning →</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'distribution' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div 
+              onClick={() => setActiveTab('stock-planning')}
+              className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white/10 flex flex-col items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
+            >
+              <div className="flex items-center gap-8 w-full">
+                <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
+                  <ShieldCheck size={48} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-emerald-400">Planning Stock</h2>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
+                      Autonomie
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-center lg:items-end text-center lg:text-right w-full">
+                <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <Package size={14} className="text-emerald-400" /> Analyse par Site
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-white/60 leading-relaxed max-w-[280px]">
+                  Visualisez l'autonomie de chaque site et planifiez les réapprovisionnements.
+                  <span className="text-white font-black block mt-1">Ouvrir le planning →</span>
+                </p>
+              </div>
+            </div>
+
+            <div 
+              onClick={() => setActiveTab('stock-synthesis')}
+              className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white/10 flex flex-col items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
+            >
+              <div className="flex items-center gap-8 w-full">
+                <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-orange-500 flex items-center justify-center text-white shadow-2xl">
+                  <TrendingUp size={48} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-orange-400">Synthèse Groupes</h2>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
+                      Vision 10 J
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-center lg:items-end text-center lg:text-right w-full">
+                <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp size={14} className="text-orange-400" /> Stock vs Prévisions
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-white/60 leading-relaxed max-w-[280px]">
+                  Consultez l'autonomie par groupe sanguin au niveau National et Abidjan.
+                  <span className="text-white font-black block mt-1">Ouvrir la synthèse →</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* RÉSUMÉ NATIONAL */}
         <div className={`relative overflow-hidden rounded-[4.5rem] p-10 lg:p-16 text-white shadow-3xl border border-white/5 transition-colors duration-700 ${viewMode === 'donations' ? 'bg-[#0f172a]' : 'bg-[#1e1b4b]'}`}>

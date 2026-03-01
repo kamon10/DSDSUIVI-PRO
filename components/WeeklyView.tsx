@@ -271,8 +271,16 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
               <ResponsiveContainer width="100%" height="100%">
                  <AreaChart data={evolutionData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                     <defs>
+                       <linearGradient id="colorFixe" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={THEME.fixed} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={THEME.fixed} stopOpacity={0}/>
+                       </linearGradient>
+                       <linearGradient id="colorMobile" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={THEME.mobile} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={THEME.mobile} stopOpacity={0}/>
+                       </linearGradient>
                        <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={viewMode === 'donations' ? THEME.total : THEME.expedie} stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor={viewMode === 'donations' ? THEME.total : THEME.expedie} stopOpacity={0.1}/>
                           <stop offset="95%" stopColor={viewMode === 'donations' ? THEME.total : THEME.expedie} stopOpacity={0}/>
                        </linearGradient>
                     </defs>
@@ -280,20 +288,26 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: 900, fill: '#94a3b8'}} padding={{left: 20, right: 20}} />
                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 900, fill: '#cbd5e1'}} />
                     <Tooltip contentStyle={{ borderRadius: '2.5rem', border: 'none', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.15)', padding: '2rem', fontWeight: '900' }} />
-                    <Area type="monotone" dataKey={viewMode === 'donations' ? 'total' : 'expedie'} stroke={viewMode === 'donations' ? THEME.total : THEME.expedie} strokeWidth={5} fillOpacity={1} fill="url(#colorMain)" animationDuration={2500} />
+                    
                     {viewMode === 'donations' ? (
                        <>
-                          <Area type="monotone" dataKey="fixe" stroke={THEME.fixed} strokeWidth={3} strokeDasharray="10 5" fill="none" animationDuration={2000} />
-                          <Area type="monotone" dataKey="mobile" stroke={THEME.mobile} strokeWidth={3} strokeDasharray="5 5" fill="none" animationDuration={2000} />
+                          <Area type="monotone" dataKey="fixe" stroke={THEME.fixed} strokeWidth={4} fillOpacity={1} fill="url(#colorFixe)" animationDuration={2000} />
+                          <Area type="monotone" dataKey="mobile" stroke={THEME.mobile} strokeWidth={4} fillOpacity={1} fill="url(#colorMobile)" animationDuration={2000} />
+                          <Area type="monotone" dataKey="total" stroke={THEME.total} strokeWidth={2} strokeDasharray="5 5" fill="none" animationDuration={2500} />
                        </>
                     ) : (
-                       <Area type="monotone" dataKey="net" stroke={THEME.net} strokeWidth={3} strokeDasharray="10 5" fill="none" animationDuration={2000} />
+                       <>
+                          <Area type="monotone" dataKey="expedie" stroke={THEME.expedie} strokeWidth={4} fillOpacity={1} fill="url(#colorMain)" animationDuration={2500} />
+                          <Area type="monotone" dataKey="net" stroke={THEME.net} strokeWidth={3} strokeDasharray="10 5" fill="none" animationDuration={2000} />
+                       </>
                     )}
                     <ReferenceLine y={statsSummary.avg} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: 'Moyenne', position: 'right', fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
                  </AreaChart>
               </ResponsiveContainer>
            </div>
         </div>
+
+        {/* Removed secondary chart as it is now integrated into the main one */}
       </div>
     </div>
   );
