@@ -336,25 +336,19 @@ export const parseStock = (text: string): StockRecord[] | null => {
 
       // Validation de base : on ignore les lignes vides ou incomplètes
       if (site && typeProduit && groupeSanguin && groupeSanguin !== "N/A") {
-        // Tentative de récupération de la région si PRES est vide
-        if (!pres || pres === "N/A") {
-          const siteInfo = getSiteByInput(site);
-          if (siteInfo && siteInfo.region) {
-            pres = siteInfo.region;
-          } else {
-            pres = "DIRECTION NATIONALE";
-          }
-        }
+        const siteInfo = getSiteByInput(site);
+        const canonicalSite = siteInfo ? siteInfo.name : site;
+        const canonicalPres = siteInfo ? siteInfo.region : (pres && pres !== "N/A" ? pres : "DIRECTION NATIONALE");
 
-        const key = `${pres}|${site}|${typeProduit}|${groupeSanguin}`;
+        const key = `${canonicalPres}|${canonicalSite}|${typeProduit}|${groupeSanguin}`;
         const existing = aggregationMap.get(key);
         
         if (existing) {
           existing.quantite += quantite;
         } else {
           aggregationMap.set(key, { 
-            pres, 
-            site, 
+            pres: canonicalPres, 
+            site: canonicalSite, 
             typeProduit, 
             groupeSanguin, 
             quantite 
@@ -403,10 +397,26 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
           console.log(`[Sync] Tentative de récupération de ${key}...`);
           
           // Première tentative : Directe
-          let response = await fetch(urlWithCacheBusting).catch(err => {
-            console.warn(`[Sync] Échec direct pour ${key}, tentative via proxy...`);
-            // Deuxième tentative : Via proxy CORS si l'accès direct échoue
-            return fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`);
+          let response = await fetch(urlWithCacheBusting, { 
+            method: 'GET',
+            headers: { 'Accept': 'text/csv, text/plain, */*' },
+            credentials: 'omit'
+          }).catch(async err => {
+            console.warn(`[Sync] Échec direct pour ${key} (${err.message}). Tentative via proxy 1...`);
+            try {
+              // Proxy 1: corsproxy.io
+              return await fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' });
+            } catch (e: any) {
+              console.warn(`[Sync] Échec proxy 1 pour ${key} (${e.message}). Tentative via proxy 2...`);
+              try {
+                // Proxy 2: allorigins (via raw)
+                return await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' });
+              } catch (e2: any) {
+                console.warn(`[Sync] Échec proxy 2 pour ${key} (${e2.message}). Tentative via proxy 3...`);
+                // Proxy 3: codetabs
+                return await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' });
+              }
+            }
           });
           
           if (!response.ok) {
@@ -429,11 +439,10 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       return { text: lastRawContent[key] || '', hasChanged: false, error: true };
     };
 
-    const [collecteResult, distResult, stockResult] = await Promise.all([
-      fetchWithRetry(url, 'collecte'),
-      distributionUrl ? fetchWithRetry(distributionUrl, 'BASE') : Promise.resolve({ text: '', hasChanged: false, error: false }),
-      stockUrl ? fetchWithRetry(stockUrl, 'STOCK') : Promise.resolve({ text: '', hasChanged: false, error: false })
-    ]);
+    // Récupération séquentielle pour éviter les limites de connexion du navigateur
+    const collecteResult = await fetchWithRetry(url, 'collecte');
+    const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE') : { text: '', hasChanged: false, error: false };
+    const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK') : { text: '', hasChanged: false, error: false };
 
     // Si la collecte échoue et qu'on n'a rien en cache, on ne peut rien faire
     if (collecteResult.error && !collecteResult.text) {
