@@ -154,3 +154,20 @@ export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1v
 export const DEFAULT_LINK_DISTRIBUTION = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=237684642&single=true&output=csv";
 export const DEFAULT_LINK_STOCK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=2055274680&single=true&output=csv";
 export const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRrIftmEeSUAutygeL2GHngC_kqV_repT9ArEP9okIz4zZPMtOxPVIfEOg8KvGezAf/exec";
+
+export const STOCK_FORECASTS: Record<string, Record<string, number>> = {
+  "NATIONALE": {
+    "A+": 248, "A-": 28,
+    "B+": 258, "B-": 28,
+    "AB+": 45, "AB-": 5,
+    "O+": 574, "O-": 64,
+    "TOTAL": 1250
+  },
+  "ABIDJAN": {
+    "A+": 99, "A-": 11,
+    "B+": 103, "B-": 12,
+    "AB+": 18, "AB-": 2,
+    "O+": 229, "O-": 26,
+    "TOTAL": 500
+  }
+};
