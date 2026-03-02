@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DashboardData, User } from '../types.ts';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -7,9 +7,10 @@ import {
 } from 'recharts';
 import { 
   ShieldCheck, AlertTriangle, TrendingUp, Package, 
-  Activity, Info, CheckCircle2, AlertCircle, Clock
+  Activity, Info, CheckCircle2, AlertCircle, Clock, Layout
 } from 'lucide-react';
 import { GROUP_COLORS, STOCK_FORECASTS } from '../constants.tsx';
+import { StockSynthesisTableView } from './StockSynthesisTableView';
 
 interface StockSynthesisViewProps {
   data: DashboardData;
@@ -19,6 +20,7 @@ interface StockSynthesisViewProps {
 const SANG_GROUPS = ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"];
 
 export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, user }) => {
+  const [viewType, setViewType] = useState<'charts' | 'table'>('charts');
   const stock = data.stock || [];
 
   const synthesisData = useMemo(() => {
@@ -243,53 +245,75 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
             </div>
           </div>
 
-          <div className="flex gap-6">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center min-w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Total National</span>
-              <span className="text-4xl font-black text-white tracking-tighter">{synthesisData.totals.national.toLocaleString()}</span>
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/10">
+              <button 
+                onClick={() => setViewType('charts')}
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 ${viewType === 'charts' ? 'bg-blue-600 text-white shadow-lg' : 'text-white/60 hover:text-white'}`}
+              >
+                <TrendingUp size={14} /> Graphiques
+              </button>
+              <button 
+                onClick={() => setViewType('table')}
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 ${viewType === 'table' ? 'bg-blue-600 text-white shadow-lg' : 'text-white/60 hover:text-white'}`}
+              >
+                <Layout size={14} /> Tableau Synthèse
+              </button>
             </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center min-w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Total Abidjan</span>
-              <span className="text-4xl font-black text-orange-400 tracking-tighter">{synthesisData.totals.abidjan.toLocaleString()}</span>
+            <div className="flex gap-6">
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-[2rem] flex flex-col items-center min-w-[150px]">
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Total National</span>
+                <span className="text-3xl font-black text-white tracking-tighter">{synthesisData.totals.national.toLocaleString()}</span>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-[2rem] flex flex-col items-center min-w-[150px]">
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Total Abidjan</span>
+                <span className="text-3xl font-black text-orange-400 tracking-tighter">{synthesisData.totals.abidjan.toLocaleString()}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-12">
-        {renderSection("Vision Nationale", synthesisData.national, synthesisData.totals.national, "NATIONALE")}
-        {renderSection("Vision Abidjan", synthesisData.abidjan, synthesisData.totals.abidjan, "ABIDJAN")}
-      </div>
+      {viewType === 'charts' ? (
+        <>
+          <div className="grid grid-cols-1 gap-12">
+            {renderSection("Vision Nationale", synthesisData.national, synthesisData.totals.national, "NATIONALE")}
+            {renderSection("Vision Abidjan", synthesisData.abidjan, synthesisData.totals.abidjan, "ABIDJAN")}
+          </div>
 
-      <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-200">
-        <div className="flex items-center gap-4 mb-8">
-          <Info size={24} className="text-slate-400" />
-          <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Méthodologie de Calcul</h4>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-emerald-600">
-              <CheckCircle2 size={18} />
-              <span className="text-[11px] font-black uppercase">Niveau Optimal</span>
+          <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-200">
+            <div className="flex items-center gap-4 mb-8">
+              <Info size={24} className="text-slate-400" />
+              <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Méthodologie de Calcul</h4>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie supérieure à 7 jours. Le stock est suffisant pour couvrir la demande prévue sans risque immédiat.</p>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-amber-600">
-              <AlertCircle size={18} />
-              <span className="text-[11px] font-black uppercase">Niveau Alerte</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-emerald-600">
+                  <CheckCircle2 size={18} />
+                  <span className="text-[11px] font-black uppercase">Niveau Optimal</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie supérieure à 7 jours. Le stock est suffisant pour couvrir la demande prévue sans risque immédiat.</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-amber-600">
+                  <AlertCircle size={18} />
+                  <span className="text-[11px] font-black uppercase">Niveau Alerte</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie entre 3 et 7 jours. Réapprovisionnement nécessaire pour éviter une situation critique.</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-rose-600">
+                  <AlertTriangle size={18} />
+                  <span className="text-[11px] font-black uppercase">Niveau Critique</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie inférieure à 3 jours. Risque élevé de rupture de stock. Action prioritaire requise.</p>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie entre 3 et 7 jours. Réapprovisionnement nécessaire pour éviter une situation critique.</p>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-rose-600">
-              <AlertTriangle size={18} />
-              <span className="text-[11px] font-black uppercase">Niveau Critique</span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie inférieure à 3 jours. Risque élevé de rupture de stock. Action prioritaire requise.</p>
-          </div>
-        </div>
-      </div>
+        </>
+      ) : (
+        <StockSynthesisTableView data={data} />
+      )}
     </div>
   );
 };
