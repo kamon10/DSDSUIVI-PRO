@@ -21,7 +21,7 @@ import { StockPlanningView } from './components/StockPlanningView.tsx';
 import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
@@ -300,6 +300,22 @@ const App: React.FC = () => {
     return true;
   });
 
+  const groupedNavItems = useMemo(() => {
+    const groups = [
+      { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
+      { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist'] },
+      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock', 'stock-synthesis', 'stock-planning'] },
+      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'contact'] }
+    ];
+
+    return groups.map(group => ({
+      ...group,
+      navItems: visibleNavItems.filter(item => group.items.includes(item.id))
+    })).filter(group => group.navItems.length > 0);
+  }, [visibleNavItems]);
+
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+
   const handleLogout = () => {
     localStorage.removeItem('dsd_user');
     setCurrentUser(null);
@@ -330,15 +346,48 @@ const App: React.FC = () => {
              </div>
           </div>
           <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {visibleNavItems.map((tab) => (
-              <button 
-                key={tab.id} 
-                onClick={() => setActiveTab(tab.id as AppTab)} 
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 ${activeTab === tab.id || (activeTab === 'recap-dist' && tab.id === 'recap-dist') ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'}`}
-              >
-                {tab.icon} <span className="text-[10px] font-black uppercase">{tab.label}</span>
-              </button>
-            ))}
+            {groupedNavItems.map((group) => {
+              const isActive = group.navItems.some(item => activeTab === item.id);
+              const isOpen = openGroup === group.id;
+              
+              return (
+                <div 
+                  key={group.id} 
+                  className="relative"
+                  onMouseEnter={() => setOpenGroup(group.id)}
+                  onMouseLeave={() => setOpenGroup(null)}
+                >
+                  <button 
+                    onClick={() => setOpenGroup(isOpen ? null : group.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-300 active:scale-95 ${isActive ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'}`}
+                  >
+                    {group.icon} <span className="text-[10px] font-black uppercase tracking-widest">{group.label}</span>
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[200]"
+                      >
+                        {group.navItems.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => { setActiveTab(item.id as AppTab); setOpenGroup(null); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${activeTab === item.id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                          >
+                            <span className={`${activeTab === item.id ? 'text-white' : 'text-slate-400'}`}>{item.icon}</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </nav>
           <div className="flex items-center gap-3">
             <button 
@@ -426,16 +475,62 @@ const App: React.FC = () => {
         sites={effectiveSitesList}
         onSiteSelect={handleSiteSelect}
       />
-      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] glass-nav rounded-3xl p-2 flex justify-between items-center shadow-2xl overflow-x-auto no-scrollbar gap-2">
-           {visibleNavItems.map((tab) => (
-             <button 
-               key={tab.id} 
-               onClick={() => setActiveTab(tab.id as AppTab)} 
-               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl shrink-0 min-w-[60px] transition-all duration-300 active:scale-90 ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100/50'}`}
-             >
-               {tab.icon} <span className="text-[8px] font-black uppercase">{tab.label}</span>
-             </button>
-           ))}
+      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] glass-nav rounded-3xl p-2 flex justify-between items-center shadow-2xl gap-2">
+           {groupedNavItems.map((group) => {
+             const isActive = group.navItems.some(item => activeTab === item.id);
+             const isOpen = openGroup === group.id;
+
+             return (
+               <div key={group.id} className="flex-1">
+                 <button 
+                   onClick={() => setOpenGroup(isOpen ? null : group.id)}
+                   className={`w-full flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-300 active:scale-90 ${isActive ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100/50'}`}
+                 >
+                   {group.icon} <span className="text-[8px] font-black uppercase">{group.label}</span>
+                 </button>
+
+                 <AnimatePresence>
+                   {isOpen && (
+                     <>
+                       <motion.div 
+                         initial={{ opacity: 0 }}
+                         animate={{ opacity: 1 }}
+                         exit={{ opacity: 0 }}
+                         onClick={() => setOpenGroup(null)}
+                         className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[-1]"
+                       />
+                       <motion.div 
+                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                         animate={{ opacity: 1, y: 0, scale: 1 }}
+                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                         className="absolute bottom-full left-0 right-0 mb-4 bg-white rounded-3xl shadow-3xl border border-slate-100 p-3 z-[200] max-h-[60vh] overflow-y-auto"
+                         style={{ width: 'calc(100vw - 2rem)', left: '50%', transform: 'translateX(-50%)', position: 'fixed', bottom: '100px' }}
+                       >
+                         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50 mb-2">
+                            <span className="text-[10px] font-black uppercase text-slate-900 tracking-widest">{group.label}</span>
+                            <button onClick={() => setOpenGroup(null)} className="p-1.5 bg-slate-100 rounded-lg text-slate-400">
+                              <X size={14} />
+                            </button>
+                         </div>
+                         <div className="grid grid-cols-2 gap-2">
+                           {group.navItems.map((item) => (
+                             <button
+                               key={item.id}
+                               onClick={() => { setActiveTab(item.id as AppTab); setOpenGroup(null); }}
+                               className={`flex items-center gap-3 px-4 py-4 rounded-2xl text-left transition-all ${activeTab === item.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-600 active:bg-slate-100'}`}
+                             >
+                               <span className={`${activeTab === item.id ? 'text-white' : 'text-slate-400'}`}>{item.icon}</span>
+                               <span className="text-[9px] font-black uppercase tracking-widest leading-tight">{item.label}</span>
+                             </button>
+                           ))}
+                         </div>
+                       </motion.div>
+                     </>
+                   )}
+                 </AnimatePresence>
+               </div>
+             );
+           })}
       </nav>
       {showSettings && (
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
