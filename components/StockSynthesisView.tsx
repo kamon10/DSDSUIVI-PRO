@@ -206,8 +206,8 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
       </div>
 
       <div className="grid grid-cols-1 gap-12">
-        {renderSection("Vision Nationale", synthesisData.national, synthesisData.totals.national, "NATIONALE")}
-        {renderSection("Vision Abidjan", synthesisData.abidjan, synthesisData.totals.abidjan, "ABIDJAN")}
+        {renderSection("Stock CGR Nationale", synthesisData.national, synthesisData.totals.national, "NATIONALE")}
+        {renderSection("Stock CGR Abidjan", synthesisData.abidjan, synthesisData.totals.abidjan, "ABIDJAN")}
       </div>
 
       <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-200">
