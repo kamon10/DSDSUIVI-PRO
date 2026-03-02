@@ -35,6 +35,55 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
 
     const excludedKeywords = ["BONOUA", "ABOISSO", "ADZOPE", "AGBOVILLE", "DABOU"];
 
+    // Calcul des prévisions basées sur la distribution réelle (CGR)
+    const distRecords = (data.distributions?.records || []).filter(r => normalize(r.typeProduit || "").includes('CGR'));
+    const uniqueDays = new Set(distRecords.map(r => r.date)).size;
+    
+    const dynamicForecasts: Record<string, Record<string, number>> = {
+      "NATIONALE": { "TOTAL": 0 },
+      "ABIDJAN": { "TOTAL": 0 }
+    };
+    SANG_GROUPS.forEach(g => {
+      dynamicForecasts["NATIONALE"][g] = 0;
+      dynamicForecasts["ABIDJAN"][g] = 0;
+    });
+
+    distRecords.forEach(r => {
+      const g = (r.groupeSanguin || "").replace(/\s/g, "").toUpperCase();
+      if (!SANG_GROUPS.includes(g)) return;
+
+      const site = normalize(r.site || "");
+      const pres = normalize(r.region || ""); // Dans les records de distri, region est souvent le PRES
+
+      dynamicForecasts["NATIONALE"][g] += r.quantite;
+      dynamicForecasts["NATIONALE"]["TOTAL"] += r.quantite;
+
+      const isAbidjanPres = pres.includes('ABIDJAN');
+      const isExcluded = excludedKeywords.some(kw => site.includes(kw));
+      if (isAbidjanPres && !isExcluded) {
+        dynamicForecasts["ABIDJAN"][g] += r.quantite;
+        dynamicForecasts["ABIDJAN"]["TOTAL"] += r.quantite;
+      }
+    });
+
+    // Moyenne journalière
+    if (uniqueDays > 0) {
+      SANG_GROUPS.forEach(g => {
+        dynamicForecasts["NATIONALE"][g] /= uniqueDays;
+        dynamicForecasts["ABIDJAN"][g] /= uniqueDays;
+      });
+      dynamicForecasts["NATIONALE"]["TOTAL"] /= uniqueDays;
+      dynamicForecasts["ABIDJAN"]["TOTAL"] /= uniqueDays;
+    } else {
+      // Fallback sur les constantes si aucune donnée de distribution
+      SANG_GROUPS.forEach(g => {
+        dynamicForecasts["NATIONALE"][g] = STOCK_FORECASTS["NATIONALE"][g] || 0;
+        dynamicForecasts["ABIDJAN"][g] = STOCK_FORECASTS["ABIDJAN"][g] || 0;
+      });
+      dynamicForecasts["NATIONALE"]["TOTAL"] = STOCK_FORECASTS["NATIONALE"]["TOTAL"] || 0;
+      dynamicForecasts["ABIDJAN"]["TOTAL"] = STOCK_FORECASTS["ABIDJAN"]["TOTAL"] || 0;
+    }
+
     stock.forEach(s => {
       const typeProduit = normalize(s.typeProduit || "");
       const pres = normalize(s.pres || "");
@@ -54,7 +103,7 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
     });
 
     const formatData = (source: Record<string, number>, forecastKey: string) => {
-      const forecasts = STOCK_FORECASTS[forecastKey];
+      const forecasts = dynamicForecasts[forecastKey];
       return SANG_GROUPS.map(g => {
         const current = source[g];
         const dailyForecast = forecasts[g] || 0;
@@ -66,7 +115,7 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
           stock: current,
           prevision: tenDayForecast,
           autonomy: parseFloat(autonomy.toFixed(1)),
-          daily: dailyForecast,
+          daily: parseFloat(dailyForecast.toFixed(1)),
           status: autonomy < 3 ? 'CRITIQUE' : autonomy < 7 ? 'ALERTE' : 'OPTIMAL'
         };
       });
@@ -77,13 +126,15 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
       abidjan: formatData(abidjan, "ABIDJAN"),
       totals: {
         national: Object.values(national).reduce((a, b) => a + b, 0),
-        abidjan: Object.values(abidjan).reduce((a, b) => a + b, 0)
+        abidjan: Object.values(abidjan).reduce((a, b) => a + b, 0),
+        forecastNational: dynamicForecasts["NATIONALE"]["TOTAL"],
+        forecastAbidjan: dynamicForecasts["ABIDJAN"]["TOTAL"]
       }
     };
-  }, [stock]);
+  }, [stock, data.distributions]);
 
   const renderSection = (title: string, chartData: any[], total: number, forecastKey: string) => {
-    const totalForecast = STOCK_FORECASTS[forecastKey]["TOTAL"];
+    const totalForecast = forecastKey === "ABIDJAN" ? synthesisData.totals.forecastAbidjan : synthesisData.totals.forecastNational;
     const globalAutonomy = totalForecast > 0 ? total / totalForecast : 0;
     const isAbidjan = forecastKey === "ABIDJAN";
 
