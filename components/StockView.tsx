@@ -200,9 +200,9 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div>
             <h2 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">Gestion des Stocks</h2>
             <div className="flex items-center gap-3 mt-2">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">Inventaire National • Temps Réel</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">Inventaire National • Temps Réel</p>
               {lastSync && (
-                <span className="text-[8px] font-black uppercase tracking-widest text-white/40 border-l border-white/10 pl-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/40 border-l border-white/10 pl-3">
                   MàJ: {lastSync.toLocaleTimeString()}
                 </span>
               )}
@@ -221,14 +221,14 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div className="flex bg-white/5 backdrop-blur-md p-1.5 rounded-2xl border border-white/10">
             <button 
               onClick={() => setViewMode('grouped')}
-              className={`px-5 py-2.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase transition-all ${viewMode === 'grouped' ? 'bg-white text-slate-900 shadow-lg' : 'text-white/60 hover:text-white'}`}
+              className={`px-5 py-2.5 rounded-xl flex items-center gap-2 text-[12px] font-black uppercase transition-all ${viewMode === 'grouped' ? 'bg-white text-slate-900 shadow-lg' : 'text-white/60 hover:text-white'}`}
             >
               <LayoutGrid size={14} />
               Vue Groupée
             </button>
             <button 
               onClick={() => setViewMode('flat')}
-              className={`px-5 py-2.5 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase transition-all ${viewMode === 'flat' ? 'bg-white text-slate-900 shadow-lg' : 'text-white/60 hover:text-white'}`}
+              className={`px-5 py-2.5 rounded-xl flex items-center gap-2 text-[12px] font-black uppercase transition-all ${viewMode === 'flat' ? 'bg-white text-slate-900 shadow-lg' : 'text-white/60 hover:text-white'}`}
             >
               <List size={14} />
               Vue Liste
@@ -244,10 +244,10 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <Database size={80} />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Volume Total</span>
+          <span className="text-[12px] font-black uppercase tracking-widest text-slate-400 block mb-2">Volume Total</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-black text-slate-900 tracking-tighter">{stats.total.toLocaleString()}</span>
-            <span className="text-xs font-bold text-slate-400 uppercase">Poches</span>
+            <span className="text-6xl font-black text-slate-900 tracking-tighter">{stats.total.toLocaleString()}</span>
+            <span className="text-sm font-bold text-slate-400 uppercase">Poches</span>
           </div>
           <div className="mt-6 flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -261,10 +261,10 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <HeartPulse size={80} className="text-rose-500" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500 block mb-2">Total CGR</span>
+          <span className="text-[12px] font-black uppercase tracking-widest text-rose-500 block mb-2">Total CGR</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-black text-rose-600 tracking-tighter">{stats.totalCGR.toLocaleString()}</span>
-            <span className="text-xs font-bold text-rose-400 uppercase">Poches</span>
+            <span className="text-6xl font-black text-rose-600 tracking-tighter">{stats.totalCGR.toLocaleString()}</span>
+            <span className="text-sm font-bold text-rose-400 uppercase">Poches</span>
           </div>
           <div className="mt-6 flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-rose-50 rounded-full overflow-hidden">
@@ -281,9 +281,9 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <Clock size={80} className="text-blue-500" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 block mb-2">Autonomie Moyenne</span>
+          <span className="text-[12px] font-black uppercase tracking-widest text-blue-500 block mb-2">Autonomie Moyenne</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-black text-blue-600 tracking-tighter">
+            <span className="text-6xl font-black text-blue-600 tracking-tighter">
               {(() => {
                 const normalize = (str: string) => 
                   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
@@ -305,9 +305,9 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                 return cgrDaily > 0 ? Math.round(stockForAutonomy / cgrDaily) : '∞';
               })()}
             </span>
-            <span className="text-xs font-bold text-blue-400 uppercase">Jours</span>
+            <span className="text-sm font-bold text-blue-400 uppercase">Jours</span>
           </div>
-          <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-blue-400">
+          <p className="mt-4 text-[12px] font-bold uppercase tracking-wide text-blue-400">
             {filterPres === 'PRES ABIDJAN' ? 'Basé sur distribution Abidjan' : 'Basé sur distribution Nationale'}
           </p>
         </div>
@@ -317,12 +317,12 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <AlertTriangle size={80} className={stats.criticalCount > 0 ? 'text-rose-500' : 'text-emerald-500'} />
           </div>
-          <span className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${stats.criticalCount > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>Alertes Critiques</span>
+          <span className={`text-[12px] font-black uppercase tracking-widest block mb-2 ${stats.criticalCount > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>Alertes Critiques</span>
           <div className="flex items-baseline gap-2">
-            <span className={`text-5xl font-black tracking-tighter ${stats.criticalCount > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{stats.criticalCount}</span>
-            <span className={`text-xs font-bold uppercase ${stats.criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>Lignes</span>
+            <span className={`text-6xl font-black tracking-tighter ${stats.criticalCount > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{stats.criticalCount}</span>
+            <span className={`text-sm font-bold uppercase ${stats.criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>Lignes</span>
           </div>
-          <p className={`mt-4 text-[10px] font-bold uppercase tracking-wide ${stats.criticalCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+          <p className={`mt-4 text-[12px] font-bold uppercase tracking-wide ${stats.criticalCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
             {stats.criticalCount > 0 ? `${stats.criticalVolume} poches à risque immédiat` : 'Tous les niveaux sont optimaux'}
           </p>
         </div>
@@ -330,15 +330,15 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
         {/* Mix Produit */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl lg:col-span-1">
           <div className="flex items-center justify-between mb-6">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mix Produit</span>
+            <span className="text-[12px] font-black uppercase tracking-widest text-slate-400">Mix Produit</span>
             <TrendingUp size={16} className="text-slate-300" />
           </div>
           <div className="space-y-4">
             {(Object.entries(stats.byProduct) as [string, number][]).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([prod, val]) => (
               <div key={prod} className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-black uppercase text-slate-500 truncate">{prod}</span>
-                  <span className="text-[10px] font-black text-slate-900">{stats.total > 0 ? Math.round((val / stats.total) * 100) : 0}%</span>
+                  <span className="text-[11px] font-black uppercase text-slate-500 truncate">{prod}</span>
+                  <span className="text-[12px] font-black text-slate-900">{stats.total > 0 ? Math.round((val / stats.total) * 100) : 0}%</span>
                 </div>
                 <div className="h-1 bg-slate-50 rounded-full overflow-hidden">
                   <div 
@@ -357,17 +357,17 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
         {/* Distribution Régionale */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl lg:col-span-1">
           <div className="flex items-center justify-between mb-6">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Top Régions</span>
+            <span className="text-[12px] font-black uppercase tracking-widest text-slate-400">Top Régions</span>
             <LayoutGrid size={16} className="text-slate-300" />
           </div>
           <div className="space-y-3">
             {stats.topRegions.map(([pres, val], idx) => (
               <div key={pres} className="flex items-center justify-between p-2 rounded-xl bg-slate-50/50">
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black text-slate-300">0{idx + 1}</span>
-                  <span className="text-[10px] font-black uppercase text-slate-600 truncate max-w-[100px]">{pres}</span>
+                  <span className="text-[12px] font-black text-slate-300">0{idx + 1}</span>
+                  <span className="text-[12px] font-black uppercase text-slate-600 truncate max-w-[100px]">{pres}</span>
                 </div>
-                <span className="text-[10px] font-black text-slate-900">{val.toLocaleString()}</span>
+                <span className="text-[12px] font-black text-slate-900">{val.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -435,13 +435,13 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
               <tr className="bg-[#f26522] text-white">
-                <th className="px-6 py-6 text-[11px] font-black uppercase tracking-widest border-r border-white/10 w-[180px]">Site Source</th>
-                <th className="px-6 py-6 text-[11px] font-black uppercase tracking-widest border-r border-white/10 w-[220px]">Structure</th>
-                <th className="px-6 py-6 text-[11px] font-black uppercase tracking-widest border-r border-white/10 w-[160px]">Produit</th>
+                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 w-[180px]">Site Source</th>
+                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 w-[220px]">Structure</th>
+                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 w-[160px]">Produit</th>
                 {SANG_GROUPS.map(g => (
-                  <th key={g} className="px-2 py-6 text-[11px] font-black uppercase tracking-widest border-r border-white/10 text-center w-[60px]">{g}</th>
+                  <th key={g} className="px-2 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 text-center w-[60px]">{g}</th>
                 ))}
-                <th className="px-6 py-6 text-[11px] font-black uppercase tracking-widest text-center w-[120px] bg-white/10">Total</th>
+                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest text-center w-[120px] bg-white/10">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -471,29 +471,29 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                               <tr key={productType} className="hover:bg-slate-50 transition-colors group">
                                 {sIdx === 0 && pIdx === 0 && (
                                   <td rowSpan={presSiteCount} className="px-6 py-4 align-top border-r border-slate-50 bg-white group-hover:bg-slate-50">
-                                    <span className="text-[11px] font-black text-[#f26522] uppercase leading-tight">{pres}</span>
+                                    <span className="text-[13px] font-black text-[#f26522] uppercase leading-tight">{pres}</span>
                                   </td>
                                 )}
                                 {pIdx === 0 && (
                                   <td rowSpan={Object.keys(siteData.products).length} className="px-6 py-4 align-top border-r border-slate-50">
-                                    <span className="text-[10px] font-black text-slate-800 uppercase leading-tight">{site}</span>
+                                    <span className="text-[12px] font-black text-slate-800 uppercase leading-tight">{site}</span>
                                   </td>
                                 )}
                                 <td className="px-6 py-4 border-r border-slate-50">
                                   <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PRODUCT_COLORS[productType] || '#cbd5e1' }}></div>
-                                    <span className="text-[10px] font-black uppercase text-slate-600 truncate">{productType}</span>
+                                    <span className="text-[12px] font-black uppercase text-slate-600 truncate">{productType}</span>
                                   </div>
                                 </td>
                                 {SANG_GROUPS.map(g => {
                                   const val = rowGroups[g];
                                   return (
-                                    <td key={g} className={`px-2 py-4 text-center text-[11px] border-r border-slate-50 ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>
+                                    <td key={g} className={`px-2 py-4 text-center text-[13px] border-r border-slate-50 ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>
                                       <span className={val > 0 && val <= 5 ? 'text-rose-600' : ''}>{val}</span>
                                     </td>
                                   );
                                 })}
-                                <td className="px-6 py-4 text-center text-[11px] font-black text-slate-900 bg-slate-50/50">
+                                <td className="px-6 py-4 text-center text-[13px] font-black text-slate-900 bg-slate-50/50">
                                   {productData.total.toLocaleString()}
                                 </td>
                               </tr>
@@ -518,14 +518,14 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
             <tfoot>
               <tr className="bg-[#2d1610] text-white font-black">
                 <td colSpan={3} className="px-12 py-8 text-left">
-                  <span className="text-2xl uppercase tracking-[0.2em] leading-none">Total Général Consolidé</span>
+                  <span className="text-3xl uppercase tracking-[0.2em] leading-none">Total Général Consolidé</span>
                 </td>
                 {SANG_GROUPS.map(g => (
-                  <td key={g} className="px-2 py-8 text-center text-xl border-l border-white/5">
+                  <td key={g} className="px-2 py-8 text-center text-2xl border-l border-white/5">
                     {stats.byGroup[g]?.toLocaleString() || 0}
                   </td>
                 ))}
-                <td className="px-6 py-8 text-center text-4xl border-l border-white/5 bg-white/5 text-[#f26522]">
+                <td className="px-6 py-8 text-center text-5xl border-l border-white/5 bg-white/5 text-[#f26522]">
                   {stats.total.toLocaleString()}
                 </td>
               </tr>

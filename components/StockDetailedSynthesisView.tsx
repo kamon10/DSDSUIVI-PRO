@@ -147,7 +147,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         <button 
           onClick={() => handleExport('image')} 
           disabled={!!exporting}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[12px] font-black uppercase hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
         >
           {exporting === 'image' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
           Exporter PNG
@@ -155,7 +155,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         <button 
           onClick={() => handleExport('pdf')} 
           disabled={!!exporting}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[12px] font-black uppercase hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50"
         >
           {exporting === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
           Exporter PDF (A4)
@@ -171,16 +171,16 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
           </div>
           <div>
             <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Détail des Stocks</h2>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Situation au {new Date().toLocaleDateString()}</p>
+            <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Situation au {new Date().toLocaleDateString()}</p>
           </div>
         </div>
         <div className="flex gap-4">
           <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 text-center min-w-[120px]">
-            <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Stock Total</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Stock Total</p>
             <p className="text-xl font-black text-slate-900">{grandTotals.total.toLocaleString()}</p>
           </div>
           <div className="bg-blue-600 px-6 py-3 rounded-2xl text-center min-w-[120px] shadow-lg shadow-blue-200">
-            <p className="text-[8px] font-black text-white/60 uppercase mb-1">CGR Adulte</p>
+            <p className="text-[10px] font-black text-white/60 uppercase mb-1">CGR Adulte</p>
             <p className="text-xl font-black text-white">{grandTotals.cgrAdulte.toLocaleString()}</p>
           </div>
         </div>
@@ -191,7 +191,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
+              <tr className="bg-slate-900 text-white text-[12px] font-black uppercase tracking-widest">
                 <th className="px-4 py-4 text-left border-r border-white/10">PRES / RÉGION</th>
                 <th className="px-4 py-4 text-left border-r border-white/10">LIBELLÉ SITE</th>
                 <th className="px-2 py-4 text-center border-r border-white/10">CGR ADULTE</th>
@@ -204,7 +204,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                 <th className="px-4 py-4 text-center">TOTAL</th>
               </tr>
             </thead>
-            <tbody className="text-[11px] font-bold text-slate-700">
+            <tbody className="text-[13px] font-bold text-slate-700">
               {synthesisData.map((region) => (
                 <React.Fragment key={region.name}>
                   {region.sites.map((site: any, idx: number) => (
@@ -238,7 +238,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                     </tr>
                   ))}
                   <tr className="bg-slate-100/80 font-black text-slate-900 border-b border-slate-200">
-                    <td className="px-4 py-3 text-right uppercase tracking-widest text-[9px]">TOTAL {region.name}</td>
+                    <td className="px-4 py-3 text-right uppercase tracking-widest text-[13px]">TOTAL {region.name}</td>
                     <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.cgrAdulte.toLocaleString()}</td>
                     <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.cgrPedia.toLocaleString()}</td>
                     <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.cgrNourri.toLocaleString()}</td>
@@ -252,7 +252,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-slate-900 text-white font-black uppercase tracking-widest text-[12px]">
+              <tr className="bg-slate-900 text-white font-black uppercase tracking-widest text-[16px]">
                 <td colSpan={2} className="px-6 py-6 text-left">TOTAL NATIONAL</td>
                 <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.cgrAdulte.toLocaleString()}</td>
                 <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.cgrPedia.toLocaleString()}</td>

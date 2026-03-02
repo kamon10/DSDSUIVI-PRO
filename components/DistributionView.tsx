@@ -131,7 +131,7 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
             <div>
               <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-none mb-3">REGISTRE DE DISTRIBUTION</h2>
               <div className="flex items-center gap-3">
-                 <span className="text-indigo-400/60 font-black uppercase tracking-[0.4em] text-[10px]">
+                 <span className="text-indigo-400/60 font-black uppercase tracking-[0.4em] text-[12px]">
                    {user?.role === 'AGENT' ? `SITE : ${user.site}` : user?.role === 'PRES' ? `PRES : ${user.region}` : 'Journal Matriciel National'}
                  </span>
               </div>
@@ -140,11 +140,11 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
 
           <div className="grid grid-cols-2 gap-6">
              <div className="bg-white/5 backdrop-blur-md px-8 py-6 rounded-[2.5rem] border border-white/10 text-center min-w-[180px]">
-                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Volume Distribué (Brut)</p>
+                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Volume Distribué (Brut)</p>
                 <p className="text-4xl font-black text-white">{totals.qty.toLocaleString()}</p>
              </div>
              <div className="bg-emerald-500/10 backdrop-blur-md px-8 py-6 rounded-[2.5rem] border border-emerald-500/20 text-center min-w-[180px]">
-                <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-1">Efficacité Nette</p>
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Efficacité Nette</p>
                 <p className="text-4xl font-black text-emerald-400">{(((totals.qty - totals.rendu) / (totals.qty || 1)) * 100).toFixed(1)}%</p>
              </div>
           </div>
@@ -157,7 +157,7 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
               <button 
                 key={m}
                 onClick={() => setSynthesisMode(m as any)}
-                className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`px-10 py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest transition-all ${
                   synthesisMode === m ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'
                 }`}
               >
@@ -178,16 +178,16 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
             </div>
             <div className="flex gap-3">
                {synthesisMode === 'day' ? (
-                 <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="bg-indigo-600 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase outline-none cursor-pointer">
+                 <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="bg-indigo-600 text-white px-6 py-4 rounded-xl text-[12px] font-black uppercase outline-none cursor-pointer">
                     {availableDates.slice(0, 31).map(d => <option key={d} value={d}>{d}</option>)}
                  </select>
                ) : (
                  <>
-                   <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="bg-slate-900 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase cursor-pointer outline-none">
+                   <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="bg-slate-900 text-white px-6 py-4 rounded-xl text-[12px] font-black uppercase cursor-pointer outline-none">
                       {years.map(y => <option key={y} value={y}>{y}</option>)}
                    </select>
                    {synthesisMode === 'month' && (
-                     <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="bg-white border border-slate-200 px-6 py-4 rounded-xl text-[10px] font-black uppercase cursor-pointer outline-none">
+                     <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="bg-white border border-slate-200 px-6 py-4 rounded-xl text-[12px] font-black uppercase cursor-pointer outline-none">
                         <option value="ALL">Tous les mois</option>
                         {MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}
                      </select>
@@ -202,7 +202,7 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
         <div className="overflow-x-auto">
           <table className="w-full border-collapse table-fixed min-w-[1000px]">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-400 uppercase tracking-widest">
                 <th className="px-4 py-6 text-left sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]">Site Source</th>
                 <th className="px-4 py-6 text-left w-[150px]">Structure</th>
                 <th className="px-4 py-6 text-left w-[125px]">Produit</th>
@@ -233,19 +233,19 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                                 <tr key={prodName} className="hover:bg-slate-50/50 transition-colors group">
                                   {dIdx === 0 && pIdx === 0 && (
                                     <td rowSpan={(Object.values(sitData.destinations).reduce((acc: number, d: any) => acc + Object.keys(d.products).length, 0) as number) + 1} className="px-4 py-4 align-top sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                      <span className="text-[11px] font-black text-red-600 uppercase leading-tight">{sitName}</span>
+                                      <span className="text-[13px] font-black text-red-600 uppercase leading-tight">{sitName}</span>
                                     </td>
                                   )}
-                                  {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top"><span className="text-[10px] font-black text-slate-800 uppercase leading-tight">{destName}</span></td>}
+                                  {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top"><span className="text-[12px] font-black text-slate-800 uppercase leading-tight">{destName}</span></td>}
                                   <td className="px-4 py-3">
-                                    <span className="px-2 py-1 rounded text-[9px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
+                                    <span className="px-2 py-1 rounded text-[11px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
                                   </td>
                                   {SANG_GROUPS.map(g => {
                                     const val = prodMetrics.groups[g];
-                                    return <td key={g} className={`px-1 py-3 text-center text-[10px] ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>{val}</td>;
+                                    return <td key={g} className={`px-1 py-3 text-center text-[12px] ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>{val}</td>;
                                   })}
-                                  <td className={`px-4 py-3 text-right text-[10px] font-black ${prodMetrics.rendu > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{prodMetrics.rendu}</td>
-                                  <td className="px-4 py-3 text-right text-[10px] font-black text-slate-900 bg-slate-50/30">{rowGrossTotal}</td>
+                                  <td className={`px-4 py-3 text-right text-[12px] font-black ${prodMetrics.rendu > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{prodMetrics.rendu}</td>
+                                  <td className="px-4 py-3 text-right text-[12px] font-black text-slate-900 bg-slate-50/30">{rowGrossTotal}</td>
                                 </tr>
                               );
                             })}
@@ -254,15 +254,15 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                         <tr className="bg-indigo-50/30 font-black border-b-2 border-indigo-100">
                           {/* PREMIERE CELLULE OMISE CAR COUVERTE PAR ROWSPAN DU SITE SOURCE */}
                           <td colSpan={2} className="px-4 py-4 text-right pr-6">
-                            <span className="text-[8px] text-slate-400 uppercase tracking-[0.2em] mr-2">SOUS-TOTAL</span>
-                            <span className="text-[10px] text-indigo-700 font-black uppercase truncate inline-block max-w-[150px] align-middle">{sitName}</span>
+                            <span className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mr-2">SOUS-TOTAL</span>
+                            <span className="text-[12px] text-indigo-700 font-black uppercase truncate inline-block max-w-[150px] align-middle">{sitName}</span>
                           </td>
                           <td className="px-4 py-4">
                             {/* Colonne Produit vide pour le sous-total */}
                           </td>
-                          {SANG_GROUPS.map(g => <td key={g} className="px-1 py-4 text-center text-[11px] text-indigo-900">{siteTotals[g]}</td>)}
-                          <td className="px-4 py-4 text-right text-indigo-700 text-[11px]">{siteRendu}</td>
-                          <td className="px-4 py-4 text-right text-indigo-900 bg-indigo-100/20 text-[11px]">{siteGrossTotal}</td>
+                          {SANG_GROUPS.map(g => <td key={g} className="px-1 py-4 text-center text-[13px] text-indigo-900">{siteTotals[g]}</td>)}
+                          <td className="px-4 py-4 text-right text-indigo-700 text-[13px]">{siteRendu}</td>
+                          <td className="px-4 py-4 text-right text-indigo-900 bg-indigo-100/20 text-[13px]">{siteGrossTotal}</td>
                         </tr>
                       </React.Fragment>
                     );
@@ -270,13 +270,13 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                   <tr className="bg-slate-900 text-white font-black">
                     <td className="px-4 py-6 sticky left-0 bg-slate-900 z-20 border-r border-slate-800"></td>
                     <td className="px-4 py-6 text-right pr-6" colSpan={2}>
-                      <span className="text-[10px] uppercase tracking-[0.3em]">TOTAL GÉNÉRAL FILTRÉ</span>
+                      <span className="text-[12px] uppercase tracking-[0.3em]">TOTAL GÉNÉRAL FILTRÉ</span>
                     </td>
                     {SANG_GROUPS.map(g => (
-                      <td key={g} className="px-1 py-6 text-center text-[12px]">{totals.groups[g]}</td>
+                      <td key={g} className="px-1 py-6 text-center text-[14px]">{totals.groups[g]}</td>
                     ))}
-                    <td className="px-4 py-6 text-right text-indigo-400 text-[12px]">{totals.rendu}</td>
-                    <td className="px-4 py-6 text-right text-emerald-400 bg-white/10 text-[14px]">{totals.qty}</td>
+                    <td className="px-4 py-6 text-right text-indigo-400 text-[14px]">{totals.rendu}</td>
+                    <td className="px-4 py-6 text-right text-emerald-400 bg-white/10 text-[16px]">{totals.qty}</td>
                   </tr>
                 </>
               ) : (

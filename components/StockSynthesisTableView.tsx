@@ -127,24 +127,24 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
             <Database size={38} />
           </div>
           <div>
-            <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Synthèse des Stocks</h2>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Périmètre : National</span>
-              <div className="w-1 h-1 bg-white/20 rounded-full"></div>
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                <Clock size={12} /> Actualisé : {new Date().toLocaleTimeString()}
-              </span>
-            </div>
+              <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Synthèse des Stocks</h2>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-[12px] font-black text-white/40 uppercase tracking-widest">Périmètre : National</span>
+                <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                <span className="text-[12px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                  <Clock size={12} /> Actualisé : {new Date().toLocaleTimeString()}
+                </span>
+              </div>
           </div>
         </div>
 
         <div className="flex flex-wrap justify-center items-center gap-6 relative z-10">
           <div className="bg-white/5 backdrop-blur-md px-8 py-5 rounded-[1.75rem] border border-white/10 text-center min-w-[160px]">
-            <p className="text-[9px] font-black text-white/40 uppercase mb-1 tracking-widest">Stock Total CGR</p>
+            <p className="text-[11px] font-black text-white/40 uppercase mb-1 tracking-widest">Stock Total CGR</p>
             <p className="text-3xl font-black text-white">{grandTotals.stock.toLocaleString()}</p>
           </div>
           <div className={`px-8 py-5 rounded-[1.75rem] text-center min-w-[160px] shadow-xl border ${globalAutonomy < 3 ? 'bg-rose-600 border-rose-500' : globalAutonomy < 7 ? 'bg-amber-600 border-amber-500' : 'bg-emerald-600 border-emerald-500'}`}>
-            <p className="text-[9px] font-black text-white/60 uppercase mb-1 tracking-widest">Autonomie Globale</p>
+            <p className="text-[11px] font-black text-white/60 uppercase mb-1 tracking-widest">Autonomie Globale</p>
             <p className="text-3xl font-black text-white">{globalAutonomy.toFixed(1)} Jours</p>
           </div>
         </div>
@@ -164,8 +164,8 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
                   <div>
                     <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">{region.name}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Autonomie Régionale :</span>
-                      <span className={`text-[10px] font-black ${regionAutonomy >= 7 ? 'text-emerald-600' : regionAutonomy >= 3 ? 'text-amber-600' : 'text-rose-600'}`}>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Autonomie Régionale :</span>
+                      <span className={`text-[12px] font-black ${regionAutonomy >= 7 ? 'text-emerald-600' : regionAutonomy >= 3 ? 'text-amber-600' : 'text-rose-600'}`}>
                         {regionAutonomy.toFixed(1)} Jours
                       </span>
                     </div>
@@ -180,8 +180,8 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
                       />
                    </div>
                    <div className="text-right border-l pl-8 border-slate-200">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stock {region.name}</p>
-                      <p className="text-lg font-black text-slate-800">{region.totalStock.toLocaleString()} <span className="text-slate-300 text-xs">Poches</span></p>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Stock {region.name}</p>
+                      <p className="text-lg font-black text-slate-800">{region.totalStock.toLocaleString()} <span className="text-slate-300 text-sm">Poches</span></p>
                    </div>
                 </div>
               </div>
@@ -189,7 +189,7 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 bg-slate-50/30">
+                    <tr className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 bg-slate-50/30">
                       <th className="px-10 py-5 text-left">Site</th>
                       <th className="px-6 py-5 text-center">Stock CGR</th>
                       <th className="px-6 py-5 text-center">Autonomie (Jours)</th>
@@ -215,20 +215,20 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
                           <td className="px-10 py-5">
                             <div className="flex items-center gap-3">
                               <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
-                              <span className="font-bold text-slate-700 text-sm uppercase tracking-tight">{site.name}</span>
+                              <span className="font-bold text-slate-700 text-base uppercase tracking-tight">{site.name}</span>
                             </div>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <span className="text-sm font-black text-slate-800">{site.stock.toLocaleString()}</span>
+                            <span className="text-base font-black text-slate-800">{site.stock.toLocaleString()}</span>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <span className={`text-sm font-black ${site.autonomy < 3 ? 'text-rose-600' : site.autonomy < 7 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            <span className={`text-base font-black ${site.autonomy < 3 ? 'text-rose-600' : site.autonomy < 7 ? 'text-amber-600' : 'text-emerald-600'}`}>
                               {site.autonomy.toFixed(1)} J
                             </span>
                           </td>
                           <td className="px-6 py-5">
                             <div className="flex flex-col items-center">
-                              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-tight ${getStatusColor(site.status)}`}>
+                              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-black uppercase tracking-tight ${getStatusColor(site.status)}`}>
                                 {getStatusIcon(site.status)}
                                 {site.status}
                               </div>
@@ -236,7 +236,7 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
                           </td>
                           <td className="px-10 py-5 text-right">
                             <div className="flex items-center justify-end gap-3">
-                              <span className={`text-xs font-black px-4 py-2 rounded-2xl ${site.gap <= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-500'}`}>
+                              <span className={`text-sm font-black px-4 py-2 rounded-2xl ${site.gap <= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-500'}`}>
                                 {site.gap <= 0 ? 'STOCK SÉCURISÉ' : `Manque ${Math.round(site.gap).toLocaleString()} poches`}
                               </span>
                             </div>
@@ -262,23 +262,23 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-emerald-600">
               <CheckCircle2 size={18} />
-              <span className="text-[11px] font-black uppercase">Niveau Optimal</span>
+              <span className="text-[13px] font-black uppercase">Niveau Optimal</span>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie supérieure à 7 jours. Le stock est suffisant pour couvrir la demande prévue sans risque immédiat.</p>
+            <p className="text-sm text-slate-500 font-medium leading-relaxed">Autonomie supérieure à 7 jours. Le stock est suffisant pour couvrir la demande prévue sans risque immédiat.</p>
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-amber-600">
               <AlertCircle size={18} />
-              <span className="text-[11px] font-black uppercase">Niveau Alerte</span>
+              <span className="text-[13px] font-black uppercase">Niveau Alerte</span>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie entre 3 et 7 jours. Réapprovisionnement nécessaire pour éviter une situation critique.</p>
+            <p className="text-sm text-slate-500 font-medium leading-relaxed">Autonomie entre 3 et 7 jours. Réapprovisionnement nécessaire pour éviter une situation critique.</p>
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-rose-600">
               <AlertTriangle size={18} />
-              <span className="text-[11px] font-black uppercase">Niveau Critique</span>
+              <span className="text-[13px] font-black uppercase">Niveau Critique</span>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">Autonomie inférieure à 3 jours. Risque élevé de rupture de stock. Action prioritaire requise.</p>
+            <p className="text-sm text-slate-500 font-medium leading-relaxed">Autonomie inférieure à 3 jours. Risque élevé de rupture de stock. Action prioritaire requise.</p>
           </div>
         </div>
       </div>
