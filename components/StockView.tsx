@@ -130,7 +130,7 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
     }, 0);
 
     // Calcul de l'autonomie (Consommation moyenne journalière)
-    const distributions = data.distributions || [];
+    const distributionRecords = data.distributions?.records || [];
     const consumptionMap: Record<string, number> = {}; // key: "Produit|Groupe"
     
     // On initialise avec les prévisions nationales par défaut pour les CGR
@@ -145,22 +145,26 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
       consumptionMap[`CGR NOURRISON|${g}`] = (forecastSource[g] || 0) * 0.05;
     });
 
-    if (distributions.length > 0) {
+    if (distributionRecords.length > 0) {
       // Trouver la plage de dates
-      const dates = distributions.map(d => new Date(d.date).getTime()).filter(t => !isNaN(t));
-      const minDate = Math.min(...dates);
-      const maxDate = Math.max(...dates);
-      const diffDays = Math.max(1, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)));
+      const dates = distributionRecords.map(d => new Date(d.date).getTime()).filter(t => !isNaN(t));
+      const uniqueDays = new Set(distributionRecords.map(d => d.date)).size;
       
-      distributions.forEach(d => {
-        const key = `${d.produit}|${d.groupeSanguin}`;
+      distributionRecords.forEach(d => {
+        const key = `${d.typeProduit}|${d.groupeSanguin}`;
         consumptionMap[key] = (consumptionMap[key] || 0) + d.quantite;
       });
 
       // Moyenne journalière
-      Object.keys(consumptionMap).forEach(key => {
-        consumptionMap[key] = consumptionMap[key] / diffDays;
-      });
+      if (uniqueDays > 0) {
+        Object.keys(consumptionMap).forEach(key => {
+          // Si on a des données réelles pour cette clé, on écrase la prévision
+          const realTotal = distributionRecords.filter(d => `${d.typeProduit}|${d.groupeSanguin}` === key).reduce((acc, d) => acc + d.quantite, 0);
+          if (realTotal > 0) {
+            consumptionMap[key] = realTotal / uniqueDays;
+          }
+        });
+      }
     }
 
     const topRegions = (Object.entries(byPres) as [string, number][])
@@ -292,17 +296,19 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                   ? filteredStock.filter(s => !excludedKeywords.some(kw => normalize(s.site || "").includes(kw))).reduce((acc, s) => acc + s.quantite, 0)
                   : stats.total;
 
-                const totalDaily = (Object.values(stats.consumptionMap) as number[]).reduce((a, b) => a + b, 0);
-                const referenceDaily = isAbidjan ? STOCK_FORECASTS["ABIDJAN"]["TOTAL"] : STOCK_FORECASTS["NATIONALE"]["TOTAL"];
-                const daily = totalDaily > 0 ? totalDaily : referenceDaily;
+                // On ne compte que la consommation des CGR pour l'autonomie globale
+                const cgrDaily = Object.entries(stats.consumptionMap).reduce((acc: number, [key, val]) => {
+                  if (key.toUpperCase().includes('CGR')) return acc + (val as number);
+                  return acc;
+                }, 0);
                 
-                return daily > 0 ? Math.round(stockForAutonomy / daily) : '∞';
+                return cgrDaily > 0 ? Math.round(stockForAutonomy / cgrDaily) : '∞';
               })()}
             </span>
             <span className="text-xs font-bold text-blue-400 uppercase">Jours</span>
           </div>
           <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-blue-400">
-            {filterPres === 'PRES ABIDJAN' ? 'Basé sur prévisions Abidjan' : 'Basé sur prévisions Nationales'}
+            {filterPres === 'PRES ABIDJAN' ? 'Basé sur distribution Abidjan' : 'Basé sur distribution Nationale'}
           </p>
         </div>
 
