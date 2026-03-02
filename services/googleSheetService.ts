@@ -206,7 +206,7 @@ export const parseDistributions = (text: string): {records: DistributionRecord[]
       // Si "Le stock equivaut au nombre de produit", alors chaque ligne = 1 unité
       // Sauf si une quantité explicite est présente et > 1 ? 
       // Pour être cohérent avec Stock, on va compter chaque ligne comme 1 unité distribuée.
-      const qty = 1; 
+      const qty = idxQty >= 0 ? (cleanNum(row[idxQty]) || 1) : 1; 
       const product = cleanStr(row[idxProd >= 0 ? idxProd : 5]);
       const group = cleanStr(row[idxGroup >= 0 ? idxGroup : 6]);
       const facility = cleanStr(row[idxFacility >= 0 ? idxFacility : 8]);
