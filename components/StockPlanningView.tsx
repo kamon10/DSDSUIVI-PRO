@@ -41,8 +41,20 @@ export const StockPlanningView: React.FC<StockPlanningViewProps> = ({ data, user
       const totalStock = siteRecords.reduce((acc, s) => acc + s.quantite, 0);
       const cgrStock = siteRecords.filter(s => normalize(s.typeProduit || "").includes('CGR')).reduce((acc, s) => acc + s.quantite, 0);
 
-      // Consommation estimée (basée sur l'objectif annuel / 313 jours)
-      const dailyConsumption = siteInfo.annualObjective / 313;
+      // Calcul de la consommation réelle basée sur la distribution (CGR)
+      const siteDistRecords = (data.distributions?.records || []).filter(r => 
+        normalize(r.site || "") === siteNameNorm && 
+        normalize(r.typeProduit || "").includes('CGR')
+      );
+      
+      const uniqueDays = new Set(siteDistRecords.map(r => r.date)).size;
+      const totalDistributed = siteDistRecords.reduce((acc, r) => acc + r.quantite, 0);
+      
+      // Si on a des données de distribution, on utilise la moyenne réelle, sinon on garde l'objectif par défaut
+      const dailyConsumption = uniqueDays > 0 
+        ? totalDistributed / uniqueDays 
+        : (siteInfo.annualObjective / 313);
+
       const autonomy = dailyConsumption > 0 ? cgrStock / dailyConsumption : 0;
 
       stats.push({
@@ -78,7 +90,7 @@ export const StockPlanningView: React.FC<StockPlanningViewProps> = ({ data, user
           <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-900">Synthèse Stock par Site</h2>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-2 flex items-center gap-2">
             <Info size={14} className="text-blue-500" />
-            Analyse de l'autonomie des stocks (CGR) basée sur la consommation moyenne estimée
+            Analyse de l'autonomie des stocks (CGR) basée sur la distribution réelle moyenne
           </p>
         </div>
 
