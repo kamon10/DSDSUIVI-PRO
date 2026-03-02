@@ -17,6 +17,8 @@ import { AdminUserManagement } from './components/AdminUserManagement.tsx';
 import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
 import { StockView } from './components/StockView.tsx';
 import { StockSynthesisView } from './components/StockSynthesisView.tsx';
+import { StockDetailedSynthesisView } from './components/StockDetailedSynthesisView.tsx';
+import { DistributionDetailedSynthesisView } from './components/DistributionDetailedSynthesisView.tsx';
 import { StockPlanningView } from './components/StockPlanningView.tsx';
 import { DistributionStockView } from './components/DistributionStockView.tsx';
 import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
@@ -281,8 +283,10 @@ const App: React.FC = () => {
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
     { id: 'recap', icon: <FileText size={18} />, label: 'Récap Coll.', public: false },
     { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
+    { id: 'distribution-detailed', icon: <ClipboardList size={18} />, label: 'Détail Dist', public: false },
     { id: 'distribution-stock', icon: <Database size={18} />, label: 'Stock & Dist', public: false },
     { id: 'stock', icon: <Package size={18} />, label: 'Stock', public: false },
+    { id: 'stock-detailed', icon: <ClipboardList size={18} />, label: 'Détail Stock', public: false },
     { id: 'stock-synthesis', icon: <TrendingUp size={18} />, label: 'Synthèse Stock', public: false },
     { id: 'stock-planning', icon: <ShieldCheck size={18} />, label: 'Planning Stock', public: false },
     { id: 'capacity-planning', icon: <Zap size={18} />, label: 'Capacité', public: false },
@@ -305,8 +309,8 @@ const App: React.FC = () => {
   const groupedNavItems = useMemo(() => {
     const groups = [
       { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
-      { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-stock'] },
-      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock', 'stock-synthesis', 'stock-planning'] },
+      { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
+      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
       { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'contact'] }
     ];
 
@@ -467,8 +471,10 @@ const App: React.FC = () => {
                   {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
                   {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
                   {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
+                  {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} />}
                   {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
                   {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} />}
+                  {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} />}
                   {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} />}
                   {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
