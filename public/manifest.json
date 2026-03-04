@@ -1,1 +1,24 @@
-
+{
+  "name": "Hemo-Stats CNTS CI",
+  "short_name": "Hemo-Stats",
+  "description": "Système professionnel de suivi des flux de prélèvements et stocks de sang.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#ef4444",
+  "icons": [
+    {
+      "src": "https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "portrait"
+}
