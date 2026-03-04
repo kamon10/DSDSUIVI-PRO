@@ -23,6 +23,8 @@ import { StockPlanningView } from './components/StockPlanningView.tsx';
 import { DistributionStockView } from './components/DistributionStockView.tsx';
 import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
+import { NotificationManager } from './components/NotificationManager.tsx';
+import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -40,7 +42,7 @@ const App: React.FC = () => {
   
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
-    const defaultBranding = { logo: './assets/logo.svg', hashtag: '#DONSANG_CI' };
+    const defaultBranding = { logo: 'https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z', hashtag: '#DONSANG_CI' };
     if (!saved) return defaultBranding;
     try { return JSON.parse(saved); } catch (e) { return defaultBranding; }
   });
@@ -71,6 +73,18 @@ const App: React.FC = () => {
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('SW registered: ', registration);
+        }).catch(registrationError => {
+          console.log('SW registration failed: ', registrationError);
+        });
+      });
+    }
   }, []);
 
   const handleSync = useCallback(async (isSilent = false, force = false) => {
@@ -437,6 +451,7 @@ const App: React.FC = () => {
             ) : (
               <button onClick={() => setShowLogin(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Connexion</button>
             )}
+            <NotificationManager />
             <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 shadow-sm"><Settings size={16} /></button>
           </div>
         </div>
@@ -457,24 +472,24 @@ const App: React.FC = () => {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="page-transition"
             >
-              {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} />}
+              {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} />}
               {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
               {currentUser && (
                 <>
-                  {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} />}
+                  {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
                   {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
-                  {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
                   {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                  {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} />}
-                  {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} />}
-                  {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" />}
-                  {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" />}
-                  {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} />}
+                  {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
+                  {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
+                  {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} />}
+                  {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} />}
+                  {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
                   {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} />}
-                  {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} />}
+                  {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} />}
                   {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
@@ -494,6 +509,7 @@ const App: React.FC = () => {
         sites={effectiveSitesList}
         onSiteSelect={handleSiteSelect}
       />
+      <InstallPrompt />
       <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] glass-nav rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl gap-1">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
