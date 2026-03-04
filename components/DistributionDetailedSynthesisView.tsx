@@ -168,8 +168,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
           "CGR NOURRI.", 
           "PLASMA", 
           "PLAQUETTE", 
-          "O+", 
-          "O-", 
           "TOTAL"
         ]);
 
@@ -183,8 +181,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
               site.cgrNourri,
               site.plasma,
               site.plaquette,
-              site.oPlus,
-              site.oMoins,
               site.total
             ]);
           });
@@ -197,8 +193,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
             region.totals.cgrNourri,
             region.totals.plasma,
             region.totals.plaquette,
-            region.totals.oPlus,
-            region.totals.oMoins,
             region.totals.total
           ]);
           excelData.push([]); // Spacer
@@ -213,8 +207,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
           grandTotals.cgrNourri,
           grandTotals.plasma,
           grandTotals.plaquette,
-          grandTotals.oPlus,
-          grandTotals.oMoins,
           grandTotals.total
         ]);
 
@@ -447,8 +439,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
                   <th className="px-2 py-6 text-center border-r border-white/10">CGR NOURRI.</th>
                   <th className="px-2 py-6 text-center border-r border-white/10">PLASMA</th>
                   <th className="px-2 py-6 text-center border-r border-white/10">PLAQUETTE</th>
-                  <th className="px-2 py-6 text-center border-r border-white/10">(O+)</th>
-                  <th className="px-2 py-6 text-center border-r border-white/10">(O-)</th>
                   <th className="px-4 py-6 text-center">TOTAL</th>
                 </tr>
               </thead>
@@ -480,8 +470,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
                         <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrNourri || '-'}</td>
                         <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plasma || '-'}</td>
                         <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plaquette || '-'}</td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black text-blue-600">{site.oPlus || '-'}</td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black text-red-600">{site.oMoins || '-'}</td>
                         <td className="px-4 py-3 text-center font-black bg-slate-50/50">{site.total.toLocaleString()}</td>
                       </tr>
                     ))}
@@ -492,8 +480,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
                       <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrNourri.toLocaleString()}</td>
                       <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plasma.toLocaleString()}</td>
                       <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plaquette.toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-blue-700 text-[16px]">{region.totals.oPlus.toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-red-700 text-[16px]">{region.totals.oMoins.toLocaleString()}</td>
                       <td className="px-4 py-4 text-center bg-slate-200/50 text-[18px]">{region.totals.total.toLocaleString()}</td>
                     </tr>
                   </React.Fragment>
@@ -507,8 +493,6 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
                   <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrNourri.toLocaleString()}</td>
                   <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plasma.toLocaleString()}</td>
                   <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plaquette.toLocaleString()}</td>
-                  <td className="px-2 py-8 text-center border-r border-white/10 text-blue-400">{grandTotals.oPlus.toLocaleString()}</td>
-                  <td className="px-2 py-8 text-center border-r border-white/10 text-red-400">{grandTotals.oMoins.toLocaleString()}</td>
                   <td className="px-4 py-8 text-center bg-white/10 text-[22px]">{grandTotals.total.toLocaleString()}</td>
                 </tr>
               </tfoot>
