@@ -2,16 +2,17 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types';
 import { SITES_DATA } from '../constants';
-import { Database, MapPin, ChevronRight, Clock, Package, FileImage, FileText, Loader2 } from 'lucide-react';
+import { Database, MapPin, ChevronRight, Clock, Package, FileImage, FileText, Loader2, FileSpreadsheet } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { utils, writeFile } from 'xlsx';
 
 interface StockDetailedSynthesisViewProps {
   data: DashboardData;
 }
 
 export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProps> = ({ data }) => {
-  const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
+  const [exporting, setExporting] = useState<'image' | 'pdf' | 'excel' | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const stock = data.stock || [];
 
@@ -87,11 +88,96 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
     }, { cgrAdulte: 0, cgrPedia: 0, cgrNourri: 0, plasma: 0, plaquette: 0, oPlus: 0, oMoins: 0, total: 0 });
   }, [synthesisData]);
 
-  const handleExport = async (type: 'image' | 'pdf') => {
+  const handleExport = async (type: 'image' | 'pdf' | 'excel') => {
     if (!contentRef.current) return;
     setExporting(type);
     
-    // Attendre un peu pour s'assurer que le DOM est stable
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    if (type === 'excel') {
+      try {
+        const excelData: any[] = [];
+        // Header
+        excelData.push(["DÉTAIL DES STOCKS - " + dateStr]);
+        excelData.push([]);
+        excelData.push([
+          "RÉGION", 
+          "SITE", 
+          "CGR ADULTE", 
+          "CGR PÉDIA.", 
+          "CGR NOURRI.", 
+          "PLASMA", 
+          "PLAQUETTE", 
+          "O+", 
+          "O-", 
+          "TOTAL"
+        ]);
+
+        synthesisData.forEach(region => {
+          region.sites.forEach((site: any) => {
+            excelData.push([
+              region.name,
+              site.name,
+              site.cgrAdulte,
+              site.cgrPedia,
+              site.cgrNourri,
+              site.plasma,
+              site.plaquette,
+              site.oPlus,
+              site.oMoins,
+              site.total
+            ]);
+          });
+          // Region Total
+          excelData.push([
+            `TOTAL ${region.name}`,
+            "",
+            region.totals.cgrAdulte,
+            region.totals.cgrPedia,
+            region.totals.cgrNourri,
+            region.totals.plasma,
+            region.totals.plaquette,
+            region.totals.oPlus,
+            region.totals.oMoins,
+            region.totals.total
+          ]);
+          excelData.push([]); // Spacer
+        });
+
+        // Grand Total
+        excelData.push([
+          "TOTAL NATIONAL",
+          "",
+          grandTotals.cgrAdulte,
+          grandTotals.cgrPedia,
+          grandTotals.cgrNourri,
+          grandTotals.plasma,
+          grandTotals.plaquette,
+          grandTotals.oPlus,
+          grandTotals.oMoins,
+          grandTotals.total
+        ]);
+
+        const ws = utils.aoa_to_sheet(excelData);
+        const wb = utils.book_new();
+        utils.book_append_sheet(wb, ws, "Stocks");
+        writeFile(wb, `DETAIL_STOCK_${dateStr}.xlsx`);
+      } catch (error) {
+        console.error('Excel export failed:', error);
+      } finally {
+        setExporting(null);
+      }
+      return;
+    }
+
+    // Force a minimum width for the capture to ensure it looks like a desktop report even on mobile
+    const originalWidth = contentRef.current.style.width;
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      contentRef.current.style.width = '1200px';
+    }
+
+    // Wait for layout adjustment
     await new Promise(res => setTimeout(res, 500));
     
     try {
@@ -100,38 +186,56 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        windowWidth: 1200, // Ensure consistent width for capture
         onclone: (clonedDoc) => {
-          // On peut ajuster le style du clone si besoin
           const el = clonedDoc.getElementById('export-container');
           if (el) {
             el.style.padding = '20px';
             el.style.borderRadius = '0px';
+            el.style.width = '1200px';
           }
         }
       });
       
+      // Restore original width
+      if (isMobile) {
+        contentRef.current.style.width = originalWidth;
+      }
+
       const imgData = canvas.toDataURL('image/png');
       
       if (type === 'image') {
         const link = document.createElement('a');
-        link.download = `DETAIL_STOCK_${new Date().toISOString().split('T')[0]}.png`;
+        link.download = `DETAIL_STOCK_${dateStr}.png`;
         link.href = imgData;
         link.click();
       } else {
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-        
-        const imgProps = pdf.getImageProperties(imgData);
+        const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        // Si le contenu dépasse une page, on peut gérer la pagination ou simplement scaler
-        // Ici on scale pour que ça tienne en largeur sur une page A4
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`DETAIL_STOCK_${new Date().toISOString().split('T')[0]}.pdf`);
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        
+        // Calculate the height of one PDF page in terms of canvas pixels
+        const pageHeightInCanvasPixels = (imgWidth * pdfHeight) / pdfWidth;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * pdfWidth) / imgWidth);
+        heightLeft -= pageHeightInCanvasPixels;
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * pdfWidth) / imgWidth);
+          heightLeft -= pageHeightInCanvasPixels;
+        }
+        
+        pdf.save(`DETAIL_STOCK_${dateStr}.pdf`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -144,6 +248,14 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
     <div className="space-y-6 animate-in fade-in duration-700 pb-24">
       {/* Export Controls */}
       <div className="flex justify-end gap-3 mb-2 no-print">
+        <button 
+          onClick={() => handleExport('excel')} 
+          disabled={!!exporting}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-[12px] font-black uppercase hover:bg-emerald-700 transition-all shadow-lg disabled:opacity-50"
+        >
+          {exporting === 'excel' ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+          Exporter EXCEL
+        </button>
         <button 
           onClick={() => handleExport('image')} 
           disabled={!!exporting}
@@ -170,18 +282,18 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
             <Database size={32} />
           </div>
           <div>
-            <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Détail des Stocks</h2>
-            <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Situation au {new Date().toLocaleDateString()}</p>
+            <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Détail des Stocks</h2>
+            <p className="text-[14px] font-black text-slate-400 uppercase tracking-widest">Situation au {new Date().toLocaleDateString()}</p>
           </div>
         </div>
         <div className="flex gap-4">
-          <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 text-center min-w-[120px]">
-            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Stock Total</p>
-            <p className="text-xl font-black text-slate-900">{grandTotals.total.toLocaleString()}</p>
+          <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 text-center min-w-[140px]">
+            <p className="text-[12px] font-black text-slate-400 uppercase mb-1">Stock Total</p>
+            <p className="text-3xl font-black text-slate-900">{grandTotals.total.toLocaleString()}</p>
           </div>
-          <div className="bg-blue-600 px-6 py-3 rounded-2xl text-center min-w-[120px] shadow-lg shadow-blue-200">
-            <p className="text-[10px] font-black text-white/60 uppercase mb-1">CGR Adulte</p>
-            <p className="text-xl font-black text-white">{grandTotals.cgrAdulte.toLocaleString()}</p>
+          <div className="bg-blue-600 px-6 py-3 rounded-2xl text-center min-w-[140px] shadow-lg shadow-blue-200">
+            <p className="text-[12px] font-black text-white/60 uppercase mb-1">CGR Adulte</p>
+            <p className="text-3xl font-black text-white">{grandTotals.cgrAdulte.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -191,20 +303,20 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-900 text-white text-[12px] font-black uppercase tracking-widest">
-                <th className="px-4 py-4 text-left border-r border-white/10">PRES / RÉGION</th>
-                <th className="px-4 py-4 text-left border-r border-white/10">LIBELLÉ SITE</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">CGR ADULTE</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">CGR PÉDIA.</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">CGR NOURRI.</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">PLASMA</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">PLAQUETTE</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">(O+)</th>
-                <th className="px-2 py-4 text-center border-r border-white/10">(O-)</th>
-                <th className="px-4 py-4 text-center">TOTAL</th>
+              <tr className="bg-slate-900 text-white text-[14px] font-black uppercase tracking-widest">
+                <th className="px-4 py-6 text-left border-r border-white/10">PRES / RÉGION</th>
+                <th className="px-4 py-6 text-left border-r border-white/10">LIBELLÉ SITE</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">CGR ADULTE</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">CGR PÉDIA.</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">CGR NOURRI.</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">PLASMA</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">PLAQUETTE</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">(O+)</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">(O-)</th>
+                <th className="px-4 py-6 text-center">TOTAL</th>
               </tr>
             </thead>
-            <tbody className="text-[13px] font-bold text-slate-700">
+            <tbody className="text-[15px] font-bold text-slate-700">
               {synthesisData.map((region) => (
                 <React.Fragment key={region.name}>
                   {region.sites.map((site: any, idx: number) => (
@@ -212,12 +324,12 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                       {idx === 0 && (
                         <td 
                           rowSpan={region.sites.length + 1} 
-                          className="px-4 py-4 font-black text-slate-900 bg-slate-50/80 border-r border-slate-200 align-middle text-center"
-                          style={{ width: '150px' }}
+                          className="px-6 py-4 font-black text-slate-900 bg-slate-50/50 border-r border-slate-200 align-middle text-center"
+                          style={{ width: '200px', minWidth: '200px' }}
                         >
-                          <div className="flex flex-col items-center gap-2">
-                            <MapPin size={16} className="text-slate-400" />
-                            <span className="uppercase tracking-tighter leading-tight">{region.name}</span>
+                          <div className="flex flex-col items-center gap-3">
+                            <MapPin size={24} className="text-blue-600" />
+                            <span className="uppercase tracking-normal leading-tight text-[15px] break-words">{region.name}</span>
                           </div>
                         </td>
                       )}
@@ -238,30 +350,30 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                     </tr>
                   ))}
                   <tr className="bg-slate-100/80 font-black text-slate-900 border-b border-slate-200">
-                    <td className="px-4 py-3 text-right uppercase tracking-widest text-[13px]">TOTAL {region.name}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.cgrAdulte.toLocaleString()}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.cgrPedia.toLocaleString()}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.cgrNourri.toLocaleString()}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.plasma.toLocaleString()}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200">{region.totals.plaquette.toLocaleString()}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200 text-blue-700">{region.totals.oPlus.toLocaleString()}</td>
-                    <td className="px-2 py-3 text-center border-r border-slate-200 text-red-700">{region.totals.oMoins.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-center bg-slate-200/50">{region.totals.total.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-right uppercase tracking-widest text-[15px]">TOTAL {region.name}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrAdulte.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrPedia.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrNourri.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plasma.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plaquette.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-blue-700 text-[16px]">{region.totals.oPlus.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-red-700 text-[16px]">{region.totals.oMoins.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-center bg-slate-200/50 text-[18px]">{region.totals.total.toLocaleString()}</td>
                   </tr>
                 </React.Fragment>
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-slate-900 text-white font-black uppercase tracking-widest text-[16px]">
-                <td colSpan={2} className="px-6 py-6 text-left">TOTAL NATIONAL</td>
-                <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.cgrAdulte.toLocaleString()}</td>
-                <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.cgrPedia.toLocaleString()}</td>
-                <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.cgrNourri.toLocaleString()}</td>
-                <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.plasma.toLocaleString()}</td>
-                <td className="px-2 py-6 text-center border-r border-white/10">{grandTotals.plaquette.toLocaleString()}</td>
-                <td className="px-2 py-6 text-center border-r border-white/10 text-blue-400">{grandTotals.oPlus.toLocaleString()}</td>
-                <td className="px-2 py-6 text-center border-r border-white/10 text-red-400">{grandTotals.oMoins.toLocaleString()}</td>
-                <td className="px-4 py-6 text-center bg-white/10">{grandTotals.total.toLocaleString()}</td>
+              <tr className="bg-slate-900 text-white font-black uppercase tracking-widest text-[18px]">
+                <td colSpan={2} className="px-6 py-8 text-left">TOTAL NATIONAL</td>
+                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrAdulte.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrPedia.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrNourri.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plasma.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plaquette.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10 text-blue-400">{grandTotals.oPlus.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10 text-red-400">{grandTotals.oMoins.toLocaleString()}</td>
+                <td className="px-4 py-8 text-center bg-white/10 text-[22px]">{grandTotals.total.toLocaleString()}</td>
               </tr>
             </tfoot>
           </table>
