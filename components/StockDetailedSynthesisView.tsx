@@ -55,8 +55,8 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
           const t = normalize(s.typeProduit);
           return t.includes('PLAQUETTE') || t.includes('PLATELET');
         }).reduce((acc, s) => acc + s.quantite, 0),
-        oPlus: siteStock.filter(s => (s.groupeSanguin || "").replace(/\s/g, "").toUpperCase() === 'O+').reduce((acc, s) => acc + s.quantite, 0),
-        oMoins: siteStock.filter(s => (s.groupeSanguin || "").replace(/\s/g, "").toUpperCase() === 'O-').reduce((acc, s) => acc + s.quantite, 0),
+        oPlus: siteStock.filter(s => normalize(s.typeProduit).includes('CGR') && (s.groupeSanguin || "").replace(/\s/g, "").toUpperCase() === 'O+').reduce((acc, s) => acc + s.quantite, 0),
+        oMoins: siteStock.filter(s => normalize(s.typeProduit).includes('CGR') && (s.groupeSanguin || "").replace(/\s/g, "").toUpperCase() === 'O-').reduce((acc, s) => acc + s.quantite, 0),
         total: siteStock.reduce((acc, s) => acc + s.quantite, 0)
       };
 
@@ -286,7 +286,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
             <p className="text-[14px] font-black text-slate-400 uppercase tracking-widest">Situation au {new Date().toLocaleDateString()}</p>
           </div>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap justify-center md:justify-end">
           <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 text-center min-w-[140px]">
             <p className="text-[12px] font-black text-slate-400 uppercase mb-1">Stock Total</p>
             <p className="text-3xl font-black text-slate-900">{grandTotals.total.toLocaleString()}</p>
@@ -294,6 +294,14 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
           <div className="bg-blue-600 px-6 py-3 rounded-2xl text-center min-w-[140px] shadow-lg shadow-blue-200">
             <p className="text-[12px] font-black text-white/60 uppercase mb-1">CGR Adulte</p>
             <p className="text-3xl font-black text-white">{grandTotals.cgrAdulte.toLocaleString()}</p>
+          </div>
+          <div className="bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 text-center min-w-[140px]">
+            <p className="text-[12px] font-black text-blue-400 uppercase mb-1">Total CGR O+</p>
+            <p className="text-3xl font-black text-blue-600">{grandTotals.oPlus.toLocaleString()}</p>
+          </div>
+          <div className="bg-red-50 px-6 py-3 rounded-2xl border border-red-100 text-center min-w-[140px]">
+            <p className="text-[12px] font-black text-red-400 uppercase mb-1">Total CGR O-</p>
+            <p className="text-3xl font-black text-red-600">{grandTotals.oMoins.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -311,8 +319,8 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                 <th className="px-2 py-6 text-center border-r border-white/10">CGR NOURRI.</th>
                 <th className="px-2 py-6 text-center border-r border-white/10">PLASMA</th>
                 <th className="px-2 py-6 text-center border-r border-white/10">PLAQUETTE</th>
-                <th className="px-2 py-6 text-center border-r border-white/10">(O+)</th>
-                <th className="px-2 py-6 text-center border-r border-white/10">(O-)</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">CGR (O+)</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">CGR (O-)</th>
                 <th className="px-4 py-6 text-center">TOTAL</th>
               </tr>
             </thead>
