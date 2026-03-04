@@ -157,7 +157,7 @@ export const fetchBrandingConfig = async (scriptUrl: string): Promise<{logo: str
     try {
       const config = JSON.parse(text);
       return {
-        logo: config.logo || 'https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z',
+        logo: config.logo || 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904',
         hashtag: config.hashtag || '#DONSANG_CI'
       };
     } catch (e) {
