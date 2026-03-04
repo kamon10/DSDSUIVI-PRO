@@ -9,9 +9,10 @@ import { utils, writeFile } from 'xlsx';
 
 interface StockDetailedSynthesisViewProps {
   data: DashboardData;
+  branding?: { logo: string; hashtag: string };
 }
 
-export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProps> = ({ data }) => {
+export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProps> = ({ data, branding }) => {
   const [exporting, setExporting] = useState<'image' | 'pdf' | 'excel' | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const stock = data.stock || [];
@@ -108,8 +109,8 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
           "CGR NOURRI.", 
           "PLASMA", 
           "PLAQUETTE", 
-          "O+", 
-          "O-", 
+          "CGR (O+)", 
+          "CGR (O-)", 
           "TOTAL"
         ]);
 
@@ -278,8 +279,8 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         {/* Header matching the image style but with stock info */}
         <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white">
-            <Database size={32} />
+          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-lg overflow-hidden">
+            <img src={branding?.logo} alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
           </div>
           <div>
             <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Détail des Stocks</h2>
@@ -292,8 +293,8 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
             <p className="text-3xl font-black text-slate-900">{grandTotals.total.toLocaleString()}</p>
           </div>
           <div className="bg-blue-600 px-6 py-3 rounded-2xl text-center min-w-[140px] shadow-lg shadow-blue-200">
-            <p className="text-[12px] font-black text-white/60 uppercase mb-1">CGR Adulte</p>
-            <p className="text-3xl font-black text-white">{grandTotals.cgrAdulte.toLocaleString()}</p>
+            <p className="text-[12px] font-black text-white/60 uppercase mb-1">TOTAL CGR</p>
+            <p className="text-3xl font-black text-white">{(grandTotals.cgrAdulte + grandTotals.cgrPedia + grandTotals.cgrNourri).toLocaleString()}</p>
           </div>
           <div className="bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100 text-center min-w-[140px]">
             <p className="text-[12px] font-black text-blue-400 uppercase mb-1">Total CGR O+</p>

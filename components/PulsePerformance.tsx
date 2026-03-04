@@ -24,9 +24,10 @@ interface PulsePerformanceProps {
   user?: User | null;
   onLoginClick?: () => void;
   isConnected?: boolean;
+  branding?: { logo: string; hashtag: string };
 }
 
-export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLoginClick, isConnected }) => {
+export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLoginClick, isConnected, branding }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [pulsePhase, setPulsePhase] = useState(0);
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -132,7 +133,15 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(pulseRef.current, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+      const canvas = await html2canvas(pulseRef.current, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#f8fafc',
+        onclone: (clonedDoc) => {
+          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
+          if (header) header.style.display = 'flex';
+        }
+      });
       const imgData = canvas.toDataURL('image/png', 1.0);
       if (type === 'image') {
         const link = document.createElement('a'); link.download = `PULSE_${viewMode}.png`; link.href = imgData; link.click();
@@ -246,7 +255,22 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
         </div>
       </div>
 
-      <div ref={pulseRef} className="space-y-12 lg:space-y-16">
+      <div ref={pulseRef} className="space-y-12 lg:space-y-16 p-1">
+        {/* HEADER EXPORT */}
+        <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
+          <div className="flex items-center gap-6">
+            <img src={branding?.logo} alt="Logo" className="h-20 w-auto object-contain" referrerPolicy="no-referrer" />
+            <div>
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Analyse de Performance</h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">Centre National de Transfusion Sanguine CI</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Situation au</p>
+            <p className="text-xl font-black text-slate-900">{selectedDay}</p>
+          </div>
+        </div>
+
         <motion.div 
           layout
           className={`relative overflow-hidden rounded-[4.5rem] p-12 lg:p-20 text-white shadow-3xl border border-white/5 transition-colors duration-700 ${viewMode === 'donations' ? 'bg-[#0f172a]' : 'bg-[#1e1b4b]'}`}

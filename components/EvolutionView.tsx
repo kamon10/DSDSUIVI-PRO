@@ -12,11 +12,12 @@ interface EvolutionViewProps {
   data: DashboardData;
   /* Added user prop to resolve TS error in App.tsx */
   user?: User | null;
+  branding?: { logo: string; hashtag: string };
 }
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
-export const EvolutionView: React.FC<EvolutionViewProps> = ({ data }) => {
+export const EvolutionView: React.FC<EvolutionViewProps> = ({ data, branding }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [timeScale, setTimeScale] = useState<'day' | 'month' | 'year'>('month');
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -129,7 +130,15 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ data }) => {
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const canvas = await html2canvas(contentRef.current, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
+          if (header) header.style.display = 'flex';
+        }
+      });
       const imgData = canvas.toDataURL('image/png', 1.0);
       if (type === 'image') {
         const link = document.createElement('a');
@@ -171,6 +180,23 @@ export const EvolutionView: React.FC<EvolutionViewProps> = ({ data }) => {
       <div ref={contentRef} className="p-1">
         <div className="bg-white rounded-[4rem] p-12 lg:p-20 shadow-2xl border border-slate-100 relative overflow-hidden flex flex-col min-h-[900px]">
           
+          {/* HEADER EXPORT */}
+          <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-12">
+            <div className="flex items-center gap-6">
+              <img src={branding?.logo} alt="Logo" className="h-20 w-auto object-contain" referrerPolicy="no-referrer" />
+              <div>
+                <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Répartition des Flux</h1>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">Centre National de Transfusion Sanguine CI</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Période</p>
+              <p className="text-xl font-black text-slate-900">
+                {timeScale === 'day' ? selectedDay : timeScale === 'month' ? `${MONTHS_FR[selectedMonth]} ${selectedYear}` : selectedYear}
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-col lg:flex-row justify-between items-start gap-8 mb-12 px-4">
             <div>
               <h2 className="text-[3.5rem] font-[950] text-slate-900 leading-none tracking-tighter uppercase mb-4">

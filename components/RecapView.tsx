@@ -17,6 +17,7 @@ interface RecapViewProps {
   user?: User | null;
   sites: any[];
   initialMode?: 'collecte' | 'distribution';
+  branding?: { logo: string; hashtag: string };
 }
 
 const MONTHS_FR = [
@@ -51,7 +52,7 @@ const parseDate = (dateStr: string) => {
   return new Date(y, m - 1, d);
 };
 
-export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user }) => {
+export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user, branding }) => {
   const viewMode = initialMode;
   // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
   const [distTimeScale, setDistTimeScale] = useState<'day' | 'month' | 'year'>('month');
@@ -420,10 +421,49 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         utils.book_append_sheet(wb, ws, "Recap");
         writeFile(wb, `${filename}.xlsx`);
       } else if (type === 'image') {
-        const canvas = await html2canvas(element, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff' });
-        const link = document.createElement('a'); link.download = `${filename}.png`; link.href = canvas.toDataURL('image/png', 1.0); link.click();
+        // Force a minimum width for the capture to ensure it looks like a desktop report even on mobile
+        const originalWidth = element.style.width;
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          element.style.width = '1200px';
+        }
+        await new Promise(res => setTimeout(res, 500));
+
+        const canvas = await html2canvas(element, { 
+          scale: 2.5, 
+          useCORS: true, 
+          backgroundColor: '#ffffff',
+          windowWidth: 1200
+        });
+
+        if (isMobile) {
+          element.style.width = originalWidth;
+        }
+
+        const link = document.createElement('a'); 
+        link.download = `${filename}.png`; 
+        link.href = canvas.toDataURL('image/png', 1.0); 
+        link.click();
       } else {
-        const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        // Force a minimum width for the capture to ensure it looks like a desktop report even on mobile
+        const originalWidth = element.style.width;
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          element.style.width = '1200px';
+        }
+        await new Promise(res => setTimeout(res, 500));
+
+        const canvas = await html2canvas(element, { 
+          scale: 2, 
+          useCORS: true, 
+          backgroundColor: '#ffffff',
+          windowWidth: 1200
+        });
+
+        if (isMobile) {
+          element.style.width = originalWidth;
+        }
+
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = 210, pdfHeight = 297, margin = 10;
@@ -650,8 +690,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           {/* HEADER DOCUMENT */}
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-center gap-6">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl ${viewMode === 'collecte' ? 'bg-[#ef4444]' : 'bg-orange-600'}`}>
-                 <Printer size={32} />
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center bg-white shadow-xl overflow-hidden border border-slate-100`}>
+                 <img src={branding?.logo} alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
               </div>
               <div>
                 <h1 className="text-4xl font-[900] uppercase tracking-tight text-[#0f172a] leading-none">

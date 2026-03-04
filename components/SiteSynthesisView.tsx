@@ -20,6 +20,7 @@ interface SiteSynthesisViewProps {
   data: DashboardData;
   user?: User | null;
   sites: any[];
+  branding?: { logo: string; hashtag: string };
 }
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -30,7 +31,7 @@ const getStatusColor = (percentage: number) => {
   return '#ef4444';
 };
 
-export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user, sites }) => {
+export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user, sites, branding }) => {
   const [selectedValue, setSelectedValue] = useState("ALL");
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -229,7 +230,15 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     setExporting(type);
     await new Promise(res => setTimeout(res, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+      const canvas = await html2canvas(contentRef.current, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#f8fafc',
+        onclone: (clonedDoc) => {
+          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
+          if (header) header.style.display = 'flex';
+        }
+      });
       const img = canvas.toDataURL('image/png');
       if (type === 'image') {
         const l = document.createElement('a'); l.download = 'FOCUS.png'; l.href = img; l.click();
@@ -288,6 +297,23 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
       </div>
 
       <div ref={contentRef} className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-1">
+        {/* HEADER EXPORT */}
+        <div className="hidden export-header lg:col-span-3 flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
+          <div className="flex items-center gap-6">
+            <img src={branding?.logo} alt="Logo" className="h-20 w-auto object-contain" referrerPolicy="no-referrer" />
+            <div>
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Focus Analyse</h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">Centre National de Transfusion Sanguine CI</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Période</p>
+            <p className="text-xl font-black text-slate-900">
+              {timeScale === 'day' ? selDate : timeScale === 'month' ? `${MONTHS_FR[parseInt(selMonth)]} ${selYear}` : selYear}
+            </p>
+          </div>
+        </div>
+
         <div className="lg:col-span-1 bg-white rounded-[2.5rem] p-8 border shadow-sm">
            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-white ${isNational ? 'bg-slate-900' : isRegion ? 'bg-blue-600' : 'bg-red-600'}`}>
              {isNational ? <Globe size={32} /> : isRegion ? <MapPin size={32} /> : <Building2 size={32} />}

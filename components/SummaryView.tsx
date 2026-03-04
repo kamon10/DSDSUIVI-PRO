@@ -12,9 +12,10 @@ interface SummaryViewProps {
   /* Added user prop to resolve TS error in App.tsx */
   user?: User | null;
   setActiveTab: (tab: AppTab) => void;
+  branding?: { logo: string; hashtag: string };
 }
 
-export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) => {
+export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, branding }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -87,7 +88,15 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
       const element = contentRef.current;
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#f8fafc' });
+      const canvas = await html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#f8fafc',
+        onclone: (clonedDoc) => {
+          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
+          if (header) header.style.display = 'flex';
+        }
+      });
       const imgData = canvas.toDataURL('image/png', 1.0);
       const filename = `RESUME_CNTS_${viewMode}_${data.month.replace(/\s/g, '_')}`;
       if (type === 'image') {
@@ -127,6 +136,21 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab }) 
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
+        {/* HEADER EXPORT - Visible uniquement lors de l'export ou si on veut un en-tête permanent */}
+        <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
+          <div className="flex items-center gap-6">
+            <img src={branding?.logo} alt="Logo" className="h-20 w-auto object-contain" referrerPolicy="no-referrer" />
+            <div>
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Cockpit National</h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">Centre National de Transfusion Sanguine CI</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Situation au</p>
+            <p className="text-xl font-black text-slate-900">{data.date}</p>
+          </div>
+        </div>
+
         {/* CARTE VEDETTE */}
         <div 
           onClick={() => setActiveTab(viewMode === 'donations' ? 'pulse' : 'hemo-stats')}

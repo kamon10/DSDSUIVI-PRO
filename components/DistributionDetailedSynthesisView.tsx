@@ -9,11 +9,12 @@ import { utils, writeFile } from 'xlsx';
 
 interface DistributionDetailedSynthesisViewProps {
   data: DashboardData;
+  branding?: { logo: string; hashtag: string };
 }
 
 type FilterType = 'all' | 'day' | 'month' | 'year' | 'period';
 
-export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSynthesisViewProps> = ({ data }) => {
+export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSynthesisViewProps> = ({ data, branding }) => {
   const [exporting, setExporting] = useState<'image' | 'pdf' | 'excel' | null>(null);
   const today = new Date().toISOString().split('T')[0];
   
@@ -397,8 +398,8 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
         {/* Header matching the image style but with distribution info */}
         <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
-              <Truck size={32} />
+            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-lg overflow-hidden">
+              <img src={branding?.logo} alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
             </div>
             <div>
               <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Détail des Distributions</h2>

@@ -17,6 +17,7 @@ import { jsPDF } from 'jspdf';
 interface WeeklyViewProps {
   data: DashboardData;
   user?: User | null;
+  branding?: { logo: string; hashtag: string };
 }
 
 const MONTHS_FR = [
@@ -33,7 +34,7 @@ const THEME = {
   net: '#10b981'         // Vert (Sorties Nettes)
 };
 
-export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
+export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user, branding }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [timeScale, setTimeScale] = useState<'days' | 'months' | 'years'>('days');
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -150,7 +151,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { scale: 2.5, useCORS: true, backgroundColor: '#f8fafc' });
+      const canvas = await html2canvas(contentRef.current, { 
+        scale: 2.5, 
+        useCORS: true, 
+        backgroundColor: '#f8fafc',
+        onclone: (clonedDoc) => {
+          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
+          if (header) header.style.display = 'flex';
+        }
+      });
       const imgData = canvas.toDataURL('image/png', 1.0);
       const filename = `EVOLUTION_${viewMode}_${timeScale}`;
       if (type === 'image') {
@@ -194,6 +203,21 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user }) => {
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
+        {/* HEADER EXPORT */}
+        <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
+          <div className="flex items-center gap-6">
+            <img src={branding?.logo} alt="Logo" className="h-20 w-auto object-contain" referrerPolicy="no-referrer" />
+            <div>
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Évolution des Flux</h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">Centre National de Transfusion Sanguine CI</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Période</p>
+            <p className="text-xl font-black text-slate-900">{timeScale === 'days' ? `${MONTHS_FR[selectedMonth]} ${selectedYear}` : timeScale === 'months' ? `Année ${selectedYear}` : 'Série Historique'}</p>
+          </div>
+        </div>
+
         <div className={`relative overflow-hidden rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl border border-white/5 ${viewMode === 'donations' ? 'bg-[#0f172a]' : 'bg-[#1e1b4b]'}`}>
            <div className={`absolute top-0 right-0 w-[600px] h-[600px] blur-[180px] rounded-full opacity-20 ${viewMode === 'donations' ? 'bg-emerald-500' : 'bg-orange-500'}`}></div>
            <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-10">
