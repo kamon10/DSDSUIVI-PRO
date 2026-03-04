@@ -312,20 +312,6 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           </p>
         </div>
 
-        {/* KPI Santé du Stock */}
-        <div className={`p-8 rounded-[2.5rem] border shadow-xl relative overflow-hidden group transition-all ${stats.criticalCount > 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <AlertTriangle size={80} className={stats.criticalCount > 0 ? 'text-rose-500' : 'text-emerald-500'} />
-          </div>
-          <span className={`text-[12px] font-black uppercase tracking-widest block mb-2 ${stats.criticalCount > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>Alertes Critiques</span>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-6xl font-black tracking-tighter ${stats.criticalCount > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{stats.criticalCount}</span>
-            <span className={`text-sm font-bold uppercase ${stats.criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>Lignes</span>
-          </div>
-          <p className={`mt-4 text-[12px] font-bold uppercase tracking-wide ${stats.criticalCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-            {stats.criticalCount > 0 ? `${stats.criticalVolume} poches à risque immédiat` : 'Tous les niveaux sont optimaux'}
-          </p>
-        </div>
 
         {/* Mix Produit */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl lg:col-span-1">
