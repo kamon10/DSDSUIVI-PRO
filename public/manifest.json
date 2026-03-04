@@ -8,13 +8,49 @@
   "theme_color": "#ef4444",
   "icons": [
     {
-      "src": "https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z",
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z",
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
