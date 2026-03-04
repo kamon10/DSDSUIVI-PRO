@@ -42,7 +42,7 @@ const App: React.FC = () => {
   
   const [branding, setBranding] = useState(() => {
     const saved = localStorage.getItem('hemo_branding');
-    const defaultBranding = { logo: 'https://files.oaiusercontent.com/file-v3jG5m8Y8G9z2W9z2W9z2W9z', hashtag: '#DONSANG_CI' };
+    const defaultBranding = { logo: 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904', hashtag: '#DONSANG_CI' };
     if (!saved) return defaultBranding;
     try { return JSON.parse(saved); } catch (e) { return defaultBranding; }
   });
@@ -355,7 +355,15 @@ const App: React.FC = () => {
         <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl min-h-[5rem]">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActiveTab('pulse')}>
              <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
-               <img src={branding.logo} alt="Logo" className="w-full h-full object-contain p-1.5" />
+                <img 
+                  src={branding.logo} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain p-1.5" 
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
+                  }}
+                />
              </div>
              <div className="flex flex-col">
                 <span className="font-black text-lg tracking-tighter uppercase text-slate-900 leading-none">HS</span>
