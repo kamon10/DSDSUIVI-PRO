@@ -223,7 +223,17 @@ const App: React.FC = () => {
     });
   }, []);
 
-  useEffect(() => { handleSync(false, true); }, [handleSync]);
+  useEffect(() => {
+    // Synchronisation initiale
+    handleSync(false, true);
+    
+    // Polling automatique toutes les 2 minutes pour garder les données fraîches
+    const interval = setInterval(() => {
+      handleSync(true, false);
+    }, 120000);
+    
+    return () => clearInterval(interval);
+  }, [handleSync]);
 
   useEffect(() => {
     const refreshInterval = setInterval(() => {
@@ -334,6 +344,13 @@ const App: React.FC = () => {
     })).filter(group => group.navItems.length > 0);
   }, [visibleNavItems]);
 
+  const getRelativeSyncTime = () => {
+    if (!lastSync) return "En attente...";
+    const diff = Math.floor((new Date().getTime() - lastSync.getTime()) / 60000);
+    if (diff < 1) return "À l'instant";
+    return `Il y a ${diff} min`;
+  };
+
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   const handleLogout = () => {
@@ -370,6 +387,10 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-1.5 mt-1">
                    <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
                    <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
+                    <div className="w-1 h-1 rounded-full bg-slate-200"></div>
+                    <span className="text-[7px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
+                       {getRelativeSyncTime()}
+                    </span>
                 </div>
              </div>
           </div>
@@ -428,6 +449,14 @@ const App: React.FC = () => {
             })}
           </nav>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => handleSync(true, true)}
+              disabled={syncStatus === 'syncing'}
+              className={`p-2.5 rounded-2xl transition-all active:scale-95 ${syncStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'}`}
+              title="Actualiser les données"
+            >
+              <RefreshCw size={18} />
+            </button>
             <button 
               onClick={() => setIsCommandPaletteOpen(true)}
               className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl text-slate-500 transition-all group"
