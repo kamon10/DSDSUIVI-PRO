@@ -133,10 +133,12 @@ export const COLORS = {
 export const PRODUCT_COLORS: Record<string, string> = {
   "CGR": "#ef4444", 
   "CGR ADULTE": "#ef4444",
+  "CGR NOURRISSON": "#f97316",
   "CGR NOURRISON": "#f97316",
   "CGR PEDIATRIQUE": "#22c55e",
   "CONCENTRE DE PLAQUETTES": "#3b82f6", 
-  "PLASMA A USAGE THERAPEUTIQUE": "#eab308" 
+  "PLASMA A USAGE THERAPEUTIQUE": "#eab308",
+  "AUTRES": "#94a3b8"
 };
 
 export const GROUP_COLORS: Record<string, string> = {

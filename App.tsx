@@ -17,7 +17,9 @@ import { AdminUserManagement } from './components/AdminUserManagement.tsx';
 import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
 import { StockView } from './components/StockView.tsx';
 import { StockSynthesisView } from './components/StockSynthesisView.tsx';
+import { StockSummaryView } from './components/StockSummaryView.tsx';
 import { StockDetailedSynthesisView } from './components/StockDetailedSynthesisView.tsx';
+import { StockAnalysisFocusView } from './components/StockAnalysisFocusView.tsx';
 import { DistributionDetailedSynthesisView } from './components/DistributionDetailedSynthesisView.tsx';
 import { StockPlanningView } from './components/StockPlanningView.tsx';
 import { DistributionStockView } from './components/DistributionStockView.tsx';
@@ -309,7 +311,9 @@ const App: React.FC = () => {
     { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
     { id: 'distribution-detailed', icon: <ClipboardList size={18} />, label: 'Détail Dist', public: false },
     { id: 'distribution-stock', icon: <Database size={18} />, label: 'Stock & Dist', public: false },
+    { id: 'stock-summary', icon: <Layout size={18} />, label: 'Résumé Stock', public: false },
     { id: 'stock', icon: <Package size={18} />, label: 'Stock', public: false },
+    { id: 'stock-focus', icon: <Zap size={18} />, label: 'Focus Analyse', public: false },
     { id: 'stock-detailed', icon: <ClipboardList size={18} />, label: 'Détail Stock', public: false },
     { id: 'stock-synthesis', icon: <TrendingUp size={18} />, label: 'Synthèse Stock', public: false },
     { id: 'stock-planning', icon: <ShieldCheck size={18} />, label: 'Planning Stock', public: false },
@@ -334,7 +338,7 @@ const App: React.FC = () => {
     const groups = [
       { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
-      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
+      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
       { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'contact'] }
     ];
 
@@ -525,7 +529,9 @@ const App: React.FC = () => {
                   {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} />}
                   {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
+                  {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} />}
                   {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} />}
+                  {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} />}
                   {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} />}
                   {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}

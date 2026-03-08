@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import fetch from "node-fetch";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +29,37 @@ app.use(bodyParser.json());
 let subscriptions: any[] = [];
 
 // API routes
+app.get("/api/proxy", async (req, res) => {
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) {
+    return res.status(400).send("URL parameter is required");
+  }
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+  try {
+    const response = await fetch(targetUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      return res.status(response.status).send(`Proxy error: ${response.statusText}`);
+    }
+    const text = await response.text();
+    res.set('Content-Type', 'text/plain');
+    res.send(text);
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      return res.status(504).send("Proxy timeout: Target URL took too long to respond");
+    }
+    res.status(500).send(`Proxy exception: ${err.message}`);
+  }
+});
+
 app.post("/api/notifications/subscribe", (req, res) => {
   const subscription = req.body;
   

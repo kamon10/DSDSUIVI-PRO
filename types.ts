@@ -46,17 +46,20 @@ export interface StockRecord {
 export interface SiteRecord {
   name: string;
   region?: string;
-  fixe: number;
-  mobile: number;
-  totalJour: number;
-  totalMois: number;
+  fixe?: number;
+  mobile?: number;
+  totalJour?: number;
+  totalMois?: number;
   monthlyFixed?: number;
   monthlyMobile?: number;
-  objDate: number;
-  objMensuel: number;
+  objDate?: number;
+  objMensuel?: number;
   manager?: string;
   email?: string;
   phone?: string;
+  code?: string;
+  annualObjective?: number;
+  coords?: [number, number];
 }
 
 export interface DistributionRecord {
@@ -115,4 +118,4 @@ export interface DashboardData {
 }
 
 // Added 'recap-dist' to support the separate flux summary view
-export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats';
+export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed';
