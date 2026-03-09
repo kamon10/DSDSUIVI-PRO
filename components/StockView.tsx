@@ -237,42 +237,77 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
         </div>
       </div>
 
+      {/* Alerte Stock Bas */}
+      {stats.total < 12000 && (
+        <div className="bg-rose-50 border-2 border-rose-200 p-6 rounded-[2rem] flex items-center justify-between gap-6 animate-pulse shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
+              <AlertTriangle className="text-white" size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black uppercase tracking-tighter text-rose-600 leading-none">Alerte Stock Critique</h3>
+              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-1">Le volume total est inférieur au seuil de sécurité (12 000 poches)</p>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <span className="text-2xl font-black text-rose-600 tracking-tighter">-{ (12000 - stats.total).toLocaleString() }</span>
+            <span className="text-[10px] font-bold text-rose-400 uppercase ml-2">Poches manquantes</span>
+          </div>
+        </div>
+      )}
+
       {/* Synthèse Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* KPI Total */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Database size={80} />
-          </div>
-          <span className="text-[12px] font-black uppercase tracking-widest text-slate-400 block mb-2">Volume Total</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-6xl font-black text-slate-900 tracking-tighter">{stats.total.toLocaleString()}</span>
-            <span className="text-sm font-bold text-slate-400 uppercase">Poches</span>
-          </div>
-          <div className="mt-6 flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-slate-900 rounded-full" style={{ width: '100%' }}></div>
+        <div className={`bg-white p-6 rounded-[2.5rem] border shadow-xl relative overflow-hidden group flex items-center gap-6 transition-all duration-500 ${stats.total < 12000 ? 'border-rose-200 bg-rose-50/30' : 'border-slate-100'}`}>
+          <div className="flex-1">
+            <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${stats.total < 12000 ? 'text-rose-500' : 'text-slate-400'}`}>Volume Total</span>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-4xl font-black tracking-tighter ${stats.total < 12000 ? 'text-rose-600' : 'text-slate-900'}`}>{stats.total.toLocaleString()}</span>
+              <span className={`text-[10px] font-bold uppercase ${stats.total < 12000 ? 'text-rose-400' : 'text-slate-400'}`}>Poches</span>
             </div>
+            <div className="mt-4 flex items-center gap-2">
+              <div className={`flex-1 h-1 rounded-full overflow-hidden ${stats.total < 12000 ? 'bg-rose-100' : 'bg-slate-100'}`}>
+                <div className={`h-full rounded-full ${stats.total < 12000 ? 'bg-rose-500' : 'bg-slate-900'}`} style={{ width: '100%' }}></div>
+              </div>
+            </div>
+          </div>
+          <div className={`relative w-10 h-24 rounded-full border-2 overflow-hidden shadow-inner shrink-0 ${stats.total < 12000 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+            <div 
+              className={`absolute bottom-0 left-0 w-full transition-all duration-1000 ease-out ${stats.total < 12000 ? 'bg-rose-600' : 'bg-slate-800'}`}
+              style={{ height: `${Math.min(100, (stats.total / 10000) * 100)}%` }}
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-white/20 blur-[1px]"></div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
           </div>
         </div>
 
         {/* KPI TOTAL CGR */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <HeartPulse size={80} className="text-rose-500" />
-          </div>
-          <span className="text-[12px] font-black uppercase tracking-widest text-rose-500 block mb-2">Total CGR</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-6xl font-black text-rose-600 tracking-tighter">{stats.totalCGR.toLocaleString()}</span>
-            <span className="text-sm font-bold text-rose-400 uppercase">Poches</span>
-          </div>
-          <div className="mt-6 flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-rose-50 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-rose-500 rounded-full" 
-                style={{ width: `${stats.total > 0 ? (stats.totalCGR / stats.total) * 100 : 0}%` }}
-              ></div>
+        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group flex items-center gap-6">
+          <div className="flex-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-500 block mb-1">Total CGR</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-black text-rose-600 tracking-tighter">{stats.totalCGR.toLocaleString()}</span>
+              <span className="text-[10px] font-bold text-rose-400 uppercase">Poches</span>
             </div>
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex-1 h-1 bg-rose-50 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-rose-500 rounded-full" 
+                  style={{ width: `${stats.total > 0 ? (stats.totalCGR / stats.total) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+          <div className="relative w-10 h-24 bg-rose-50 rounded-full border-2 border-rose-100 overflow-hidden shadow-inner shrink-0">
+            <div 
+              className="absolute bottom-0 left-0 w-full bg-rose-600 transition-all duration-1000 ease-out"
+              style={{ height: `${Math.min(100, (stats.totalCGR / 8000) * 100)}%` }}
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-white/30 blur-[1px]"></div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
           </div>
         </div>
 

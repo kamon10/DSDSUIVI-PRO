@@ -1,13 +1,18 @@
 
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { fr } from 'date-fns/locale/fr';
+import "react-datepicker/dist/react-datepicker.css";
 import { DashboardData, User, DistributionRecord } from '../types.ts';
 import { PRODUCT_COLORS } from '../constants.tsx';
 import { 
   FileImage, FileText, Loader2, TableProperties, Printer, 
-  Calendar, Filter, Truck, Activity, ClipboardList, Search, 
+  Calendar as CalendarIcon, Filter, Truck, Activity, ClipboardList, Search, 
   X, MapPin, Building2, Package, Layers, CalendarDays, Clock, Target, ArrowRight,
-  FileSpreadsheet
+  FileSpreadsheet, ChevronLeft, ChevronRight
 } from 'lucide-react';
+
+registerLocale('fr', fr);
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
@@ -81,6 +86,22 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
   const [isPeriodMode, setIsPeriodMode] = useState(false);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+
+  const selectedDateObj = useMemo(() => selectedDate ? parseDate(selectedDate) : null, [selectedDate]);
+  const startDateObj = useMemo(() => startDate ? parseDate(startDate) : null, [startDate]);
+  const endDateObj = useMemo(() => endDate ? parseDate(endDate) : null, [endDate]);
+  const selectedMonthObj = useMemo(() => {
+    if (selectedMonth === -1 || !selectedYear) return null;
+    return new Date(parseInt(selectedYear), selectedMonth, 1);
+  }, [selectedMonth, selectedYear]);
+  const selectedYearObj = useMemo(() => selectedYear ? new Date(parseInt(selectedYear), 0, 1) : null, [selectedYear]);
+
+  const formatDate = (date: Date) => {
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
 
   // --- ÉTATS FILTRES DE RECHERCHE (DEMANDÉS) ---
   const [filterSite, setFilterSite] = useState("ALL");
@@ -549,28 +570,56 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
              {!isPeriodMode && (
                <>
                  <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-                   <Calendar size={14} className="text-slate-400" />
-                   <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
-                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                   </select>
+                   <CalendarIcon size={14} className="text-slate-400" />
+                   <DatePicker
+                     selected={selectedYearObj}
+                     onChange={(date) => {
+                       if (date) {
+                         setSelectedYear(date.getFullYear().toString());
+                       }
+                     }}
+                     showYearPicker
+                     dateFormat="yyyy"
+                     locale="fr"
+                     className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase w-12"
+                   />
                  </div>
 
                  {(viewMode === 'collecte' || distTimeScale !== 'year') && (
                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
                      <Filter size={14} className="text-slate-400" />
-                     <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase">
-                        {viewMode === 'distribution' && <option value={-1}>Tous les mois</option>}
-                        {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
-                     </select>
+                     <DatePicker
+                       selected={selectedMonthObj}
+                       onChange={(date) => {
+                         if (date) {
+                           setSelectedMonth(date.getMonth());
+                           setSelectedYear(date.getFullYear().toString());
+                         } else {
+                           setSelectedMonth(-1);
+                         }
+                       }}
+                       showMonthYearPicker
+                       dateFormat="MMMM yyyy"
+                       locale="fr"
+                       placeholderText="Tous les mois"
+                       isClearable={viewMode === 'distribution'}
+                       className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase w-32"
+                     />
                    </div>
                  )}
 
                  {(viewMode === 'collecte' || distTimeScale === 'day') && (
                    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-sm ${viewMode === 'collecte' ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
                      <CalendarDays size={14} className={viewMode === 'collecte' ? 'text-blue-500' : 'text-orange-500'} />
-                     <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
-                       {filteredDates.map(d => <option key={d} value={d}>{d}</option>)}
-                     </select>
+                     <DatePicker
+                       selected={selectedDateObj}
+                       onChange={(date) => {
+                         if (date) setSelectedDate(formatDate(date));
+                       }}
+                       dateFormat="dd/MM/yyyy"
+                       locale="fr"
+                       className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer w-24"
+                     />
                    </div>
                  )}
                </>
@@ -580,16 +629,28 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                <div className="flex items-center gap-3">
                  <div className="flex items-center gap-2 bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 shadow-sm">
                    <span className="text-[8px] font-black uppercase text-blue-400">Du</span>
-                   <select value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
-                     {allDates.map(d => <option key={d} value={d}>{d}</option>)}
-                   </select>
+                   <DatePicker
+                     selected={startDateObj}
+                     onChange={(date) => {
+                       if (date) setStartDate(formatDate(date));
+                     }}
+                     dateFormat="dd/MM/yyyy"
+                     locale="fr"
+                     className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer w-24"
+                   />
                  </div>
                  <ArrowRight size={14} className="text-slate-300" />
                  <div className="flex items-center gap-2 bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 shadow-sm">
                    <span className="text-[8px] font-black uppercase text-blue-400">Au</span>
-                   <select value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer">
-                     {allDates.map(d => <option key={d} value={d}>{d}</option>)}
-                   </select>
+                   <DatePicker
+                     selected={endDateObj}
+                     onChange={(date) => {
+                       if (date) setEndDate(formatDate(date));
+                     }}
+                     dateFormat="dd/MM/yyyy"
+                     locale="fr"
+                     className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer w-24"
+                   />
                  </div>
                </div>
              )}

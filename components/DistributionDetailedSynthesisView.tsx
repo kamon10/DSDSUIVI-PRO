@@ -2,10 +2,15 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types';
 import { SITES_DATA } from '../constants';
-import { Truck, MapPin, ChevronRight, FileImage, FileText, Loader2, PackageOpen, Calendar, Filter, FileSpreadsheet } from 'lucide-react';
+import { Truck, MapPin, ChevronRight, FileImage, FileText, Loader2, PackageOpen, Calendar as CalendarIcon, Filter, FileSpreadsheet } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
+import DatePicker, { registerLocale } from "react-datepicker";
+import { fr } from 'date-fns/locale';
+import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale('fr', fr);
 
 interface DistributionDetailedSynthesisViewProps {
   data: DashboardData;
@@ -320,20 +325,36 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
           </select>
 
           {filterType === 'day' && (
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"
+            <DatePicker
+              selected={selectedDate ? new Date(selectedDate) : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  const y = date.getFullYear();
+                  const m = String(date.getMonth() + 1).padStart(2, '0');
+                  const d = String(date.getDate()).padStart(2, '0');
+                  setSelectedDate(`${y}-${m}-${d}`);
+                }
+              }}
+              dateFormat="dd/MM/yyyy"
+              locale="fr"
+              className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-32"
             />
           )}
 
           {filterType === 'month' && (
-            <input 
-              type="month" 
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"
+            <DatePicker
+              selected={selectedMonth ? new Date(selectedMonth + "-01") : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  const y = date.getFullYear();
+                  const m = String(date.getMonth() + 1).padStart(2, '0');
+                  setSelectedMonth(`${y}-${m}`);
+                }
+              }}
+              dateFormat="MM/yyyy"
+              showMonthYearPicker
+              locale="fr"
+              className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-32"
             />
           )}
 
@@ -349,18 +370,34 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
 
           {filterType === 'period' && (
             <div className="flex items-center gap-2">
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"
+              <DatePicker
+                selected={startDate ? new Date(startDate) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    setStartDate(`${y}-${m}-${d}`);
+                  }
+                }}
+                dateFormat="dd/MM/yyyy"
+                locale="fr"
+                className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-32"
               />
               <span className="text-[12px] font-black text-slate-300">AU</span>
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"
+              <DatePicker
+                selected={endDate ? new Date(endDate) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    setEndDate(`${y}-${m}-${d}`);
+                  }
+                }}
+                dateFormat="dd/MM/yyyy"
+                locale="fr"
+                className="bg-slate-50 border-none rounded-lg text-[12px] font-bold px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-32"
               />
             </div>
           )}
@@ -404,7 +441,7 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
             <div>
               <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Détail des Distributions</h2>
               <div className="flex items-center gap-2 mt-1">
-                <Calendar size={12} className="text-slate-400" />
+                <CalendarIcon size={12} className="text-slate-400" />
                 <p className="text-[14px] font-black text-slate-400 uppercase tracking-widest">
                   {filterType === 'all' && "Toutes les données"}
                   {filterType === 'day' && `Journée du ${new Date(selectedDate).toLocaleDateString()}`}

@@ -1,9 +1,14 @@
 
 import React, { useMemo, useState } from 'react';
 import { DashboardData, User } from '../types';
-import { Package, Truck, Search, Filter, Database, ArrowRight, Download, Info, Activity, Map as MapIcon, ChevronRight, Calendar } from 'lucide-react';
+import { Package, Truck, Search, Filter, Database, ArrowRight, Download, Info, Activity, Map as MapIcon, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PRODUCT_COLORS, GROUP_COLORS } from '../constants';
+import DatePicker, { registerLocale } from "react-datepicker";
+import { fr } from 'date-fns/locale';
+import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale('fr', fr);
 
 interface DistributionStockViewProps {
   data: DashboardData;
@@ -133,14 +138,26 @@ export const DistributionStockView: React.FC<DistributionStockViewProps> = ({ da
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative group">
-            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 group-hover:scale-110 transition-transform" size={16} />
-            <input 
-              type="date"
-              value={formatDateForInput(selectedDate)}
-              onChange={(e) => setSelectedDate(formatDateFromInput(e.target.value))}
+            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 group-hover:scale-110 transition-transform z-10" size={16} />
+            <DatePicker
+              selected={selectedDate ? (function() {
+                const [d, m, y] = selectedDate.split('/');
+                return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+              })() : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  const d = String(date.getDate()).padStart(2, '0');
+                  const m = String(date.getMonth() + 1).padStart(2, '0');
+                  const y = date.getFullYear();
+                  setSelectedDate(`${d}/${m}/${y}`);
+                }
+              }}
+              dateFormat="dd/MM/yyyy"
+              locale="fr"
               className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-black outline-none focus:ring-2 ring-blue-500/20 transition-all w-48 cursor-pointer hover:border-blue-300"
+              wrapperClassName="w-full"
             />
-            <div className="absolute -top-2 -right-1 bg-blue-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded-full shadow-sm">
+            <div className="absolute -top-2 -right-1 bg-blue-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded-full shadow-sm z-10">
               CALENDRIER
             </div>
           </div>

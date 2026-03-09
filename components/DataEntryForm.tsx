@@ -1,8 +1,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building2, Calendar, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle, CloudUpload, Loader2 } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle, CloudUpload, Loader2 } from 'lucide-react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { DashboardData, User } from '../types';
+import DatePicker, { registerLocale } from "react-datepicker";
+import { fr } from 'date-fns/locale';
+import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale('fr', fr);
 
 interface DataEntryFormProps {
   scriptUrl: string | null;
@@ -239,7 +244,25 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date de l'Activité</label>
-                <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none focus:ring-4 ring-blue-50 transition-all" />
+                <div className="relative">
+                  <DatePicker
+                    selected={formData.date ? new Date(formData.date) : null}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const y = date.getFullYear();
+                        const m = String(date.getMonth() + 1).padStart(2, '0');
+                        const d = String(date.getDate()).padStart(2, '0');
+                        setFormData({...formData, date: `${y}-${m}-${d}`});
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    locale="fr"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none focus:ring-4 ring-blue-50 transition-all"
+                    wrapperClassName="w-full"
+                  />
+                  <CalendarIcon className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
+                </div>
               </div>
               <div className={`p-8 rounded-[2.5rem] border space-y-4 transition-colors ${isEditing ? 'bg-blue-50 border-blue-100' : 'bg-emerald-50 border-emerald-100'}`}>
                 <label className={`text-[10px] font-black uppercase tracking-widest ${isEditing ? 'text-blue-600' : 'text-emerald-600'}`}>Nombre de Poches (FIXE)</label>
