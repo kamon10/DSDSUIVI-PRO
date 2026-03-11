@@ -36,8 +36,14 @@
             background-attachment: fixed;
             color: #0f172a;
             min-height: 100vh;
+            min-height: calc(var(--vh, 1vh) * 100);
             margin: 0;
             scroll-behavior: smooth;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-overflow-scrolling: touch;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            overscroll-behavior-y: none;
         }
         ::-webkit-scrollbar { display: none; }
         
@@ -60,10 +66,29 @@
 
         button, a, .card, .interactive {
             transition: var(--transition-smooth);
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         button:active {
             transform: scale(0.95);
+        }
+
+        /* Fluid scrolling for all overflow containers */
+        .overflow-y-auto, .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Better focus states for accessibility but clean on touch */
+        :focus:not(:focus-visible) {
+            outline: none;
+        }
+        
+        /* Tablet and Mobile specific adjustments */
+        @media (max-width: 1024px) {
+            .glass-nav {
+                backdrop-filter: blur(16px) saturate(150%);
+            }
         }
 
         .hover-lift:hover {
@@ -73,6 +98,12 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+        .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+        .mt-safe { margin-top: env(safe-area-inset-top); }
+        .bottom-safe { bottom: env(safe-area-inset-bottom); }
     </style>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script type="importmap">
@@ -92,6 +123,16 @@
 }
 </script>
 <link rel="stylesheet" href="/index.css">
+    <script>
+        // Fix for 100vh on mobile browsers
+        const setVh = () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        window.addEventListener('resize', setVh);
+        window.addEventListener('orientationchange', setVh);
+        setVh();
+    </script>
 </head>
 <body>
     <div id="root"></div>

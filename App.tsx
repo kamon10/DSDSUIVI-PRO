@@ -497,7 +497,7 @@ const App: React.FC = () => {
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-28 pb-24">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-28 pb-32 pb-safe">
         {loading && !fullData.dailyHistory.length ? (
           <div className="flex flex-col items-center justify-center py-48 gap-6">
              <Activity size={60} className="text-blue-600 animate-pulse" />
@@ -553,7 +553,7 @@ const App: React.FC = () => {
         onSiteSelect={handleSiteSelect}
       />
       <InstallPrompt />
-      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] glass-nav rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl gap-1">
+      <nav className="lg:hidden fixed bottom-6 bottom-safe left-4 right-4 z-[100] glass-nav rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl gap-1 mb-safe">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
              const isOpen = openGroup === group.id;
