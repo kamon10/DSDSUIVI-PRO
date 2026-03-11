@@ -394,21 +394,19 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       for (let i = 0; i <= retries; i++) {
         console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
         
-        // Liste des stratégies à essayer dans l'ordre
+        // Liste des stratégies à essayer dans l'ordre - On privilégie le proxy local
         const strategies = [
-          // 1. Direct
+          // 1. Proxy local (le plus fiable si le serveur est up)
+          async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
+          // 2. Direct (peut échouer cause CORS)
           async () => fetch(urlWithCacheBusting, { 
             method: 'GET',
             headers: { 'Accept': 'text/csv, text/plain, */*' },
             credentials: 'omit'
           }),
-          // 2. Proxy local
-          async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
-          // 3. Proxy externe 1
+          // 3. Proxies externes
           async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-          // 4. Proxy externe 2
           async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-          // 5. Proxy externe 3
           async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
         ];
 
@@ -417,13 +415,16 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
             const response = await strategy();
             if (response.ok) {
               const text = await response.text();
-              if (text && !text.includes("<!DOCTYPE")) {
+              // Validation minimale : ne doit pas être du HTML et doit ressembler à du CSV (au moins un séparateur)
+              if (text && !text.includes("<!DOCTYPE") && (text.includes(',') || text.includes(';'))) {
                 const hasChanged = force || text !== lastRawContent[key];
                 lastRawContent[key] = text;
                 return { text, hasChanged, error: false };
               }
+              console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie.`);
+            } else {
+              console.warn(`[Sync] Stratégie échouée pour ${key} (Status: ${response.status})`);
             }
-            console.warn(`[Sync] Stratégie échouée pour ${key} (Status: ${response.status})`);
           } catch (e: any) {
             console.warn(`[Sync] Erreur stratégie pour ${key}:`, e.message || e);
           }
@@ -437,6 +438,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       }
 
       console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives.`);
+      // Si on a un cache, on l'utilise même si on marque une erreur
       return { text: lastRawContent[key] || '', hasChanged: false, error: true };
     };
 
@@ -444,6 +446,10 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const collecteResult = await fetchWithRetry(url, 'collecte');
     const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE') : { text: '', hasChanged: false, error: false };
     const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK') : { text: '', hasChanged: false, error: false };
+
+    if (collecteResult.text) {
+      console.log(`[Sync] Collecte reçue (${collecteResult.text.length} chars). Début: ${collecteResult.text.substring(0, 50)}...`);
+    }
 
     // Si la collecte échoue et qu'on n'a rien en cache, on ne peut rien faire
     if (collecteResult.error && !collecteResult.text) {
@@ -462,7 +468,27 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       throw new Error("Fichier source Collecte vide ou mal formaté.");
     }
 
-    const col = { date: 0, code: 1, site: 2, fixe: 5, mobile: 7, total: 8 };
+    // Détection dynamique des colonnes pour la collecte
+    const headers = rows[0].map(h => normalizeHeader(h));
+    console.log("[Parser] COLLECTE Headers détectés:", headers);
+
+    const col = {
+      date: headers.findIndex(h => h.includes('DATE') || h.includes('JOUR')),
+      code: headers.findIndex(h => h.includes('CODE') || h.includes('ID')),
+      site: headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE')),
+      fixe: headers.findIndex(h => h.includes('FIXE')),
+      mobile: headers.findIndex(h => h.includes('MOBILE')),
+      total: headers.findIndex(h => h.includes('TOTAL') || h.includes('SOMME') || h.includes('REALISE'))
+    };
+
+    // Fallback sur les index par défaut si non trouvés
+    if (col.date === -1) col.date = 0;
+    if (col.code === -1) col.code = 1;
+    if (col.site === -1) col.site = 2;
+    if (col.fixe === -1) col.fixe = 5;
+    if (col.mobile === -1) col.mobile = 7;
+    if (col.total === -1) col.total = 8;
+
     let latestDateObj = new Date(2000, 0, 1);
     const validRows: any[] = [];
 
