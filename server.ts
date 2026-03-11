@@ -142,6 +142,12 @@ app.post("/api/admin/whatsapp-config", (req, res) => {
   res.json({ success: true });
 });
 
+app.post("/api/admin/whatsapp-check-now", async (req, res) => {
+  console.log("[Admin] Manual WhatsApp check triggered");
+  await checkDataChanges();
+  res.json({ success: true });
+});
+
 // Polling logic to check for changes
 const COLLECTE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 const STOCK_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=2055274680&single=true&output=csv";
@@ -174,26 +180,39 @@ async function checkDataChanges() {
     const stockRes = await fetch(STOCK_URL + "&_t=" + Date.now(), fetchOptions);
     if (stockRes.ok) {
       const text = await stockRes.text();
+      console.log(`[Sync] Stock data fetched (${text.length} chars). Preview: ${text.substring(0, 100)}`);
       
       // WhatsApp Alert Logic
       const config = getWhatsAppConfig();
       const totalStock = calculateTotalStock(text);
-      console.log(`Current Total Stock: ${totalStock}`);
+      console.log(`[Alert] Current Total Stock calculated: ${totalStock} (Threshold: ${config.alertThreshold})`);
 
-      if (totalStock < config.alertThreshold) {
+      if (totalStock > 0 && totalStock < config.alertThreshold) {
         const now = Date.now();
+        const lastSent = config.lastAlertSent || 0;
+        const hoursSinceLast = (now - lastSent) / (1000 * 60 * 60);
+        
+        console.log(`[Alert] Stock is below threshold. Last alert sent ${hoursSinceLast.toFixed(2)} hours ago.`);
+
         // Alert every 4 hours if stock is still low
-        if (now - config.lastAlertSent > 4 * 60 * 60 * 1000) {
-          console.log("CRITICAL STOCK DETECTED! Sending WhatsApp alerts...");
+        if (now - lastSent > 4 * 60 * 60 * 1000) {
+          console.log("[Alert] CRITICAL STOCK DETECTED! Sending WhatsApp alerts to", config.numbers.length, "numbers");
           const message = `🚨 ALERTE STOCK CRITIQUE : Le stock national est à ${totalStock.toLocaleString()} poches. Seuil de sécurité (${config.alertThreshold.toLocaleString()}) non atteint.`;
           
-          for (const number of config.numbers) {
-            await sendWhatsAppMessage(number, message, config);
+          if (config.numbers.length > 0) {
+            for (const number of config.numbers) {
+              await sendWhatsAppMessage(number, message, config);
+            }
+            config.lastAlertSent = now;
+            saveWhatsAppConfig(config);
+          } else {
+            console.log("[Alert] No WhatsApp numbers configured.");
           }
-          
-          config.lastAlertSent = now;
-          saveWhatsAppConfig(config);
+        } else {
+          console.log("[Alert] Skipping WhatsApp alert (cooldown active).");
         }
+      } else if (totalStock >= config.alertThreshold) {
+        console.log("[Alert] Stock is healthy.");
       }
 
       if (lastStockHash && text !== lastStockHash) {
@@ -209,21 +228,31 @@ async function checkDataChanges() {
 
 function calculateTotalStock(csvText: string): number {
   try {
+    if (!csvText) return 0;
     const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
     if (lines.length < 2) return 0;
     
-    const headers = lines[0].split(/[;,]/).map(h => h.toUpperCase().trim());
+    // Detect separator
+    const firstLine = lines[0];
+    const sep = firstLine.includes(';') ? ';' : ',';
+    
+    const headers = firstLine.split(sep).map(h => h.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim());
+    console.log("[Parser] Stock Headers for calculation:", headers);
+
     const qtyIdx = headers.findIndex(h => h.includes('QUANTITE') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE') || h.includes('STOCK'));
     
     if (qtyIdx === -1) {
-      // If no quantity column, count lines (excluding header)
+      console.warn("[Parser] No quantity column found in stock CSV, counting rows.");
       return lines.length - 1;
     }
 
     let total = 0;
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(/[;,]/);
-      const val = parseFloat(cols[qtyIdx]?.replace(/[^\d,.-]/g, '').replace(',', '.') || "0");
+      const cols = lines[i].split(sep);
+      const rawVal = cols[qtyIdx];
+      if (!rawVal) continue;
+      
+      const val = parseFloat(rawVal.replace(/[^\d,.-]/g, '').replace(',', '.') || "0");
       if (!isNaN(val)) total += val;
     }
     return Math.round(total);
