@@ -10,6 +10,7 @@ import {
   Activity, Info, CheckCircle2, AlertCircle, Clock, Layout
 } from 'lucide-react';
 import { GROUP_COLORS, STOCK_FORECASTS } from '../constants.tsx';
+import { StockAlert } from './StockAlert.tsx';
 import { StockSynthesisTableView } from './StockSynthesisTableView';
 
 interface StockSynthesisViewProps {
@@ -222,6 +223,7 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700 pb-24">
+      <StockAlert data={data} />
       <div className="relative overflow-hidden rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl bg-slate-900">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/20 blur-[150px] rounded-full"></div>
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/10 blur-[120px] rounded-full"></div>
@@ -232,13 +234,13 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
               <TrendingUp size={48} className="text-blue-400" />
             </div>
             <div>
-              <h2 className="text-5xl lg:text-7xl font-[950] uppercase tracking-tighter leading-none mb-4">Synthèse Stock</h2>
-              <div className="flex items-center gap-6">
-                <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[12px] flex items-center gap-3">
+              <h2 className="text-3xl lg:text-7xl font-[950] uppercase tracking-tighter leading-none mb-4">Synthèse Stock</h2>
+              <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-6">
+                <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px] lg:text-[12px] flex items-center gap-3">
                   <Clock size={16} /> Actualisé : {new Date().toLocaleTimeString()}
                 </p>
-                <div className="h-1 w-1 rounded-full bg-white/20"></div>
-                <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[12px] flex items-center gap-3">
+                <div className="hidden lg:block h-1 w-1 rounded-full bg-white/20"></div>
+                <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px] lg:text-[12px] flex items-center gap-3">
                   <Package size={16} /> Focus : Globules Rouges (CGR)
                 </p>
               </div>

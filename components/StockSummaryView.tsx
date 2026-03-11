@@ -10,6 +10,7 @@ import {
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants';
+import { StockAlert } from './StockAlert.tsx';
 
 interface StockSummaryViewProps {
   data: DashboardData;
@@ -153,6 +154,7 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
+        <StockAlert data={data} />
         {/* HEADER EXPORT */}
         <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
           <div className="flex items-center gap-6">

@@ -6,6 +6,7 @@ import { Database, MapPin, ChevronRight, Clock, Package, FileImage, FileText, Lo
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
+import { StockAlert } from './StockAlert.tsx';
 
 interface StockDetailedSynthesisViewProps {
   data: DashboardData;
@@ -247,6 +248,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-24">
+      <StockAlert data={data} />
       {/* Export Controls */}
       <div className="flex justify-end gap-3 mb-2 no-print">
         <button 

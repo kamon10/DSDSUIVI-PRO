@@ -266,7 +266,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
               </div>
               <div className={`p-8 rounded-[2.5rem] border space-y-4 transition-colors ${isEditing ? 'bg-blue-50 border-blue-100' : 'bg-emerald-50 border-emerald-100'}`}>
                 <label className={`text-[10px] font-black uppercase tracking-widest ${isEditing ? 'text-blue-600' : 'text-emerald-600'}`}>Nombre de Poches (FIXE)</label>
-                <input type="number" min="0" placeholder="0" value={formData.fixe} onChange={(e) => setFormData({...formData, fixe: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-6 text-4xl font-black text-slate-800 outline-none text-center shadow-inner focus:ring-4 ring-blue-100" />
+                <input type="number" inputMode="numeric" min="0" placeholder="0" value={formData.fixe} onChange={(e) => setFormData({...formData, fixe: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-6 text-4xl font-black text-slate-800 outline-none text-center shadow-inner focus:ring-4 ring-blue-100" />
               </div>
             </div>
             <div className="space-y-6">
@@ -276,9 +276,9 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                   <div className={`${isEditing ? 'bg-blue-600' : 'bg-orange-600'} text-white px-3 py-1 rounded-full text-[10px] font-black`}>SOMME : {totalMobile}</div>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  <input type="number" min="0" placeholder="Saisie 1" value={formData.mobile1} onChange={(e) => setFormData({...formData, mobile1: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
-                  <input type="number" min="0" placeholder="Saisie 2" value={formData.mobile2} onChange={(e) => setFormData({...formData, mobile2: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
-                  <input type="number" min="0" placeholder="Saisie 3" value={formData.mobile3} onChange={(e) => setFormData({...formData, mobile3: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 1" value={formData.mobile1} onChange={(e) => setFormData({...formData, mobile1: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 2" value={formData.mobile2} onChange={(e) => setFormData({...formData, mobile2: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 3" value={formData.mobile3} onChange={(e) => setFormData({...formData, mobile3: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
                 </div>
               </div>
             </div>

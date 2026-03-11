@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { DashboardData, User, StockRecord } from '../types.ts';
 import { Package, Search, Filter, Database, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, List, LayoutGrid, HeartPulse, Clock, Info } from 'lucide-react';
+import { StockAlert } from './StockAlert.tsx';
 import { PRODUCT_COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants.tsx';
 
 interface StockViewProps {
@@ -238,23 +239,7 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
       </div>
 
       {/* Alerte Stock Bas */}
-      {stats.total < 12000 && (
-        <div className="bg-rose-50 border-2 border-rose-200 p-6 rounded-[2rem] flex items-center justify-between gap-6 animate-pulse shadow-lg">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
-              <AlertTriangle className="text-white" size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-black uppercase tracking-tighter text-rose-600 leading-none">Alerte Stock Critique</h3>
-              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-1">Le volume total est inférieur au seuil de sécurité (12 000 poches)</p>
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <span className="text-2xl font-black text-rose-600 tracking-tighter">-{ (12000 - stats.total).toLocaleString() }</span>
-            <span className="text-[10px] font-bold text-rose-400 uppercase ml-2">Poches manquantes</span>
-          </div>
-        </div>
-      )}
+      <StockAlert data={data} className="mb-8" />
 
       {/* Synthèse Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">

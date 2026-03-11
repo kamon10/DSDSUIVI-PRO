@@ -167,10 +167,10 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
                   {viewMode === 'donations' ? (stats.isReached ? "Objectif Atteint !" : "Reste à collecter ce mois") : "Volume Distribué ce mois"}
                 </h2>
                 <div className="flex items-baseline gap-4">
-                  <span className="text-7xl lg:text-9xl font-black tracking-tighter text-slate-900 leading-none">
+                  <span className="text-5xl lg:text-9xl font-black tracking-tighter text-slate-900 leading-none">
                     {viewMode === 'donations' ? stats.pochesRestantes.toLocaleString() : stats.distTotal.toLocaleString()}
                   </span>
-                  <span className="text-xl lg:text-3xl font-black text-slate-300 uppercase tracking-tighter">Poches</span>
+                  <span className="text-lg lg:text-3xl font-black text-slate-300 uppercase tracking-tighter">Poches</span>
                 </div>
               </div>
             </div>

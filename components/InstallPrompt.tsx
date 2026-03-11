@@ -61,7 +61,7 @@ export const InstallPrompt: React.FC = () => {
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 100 }}
-          className="fixed bottom-6 left-4 right-4 z-[100] md:left-auto md:right-6 md:w-96"
+          className="fixed bottom-32 lg:bottom-6 left-4 right-4 z-[100] md:left-auto md:right-6 md:w-96"
         >
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 overflow-hidden relative">
             <button 

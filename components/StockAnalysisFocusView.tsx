@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, Cell, PieChart as RePieChart, Pie, Legend
 } from 'recharts';
 import { GROUP_COLORS, PRODUCT_COLORS, STOCK_FORECASTS } from '../constants.tsx';
+import { StockAlert } from './StockAlert.tsx';
 import { motion } from 'motion/react';
 
 interface StockAnalysisFocusViewProps {
@@ -133,6 +134,7 @@ export const StockAnalysisFocusView: React.FC<StockAnalysisFocusViewProps> = ({ 
 
   return (
     <div className="space-y-8 pb-24 animate-in fade-in duration-700">
+      <StockAlert data={data} />
       {/* Header Focus */}
       <div className="relative overflow-hidden rounded-[3.5rem] p-10 lg:p-14 text-white shadow-3xl bg-slate-900">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full -mr-40 -mt-40"></div>
