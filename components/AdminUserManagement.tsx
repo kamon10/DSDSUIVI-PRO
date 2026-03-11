@@ -480,6 +480,23 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                   <button onClick={handleTestWhatsApp} disabled={submitting} className="flex-1 py-5 bg-slate-100 text-slate-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-3">
                     <Send size={18} /> Tester
                   </button>
+                  <button 
+                    onClick={async () => {
+                      setSubmitting(true);
+                      try {
+                        await fetch('/api/admin/whatsapp-check-now', { method: 'POST' });
+                        setStatus({ type: 'success', msg: "Vérification forcée lancée." });
+                      } catch (err) {
+                        setStatus({ type: 'error', msg: "Erreur lors de la vérification." });
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }} 
+                    disabled={submitting} 
+                    className="flex-1 py-5 bg-blue-50 text-blue-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3"
+                  >
+                    <RefreshCw size={18} className={submitting ? 'animate-spin' : ''} /> Vérifier Stock
+                  </button>
                 </div>
               </div>
            </div>
