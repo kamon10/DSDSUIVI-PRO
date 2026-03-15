@@ -394,39 +394,34 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       for (let i = 0; i <= retries; i++) {
         console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
         
-        // Liste des stratégies à essayer dans l'ordre - On privilégie le proxy local
         const strategies = [
-          // 1. Proxy local (le plus fiable si le serveur est up)
           async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
-          // 2. Direct (peut échouer cause CORS)
           async () => fetch(urlWithCacheBusting, { 
             method: 'GET',
             headers: { 'Accept': 'text/csv, text/plain, */*' },
             credentials: 'omit'
           }),
-          // 3. Proxies externes
           async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
           async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
           async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
         ];
 
-        for (const strategy of strategies) {
+        for (let j = 0; j < strategies.length; j++) {
           try {
-            const response = await strategy();
+            const response = await strategies[j]();
             if (response.ok) {
               const text = await response.text();
-              // Validation minimale : ne doit pas être du HTML et doit ressembler à du CSV (au moins un séparateur)
-              if (text && !text.includes("<!DOCTYPE") && (text.includes(',') || text.includes(';'))) {
+              if (text && !text.includes("<!DOCTYPE") && text.trim().length > 0) {
                 const hasChanged = force || text !== lastRawContent[key];
                 lastRawContent[key] = text;
                 return { text, hasChanged, error: false };
               }
-              console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie.`);
+              console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
             } else {
-              console.warn(`[Sync] Stratégie échouée pour ${key} (Status: ${response.status})`);
+              console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
             }
           } catch (e: any) {
-            console.warn(`[Sync] Erreur stratégie pour ${key}:`, e.message || e);
+            console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
           }
         }
 
@@ -446,6 +441,10 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const collecteResult = await fetchWithRetry(url, 'collecte');
     const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE') : { text: '', hasChanged: false, error: false };
     const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK') : { text: '', hasChanged: false, error: false };
+
+    if (stockResult.error && stockUrl) {
+      console.warn(`[Sync] Échec de récupération pour STOCK. Utilisation du cache si disponible.`);
+    }
 
     if (collecteResult.text) {
       console.log(`[Sync] Collecte reçue (${collecteResult.text.length} chars). Début: ${collecteResult.text.substring(0, 50)}...`);
