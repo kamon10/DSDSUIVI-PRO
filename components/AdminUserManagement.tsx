@@ -33,11 +33,15 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
     numbers: string[];
     alertThreshold: number;
     apiUrl: string;
+    groupApiUrl: string;
+    groupId: string;
     apiKey: string;
   }>({
     numbers: [],
     alertThreshold: 12000,
     apiUrl: "",
+    groupApiUrl: "",
+    groupId: "",
     apiKey: ""
   });
   const [newNumber, setNewNumber] = useState("");
@@ -167,27 +171,33 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   };
 
   const handleTestWhatsApp = async () => {
-    if (whatsappConfig.numbers.length === 0) {
-      setStatus({ type: 'error', msg: "Ajoutez au moins un numéro pour tester." });
+    if (whatsappConfig.numbers.length === 0 && !whatsappConfig.groupId) {
+      setStatus({ type: 'error', msg: "Ajoutez au moins un numéro ou un ID de groupe pour tester." });
       return;
     }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/notifications/broadcast-alert', {
+      const res = await fetch('/api/admin/whatsapp-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: "TEST WHATSAPP",
-          body: "Ceci est un message de test de la plateforme HS."
+          number: whatsappConfig.numbers[0], // Test with first number
+          message: "Test de connexion HS - TextMeBot"
         })
       });
-      // Note: broadcast-alert currently only sends web push. 
-      // I should update server.ts to also send WhatsApp on manual broadcast if desired, 
-      // but the request was specifically for "automatic" alerts.
-      // For testing, I'll just trigger a manual check or a specific test route.
-      setStatus({ type: 'success', msg: "Test envoyé (vérifiez les logs serveur)." });
+      const data = await res.json();
+      if (data.success) {
+        const result = data.results[0];
+        if (result.status === 200) {
+          setStatus({ type: 'success', msg: `Test réussi ! Réponse API: ${result.response}` });
+        } else {
+          setStatus({ type: 'error', msg: `Erreur API (${result.status}): ${result.response}` });
+        }
+      } else {
+        setStatus({ type: 'error', msg: `Erreur: ${data.error}` });
+      }
     } catch (err) {
-      setStatus({ type: 'error', msg: "Erreur test." });
+      setStatus({ type: 'error', msg: "Erreur lors de la communication avec le serveur." });
     } finally {
       setSubmitting(false);
     }
@@ -452,14 +462,36 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                   <h4 className="text-sm font-black uppercase tracking-tighter text-slate-900">Configuration de la Passerelle API</h4>
                   <p className="text-[10px] text-slate-500 font-medium">L'application enverra une requête GET à l'URL suivante en remplaçant les balises [NUMBER], [MESSAGE] et [APIKEY].</p>
                   
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">URL API Individuelle (ex: ...?phone=[NUMBER]&...)</label>
+                      <input 
+                        value={whatsappConfig.apiUrl} 
+                        onChange={e => setWhatsappConfig({...whatsappConfig, apiUrl: e.target.value})} 
+                        placeholder="https://api.example.com/send?to=[NUMBER]&msg=[MESSAGE]"
+                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">URL API Groupe (ex: ...?user=[GROUP]&...)</label>
+                      <input 
+                        value={whatsappConfig.groupApiUrl} 
+                        onChange={e => setWhatsappConfig({...whatsappConfig, groupApiUrl: e.target.value})} 
+                        placeholder="https://api.example.com/group?id=[GROUP]&msg=[MESSAGE]"
+                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">URL de l'API (ex: https://api.callmebot.com/whatsapp.php?phone=[NUMBER]&text=[MESSAGE]&apikey=[APIKEY])</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">ID du Groupe WhatsApp (Optionnel)</label>
                     <input 
-                      value={whatsappConfig.apiUrl} 
-                      onChange={e => setWhatsappConfig({...whatsappConfig, apiUrl: e.target.value})} 
-                      placeholder="https://api.example.com/send?to=[NUMBER]&msg=[MESSAGE]"
+                      value={whatsappConfig.groupId} 
+                      onChange={e => setWhatsappConfig({...whatsappConfig, groupId: e.target.value})} 
+                      placeholder="Ex: 12036302456789@g.us"
                       className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
                     />
+                    <p className="text-[9px] text-slate-400 mt-1 italic">Pour TextMeBot, ajoutez le bot au groupe et envoyez /groupid pour obtenir cet identifiant.</p>
                   </div>
 
                   <div className="space-y-4">

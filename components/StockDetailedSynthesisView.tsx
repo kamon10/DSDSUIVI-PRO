@@ -203,32 +203,63 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
-        const targetWidth = pdfWidth - (margin * 2);
+        const marginTop = 20;
+        const marginBottom = 20;
+        const marginSide = 15;
+        const contentWidth = pdfWidth - (marginSide * 2);
+        const contentHeight = pdfHeight - marginTop - marginBottom;
         
         const img = new Image();
         img.src = imgData;
         await new Promise((resolve) => (img.onload = resolve));
 
+        const logoImg = new Image();
+        if (branding?.logo) {
+          logoImg.src = branding.logo;
+          logoImg.crossOrigin = 'anonymous';
+          await new Promise((resolve) => {
+            logoImg.onload = resolve;
+            logoImg.onerror = resolve;
+          });
+        }
+
         const imgWidth = img.width;
         const imgHeight = img.height;
-        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        const imgHeightInPdf = (imgHeight * contentWidth) / imgWidth;
         
-        let heightLeft = imgHeightInPdf;
-        let position = margin;
-        let page = 0;
+        const totalPages = Math.ceil(imgHeightInPdf / contentHeight);
 
-        // Add first page
-        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
-        heightLeft -= (pdfHeight - margin * 2);
-        
-        // Add subsequent pages if needed
-        while (heightLeft > 0) {
-          page++;
-          position = margin - (page * (pdfHeight - margin * 2));
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
-          heightLeft -= (pdfHeight - margin * 2);
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) pdf.addPage();
+          
+          const position = marginTop - (i * contentHeight);
+          
+          pdf.addImage(imgData, 'PNG', marginSide, position, contentWidth, imgHeightInPdf);
+          
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(0, 0, pdfWidth, marginTop, 'F');
+          pdf.rect(0, pdfHeight - marginBottom, pdfWidth, marginBottom, 'F');
+          
+          // Header
+          if (logoImg.complete && logoImg.naturalWidth > 0) {
+            try {
+              pdf.addImage(logoImg, 'PNG', marginSide, 5, 12, 12);
+            } catch (e) {
+              console.error('Could not add logo to PDF', e);
+            }
+          }
+
+          pdf.setFontSize(8);
+          pdf.setTextColor(100);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('HS COCKPIT v4.0 - DÉTAIL DES STOCKS', logoImg.complete && logoImg.naturalWidth > 0 ? marginSide + 15 : marginSide, 12);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(`Généré le ${new Date().toLocaleString()}`, pdfWidth - marginSide, 12, { align: 'right' });
+          
+          pdf.setDrawColor(240);
+          pdf.line(marginSide, pdfHeight - 15, pdfWidth - marginSide, pdfHeight - 15);
+          pdf.text(`Document de Référence - ${branding?.hashtag || ''}`, marginSide, pdfHeight - 10);
+          pdf.text(`Page ${i + 1} sur ${totalPages}`, pdfWidth - marginSide, pdfHeight - 10, { align: 'right' });
         }
         
         pdf.save(`DETAIL_STOCK_${dateStr}.pdf`);
@@ -277,7 +308,15 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-lg overflow-hidden">
-            <img src={branding?.logo} alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
+            <img 
+              src={branding?.logo} 
+              alt="Logo" 
+              className="w-full h-full object-contain p-2" 
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
+              }}
+            />
           </div>
           <div>
             <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-800">Détail des Stocks</h2>

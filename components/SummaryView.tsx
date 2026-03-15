@@ -105,28 +105,59 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
-        const targetWidth = pdfWidth - (margin * 2);
+        const marginTop = 20;
+        const marginBottom = 20;
+        const marginSide = 15;
+        const contentWidth = pdfWidth - (marginSide * 2);
+        const contentHeight = pdfHeight - marginTop - marginBottom;
         
+        const logoImg = new Image();
+        if (branding?.logo) {
+          logoImg.src = branding.logo;
+          logoImg.crossOrigin = 'anonymous';
+          await new Promise((resolve) => {
+            logoImg.onload = resolve;
+            logoImg.onerror = resolve;
+          });
+        }
+
         const imgWidth = img.width;
         const imgHeight = img.height;
-        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        const imgHeightInPdf = (imgHeight * contentWidth) / imgWidth;
         
-        let heightLeft = imgHeightInPdf;
-        let position = margin;
-        let page = 0;
+        const totalPages = Math.ceil(imgHeightInPdf / contentHeight);
 
-        // Add first page
-        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
-        heightLeft -= (pdfHeight - margin * 2);
-        
-        // Add subsequent pages if needed
-        while (heightLeft > 0) {
-          page++;
-          position = margin - (page * (pdfHeight - margin * 2));
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
-          heightLeft -= (pdfHeight - margin * 2);
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) pdf.addPage();
+          
+          const position = marginTop - (i * contentHeight);
+          
+          pdf.addImage(imgData, 'PNG', marginSide, position, contentWidth, imgHeightInPdf);
+          
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(0, 0, pdfWidth, marginTop, 'F');
+          pdf.rect(0, pdfHeight - marginBottom, pdfWidth, marginBottom, 'F');
+          
+          // Header
+          if (logoImg.complete && logoImg.naturalWidth > 0) {
+            try {
+              pdf.addImage(logoImg, 'PNG', marginSide, 5, 12, 12);
+            } catch (e) {
+              console.error('Could not add logo to PDF', e);
+            }
+          }
+
+          pdf.setFontSize(8);
+          pdf.setTextColor(100);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('HS COCKPIT v4.0 - RÉSUMÉ DES ACTIVITÉS', logoImg.complete && logoImg.naturalWidth > 0 ? marginSide + 15 : marginSide, 12);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(`Généré le ${new Date().toLocaleString()}`, pdfWidth - marginSide, 12, { align: 'right' });
+          
+          pdf.setDrawColor(240);
+          pdf.line(marginSide, pdfHeight - 15, pdfWidth - marginSide, pdfHeight - 15);
+          pdf.text(`Document de Référence - ${branding?.hashtag || ''}`, marginSide, pdfHeight - 10);
+          pdf.text(`Page ${i + 1} sur ${totalPages}`, pdfWidth - marginSide, pdfHeight - 10, { align: 'right' });
         }
         
         pdf.save(`${filename}.pdf`);
@@ -161,10 +192,18 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
-        {/* HEADER EXPORT - Visible uniquement lors de l'export ou si on veut un en-tête permanent */}
-        <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
+        {/* HEADER EXPORT - Visible uniquement lors de l'export */}
+        <div className={`${exporting ? 'flex' : 'hidden'} items-center justify-between border-b-2 border-slate-900 pb-6 mb-8`}>
           <div className="flex items-center gap-6">
-            <img src={branding?.logo} alt="Logo" className="h-20 w-auto object-contain" referrerPolicy="no-referrer" />
+            <img 
+              src={branding?.logo} 
+              alt="Logo" 
+              className="h-20 w-auto object-contain" 
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
+              }}
+            />
             <div>
               <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">Cockpit National</h1>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">Centre National de Transfusion Sanguine CI</p>
