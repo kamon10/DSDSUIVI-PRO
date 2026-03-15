@@ -22,6 +22,7 @@ import { StockDetailedSynthesisView } from './components/StockDetailedSynthesisV
 import { StockAnalysisFocusView } from './components/StockAnalysisFocusView.tsx';
 import { DistributionDetailedSynthesisView } from './components/DistributionDetailedSynthesisView.tsx';
 import { StockPlanningView } from './components/StockPlanningView.tsx';
+import { GlobalSynthesisReportView } from './components/GlobalSynthesisReportView.tsx';
 import { DistributionStockView } from './components/DistributionStockView.tsx';
 import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
@@ -29,7 +30,7 @@ import { NotificationManager } from './components/NotificationManager.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
 const App: React.FC = () => {
@@ -324,6 +325,7 @@ const App: React.FC = () => {
     { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
     { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
     { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
+    { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
   ];
 
@@ -339,7 +341,7 @@ const App: React.FC = () => {
       { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
       { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'contact'] }
+      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'global-report', 'contact'] }
     ];
 
     return groups.map(group => ({
@@ -353,6 +355,25 @@ const App: React.FC = () => {
     const diff = Math.floor((new Date().getTime() - lastSync.getTime()) / 60000);
     if (diff < 1) return "À l'instant";
     return `Il y a ${diff} min`;
+  };
+
+  const getFullSyncTime = () => {
+    if (!lastSync) return "En attente...";
+    return lastSync.toLocaleString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const getSituationTime = () => {
+    if (!lastSync) return "En attente...";
+    const date = lastSync.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const time = lastSync.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `Situation au ${date} à ${time}`;
   };
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -393,7 +414,7 @@ const App: React.FC = () => {
                    <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
                     <div className="w-1 h-1 rounded-full bg-slate-200"></div>
                     <span className="text-[7px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
-                       {getRelativeSyncTime()}
+                       {getRelativeSyncTime()} <span className="opacity-60">({getFullSyncTime()})</span>
                     </span>
                 </div>
              </div>
@@ -427,8 +448,9 @@ const App: React.FC = () => {
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         className="absolute top-full left-0 mt-2 w-72 bg-white rounded-[2rem] shadow-3xl border border-slate-100 p-3 z-[200] origin-top-left"
                       >
-                        <div className="px-4 py-2 mb-2 border-b border-slate-50">
+                        <div className="px-4 py-2 mb-2 border-b border-slate-50 flex items-center justify-between">
                           <span className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em]">{group.label}</span>
+                          <span className="text-[6px] font-bold text-slate-300 uppercase tracking-tighter">MàJ: {getFullSyncTime()}</span>
                         </div>
                         <div className="space-y-1">
                           {group.navItems.map((item) => (
@@ -529,14 +551,15 @@ const App: React.FC = () => {
                   {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} />}
                   {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
-                  {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} />}
-                  {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} />}
-                  {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} />}
-                  {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} />}
-                  {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} />}
-                  {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
+                  {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
+                  {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                  {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
+                  {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                  {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                   {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                  {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                   {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} />}
                 </>
               )}
@@ -551,6 +574,7 @@ const App: React.FC = () => {
         onNavigate={setActiveTab}
         sites={effectiveSitesList}
         onSiteSelect={handleSiteSelect}
+        syncTime={getFullSyncTime()}
       />
       <InstallPrompt />
       <nav className="lg:hidden fixed bottom-6 bottom-safe left-4 right-4 z-[100] glass-nav rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl gap-1 mb-safe">
@@ -596,7 +620,11 @@ const App: React.FC = () => {
                               </div>
                               <div>
                                 <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">{group.label}</h4>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.navItems.length} Options disponibles</p>
+                                <div className="flex items-center gap-2">
+                                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.navItems.length} Options</p>
+                                   <div className="w-1 h-1 rounded-full bg-slate-200" />
+                                   <p className="text-[8px] font-bold text-blue-500 uppercase tracking-widest">MàJ: {getFullSyncTime()}</p>
+                                 </div>
                               </div>
                             </div>
                             <button onClick={() => setOpenGroup(null)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 active:scale-90 transition-transform">
@@ -638,7 +666,13 @@ const App: React.FC = () => {
       {showSettings && (
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-3xl">
-             <h3 className="text-xl font-black uppercase mb-6">Paramètres des Sources</h3>
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-black uppercase">Paramètres</h3>
+                <div className="flex flex-col items-end">
+                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Dernière Synchronisation</span>
+                  <span className="text-[10px] font-bold text-blue-600">{getFullSyncTime()}</span>
+                </div>
+             </div>
              
              <div className="space-y-4 mb-8">
                <div>

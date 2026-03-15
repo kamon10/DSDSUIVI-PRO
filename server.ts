@@ -1,11 +1,20 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
+import * as vite from "vite";
 import webpush from "web-push";
 import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import fetch from "node-fetch";
+
+console.log("[SERVER] Starting initialization...");
+
+process.on('uncaughtException', (err) => {
+  console.error('[SERVER] Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[SERVER] Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,19 +44,25 @@ const app = express();
 const PORT = 3000;
 
 // VAPID keys should be generated and stored securely
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDDJwlL-37_7jGw-6N9mctOrgvHJwDILLNZo99U0vMfW2Zu8o7BUV4xzUodE_lPZ0QSBdtwse5bZCdsiiIyZX_4";
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY || "Zq4AzquQm-Pst3uXwvZMgPix9pfE_Eg_Q82AN55Gjrg";
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
 
 const vapidEmail = process.env.VAPID_EMAIL || "mailto:kadioamon@gmail.com";
 const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('http')) 
   ? vapidEmail 
   : `mailto:${vapidEmail}`;
 
-webpush.setVapidDetails(
-  vapidSubject,
-  publicVapidKey,
-  privateVapidKey
-);
+try {
+  console.log("[SERVER] Setting up VAPID details...");
+  webpush.setVapidDetails(
+    vapidSubject,
+    publicVapidKey,
+    privateVapidKey
+  );
+  console.log("[SERVER] VAPID details set successfully");
+} catch (err) {
+  console.error("[SERVER] Failed to set VAPID details:", err);
+}
 
 app.use(bodyParser.json());
 
@@ -55,6 +70,10 @@ app.use(bodyParser.json());
 let subscriptions: any[] = [];
 
 // API routes
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.get("/api/proxy", async (req, res) => {
   const targetUrl = req.query.url as string;
   if (!targetUrl) {
@@ -142,12 +161,6 @@ app.post("/api/admin/whatsapp-config", (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/admin/whatsapp-check-now", async (req, res) => {
-  console.log("[Admin] Manual WhatsApp check triggered");
-  await checkDataChanges();
-  res.json({ success: true });
-});
-
 // Polling logic to check for changes
 const COLLECTE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 const STOCK_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=2055274680&single=true&output=csv";
@@ -180,39 +193,26 @@ async function checkDataChanges() {
     const stockRes = await fetch(STOCK_URL + "&_t=" + Date.now(), fetchOptions);
     if (stockRes.ok) {
       const text = await stockRes.text();
-      console.log(`[Sync] Stock data fetched (${text.length} chars). Preview: ${text.substring(0, 100)}`);
       
       // WhatsApp Alert Logic
       const config = getWhatsAppConfig();
       const totalStock = calculateTotalStock(text);
-      console.log(`[Alert] Current Total Stock calculated: ${totalStock} (Threshold: ${config.alertThreshold})`);
+      console.log(`Current Total Stock: ${totalStock}`);
 
-      if (totalStock > 0 && totalStock < config.alertThreshold) {
+      if (totalStock < config.alertThreshold) {
         const now = Date.now();
-        const lastSent = config.lastAlertSent || 0;
-        const hoursSinceLast = (now - lastSent) / (1000 * 60 * 60);
-        
-        console.log(`[Alert] Stock is below threshold. Last alert sent ${hoursSinceLast.toFixed(2)} hours ago.`);
-
         // Alert every 4 hours if stock is still low
-        if (now - lastSent > 4 * 60 * 60 * 1000) {
-          console.log("[Alert] CRITICAL STOCK DETECTED! Sending WhatsApp alerts to", config.numbers.length, "numbers");
+        if (now - config.lastAlertSent > 4 * 60 * 60 * 1000) {
+          console.log("CRITICAL STOCK DETECTED! Sending WhatsApp alerts...");
           const message = `🚨 ALERTE STOCK CRITIQUE : Le stock national est à ${totalStock.toLocaleString()} poches. Seuil de sécurité (${config.alertThreshold.toLocaleString()}) non atteint.`;
           
-          if (config.numbers.length > 0) {
-            for (const number of config.numbers) {
-              await sendWhatsAppMessage(number, message, config);
-            }
-            config.lastAlertSent = now;
-            saveWhatsAppConfig(config);
-          } else {
-            console.log("[Alert] No WhatsApp numbers configured.");
+          for (const number of config.numbers) {
+            await sendWhatsAppMessage(number, message, config);
           }
-        } else {
-          console.log("[Alert] Skipping WhatsApp alert (cooldown active).");
+          
+          config.lastAlertSent = now;
+          saveWhatsAppConfig(config);
         }
-      } else if (totalStock >= config.alertThreshold) {
-        console.log("[Alert] Stock is healthy.");
       }
 
       if (lastStockHash && text !== lastStockHash) {
@@ -228,31 +228,21 @@ async function checkDataChanges() {
 
 function calculateTotalStock(csvText: string): number {
   try {
-    if (!csvText) return 0;
     const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
     if (lines.length < 2) return 0;
     
-    // Detect separator
-    const firstLine = lines[0];
-    const sep = firstLine.includes(';') ? ';' : ',';
-    
-    const headers = firstLine.split(sep).map(h => h.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim());
-    console.log("[Parser] Stock Headers for calculation:", headers);
-
+    const headers = lines[0].split(/[;,]/).map(h => h.toUpperCase().trim());
     const qtyIdx = headers.findIndex(h => h.includes('QUANTITE') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE') || h.includes('STOCK'));
     
     if (qtyIdx === -1) {
-      console.warn("[Parser] No quantity column found in stock CSV, counting rows.");
+      // If no quantity column, count lines (excluding header)
       return lines.length - 1;
     }
 
     let total = 0;
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(sep);
-      const rawVal = cols[qtyIdx];
-      if (!rawVal) continue;
-      
-      const val = parseFloat(rawVal.replace(/[^\d,.-]/g, '').replace(',', '.') || "0");
+      const cols = lines[i].split(/[;,]/);
+      const val = parseFloat(cols[qtyIdx]?.replace(/[^\d,.-]/g, '').replace(',', '.') || "0");
       if (!isNaN(val)) total += val;
     }
     return Math.round(total);
@@ -309,23 +299,28 @@ setInterval(checkDataChanges, 5 * 60 * 1000);
 setTimeout(checkDataChanges, 30000);
 
 async function startServer() {
+  console.log("[SERVER] startServer() called");
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    console.log("[SERVER] Starting Vite in middleware mode...");
+    const viteInstance = await vite.createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use(vite.middlewares);
+    app.use(viteInstance.middlewares);
+    console.log("[SERVER] Vite middleware attached");
   } else {
+    console.log("[SERVER] Production mode: serving static files");
     app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => {
+    app.get("*all", (req, res) => {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+    console.log(`[SERVER] Attempting to listen on port ${PORT}...`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`[SERVER] Server successfully running on http://0.0.0.0:${PORT}`);
+    });
 }
 
 startServer();

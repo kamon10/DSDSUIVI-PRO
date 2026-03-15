@@ -118,4 +118,4 @@ export interface DashboardData {
 }
 
 // Added 'recap-dist' to support the separate flux summary view
-export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed';
+export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed' | 'global-report';
