@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, X, ArrowRight, Activity, LayoutDashboard, Map, PlusSquare, Package, UserCheck, History, BarChart3, Settings, TrendingUp, Zap, ShieldCheck } from 'lucide-react';
 import { AppTab, SiteRecord } from '../types';
 
@@ -10,9 +10,10 @@ interface CommandPaletteProps {
   onNavigate: (tab: AppTab) => void;
   sites: SiteRecord[];
   onSiteSelect: (siteName: string) => void;
+  syncTime: string;
 }
 
-export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavigate, sites, onSiteSelect }) => {
+export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavigate, sites, onSiteSelect, syncTime }) => {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -196,9 +197,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                 <span className="text-[9px] font-bold text-slate-400 uppercase">Sélectionner</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <Command size={12} className="text-slate-300" />
-              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">HEMO-COCKPIT v2.5</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">HEMO-COCKPIT v2.5</span>
+                <span className="text-[7px] font-bold text-blue-400/60 uppercase tracking-tighter">MàJ: {syncTime}</span>
+              </div>
             </div>
           </div>
         </motion.div>

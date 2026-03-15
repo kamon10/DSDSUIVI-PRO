@@ -5,15 +5,16 @@ import { SITES_DATA, COLORS, STOCK_FORECASTS } from '../constants';
 import { StockAlert } from './StockAlert.tsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Package, ShieldCheck, AlertTriangle, CheckCircle2, Search, Info, TrendingUp, Clock, Zap } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface StockPlanningViewProps {
   data: DashboardData;
   user: User | null;
   sites: any[];
+  situationTime?: string;
 }
 
-export const StockPlanningView: React.FC<StockPlanningViewProps> = ({ data, user, sites }) => {
+export const StockPlanningView: React.FC<StockPlanningViewProps> = ({ data, user, sites, situationTime }) => {
   const [viewMode, setViewMode] = useState<'NATIONAL' | 'ABIDJAN'>('NATIONAL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -92,7 +93,7 @@ export const StockPlanningView: React.FC<StockPlanningViewProps> = ({ data, user
           <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-900">Synthèse Stock par Site</h2>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-2 flex items-center gap-2">
             <Info size={14} className="text-blue-500" />
-            Analyse de l'autonomie des stocks (CGR) basée sur la distribution réelle moyenne
+            {situationTime || "Analyse de l'autonomie des stocks (CGR) basée sur la distribution réelle moyenne"}
           </p>
         </div>
 

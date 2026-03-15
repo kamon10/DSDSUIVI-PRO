@@ -7,7 +7,7 @@ import {
   FileImage, FileText, Loader2, CheckCircle2,
   ChevronRight, Database, Layout
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants';
 import { StockAlert } from './StockAlert.tsx';
@@ -17,11 +17,12 @@ interface StockSummaryViewProps {
   user?: User | null;
   setActiveTab: (tab: AppTab) => void;
   branding?: { logo: string; hashtag: string };
+  situationTime?: string;
 }
 
 const SANG_GROUPS = ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"];
 
-export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setActiveTab, branding }) => {
+export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setActiveTab, branding, situationTime }) => {
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -105,28 +106,53 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
       const element = contentRef.current;
-      const canvas = await html2canvas(element, { 
+      const imgData = await domToPng(element, { 
         scale: 2, 
-        useCORS: true, 
         backgroundColor: '#f8fafc',
-        onclone: (clonedDoc) => {
-          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
-          if (header) header.style.display = 'flex';
-        }
       });
-      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => (img.onload = resolve));
+
       const filename = `RESUME_STOCK_${data.date.replace(/\//g, '-')}`;
       if (type === 'image') {
         const link = document.createElement('a');
         link.download = `${filename}.png`; link.href = imgData; link.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth(); 
-        const ratio = pageWidth / (canvas.width / 2);
-        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const targetWidth = pdfWidth - (margin * 2);
+        
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+        heightLeft -= (pdfHeight - margin * 2);
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
+        }
+        
         pdf.save(`${filename}.pdf`);
       }
-    } catch (err) { console.error(err); } finally { setExporting(null); }
+    } catch (err) { 
+      console.error(err); 
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    } finally { setExporting(null); }
   };
 
   return (
@@ -140,7 +166,7 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
           </div>
           <div>
             <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 leading-none">Résumé Stock</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Situation Consolidée Nationale & Abidjan</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{situationTime || 'Situation Consolidée Nationale & Abidjan'}</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -166,7 +192,7 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
           </div>
           <div className="text-right">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Situation au</p>
-            <p className="text-xl font-black text-slate-900">{data.date}</p>
+            <p className="text-xl font-black text-slate-900">{situationTime?.replace('Situation au ', '') || data.date}</p>
           </div>
         </div>
 

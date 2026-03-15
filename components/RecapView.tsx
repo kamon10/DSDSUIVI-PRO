@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 registerLocale('fr', fr);
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
 
@@ -450,11 +450,9 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         }
         await new Promise(res => setTimeout(res, 500));
 
-        const canvas = await html2canvas(element, { 
+        const imgData = await domToPng(element, { 
           scale: 2.5, 
-          useCORS: true, 
           backgroundColor: '#ffffff',
-          windowWidth: 1200
         });
 
         if (isMobile) {
@@ -463,7 +461,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
 
         const link = document.createElement('a'); 
         link.download = `${filename}.png`; 
-        link.href = canvas.toDataURL('image/png', 1.0); 
+        link.href = imgData; 
         link.click();
       } else {
         // Force a minimum width for the capture to ensure it looks like a desktop report even on mobile
@@ -474,29 +472,49 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         }
         await new Promise(res => setTimeout(res, 500));
 
-        const canvas = await html2canvas(element, { 
+        const imgData = await domToPng(element, { 
           scale: 2, 
-          useCORS: true, 
           backgroundColor: '#ffffff',
-          windowWidth: 1200
         });
 
         if (isMobile) {
           element.style.width = originalWidth;
         }
 
-        const imgData = canvas.toDataURL('image/png');
+        const img = new Image();
+        img.src = imgData;
+        await new Promise((resolve) => (img.onload = resolve));
+
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = 210, pdfHeight = 297, margin = 10;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
         const targetWidth = pdfWidth - (margin * 2);
-        const imgHeightInPdf = (canvas.height * targetWidth) / canvas.width;
-        let heightLeft = imgHeightInPdf, position = margin;
+        const imgHeightInPdf = (img.height * targetWidth) / img.width;
+        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
+        // Add first page
         pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
         heightLeft -= (pdfHeight - margin * 2);
-        while (heightLeft > 0) { position = heightLeft - imgHeightInPdf + margin; pdf.addPage(); pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf); heightLeft -= (pdfHeight - margin * 2); }
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
+        }
+        
         pdf.save(`${filename}.pdf`);
       }
-    } catch (err) { console.error(err); } finally { setExporting(null); }
+    } catch (err) { 
+      console.error(err); 
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    } finally { setExporting(null); }
   };
 
   const currentPeriodLabel = useMemo(() => {

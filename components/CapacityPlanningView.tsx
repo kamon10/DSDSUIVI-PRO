@@ -4,7 +4,7 @@ import { DashboardData, User, SiteRecord } from '../types';
 import { SITES_DATA, COLORS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Target, TrendingUp, Zap, AlertTriangle, CheckCircle2, Filter, Search, Download, Info } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface CapacityPlanningViewProps {
   data: DashboardData;

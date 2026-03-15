@@ -3,7 +3,7 @@ import React, { useMemo, useState, useRef } from 'react';
 /* Added User import */
 import { DashboardData, AppTab, DistributionRecord, User } from '../types';
 import { Activity, MapPin, ChevronRight, PieChart, Users, Heart, TrendingUp, FileImage, FileText, Loader2, Target, AlertCircle, CheckCircle2, Truck, Package, ShieldCheck, Zap } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { COLORS } from '../constants';
 
@@ -88,28 +88,53 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
       const element = contentRef.current;
-      const canvas = await html2canvas(element, { 
+      const imgData = await domToPng(element, { 
         scale: 2, 
-        useCORS: true, 
         backgroundColor: '#f8fafc',
-        onclone: (clonedDoc) => {
-          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
-          if (header) header.style.display = 'flex';
-        }
       });
-      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => (img.onload = resolve));
+
       const filename = `RESUME_CNTS_${viewMode}_${data.month.replace(/\s/g, '_')}`;
       if (type === 'image') {
         const link = document.createElement('a');
         link.download = `${filename}.png`; link.href = imgData; link.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth(); 
-        const ratio = pageWidth / (canvas.width / 2);
-        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const targetWidth = pdfWidth - (margin * 2);
+        
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+        heightLeft -= (pdfHeight - margin * 2);
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
+        }
+        
         pdf.save(`${filename}.pdf`);
       }
-    } catch (err) { console.error(err); } finally { setExporting(null); }
+    } catch (err) { 
+      console.error(err); 
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    } finally { setExporting(null); }
   };
 
   return (

@@ -16,11 +16,12 @@ import { StockSynthesisTableView } from './StockSynthesisTableView';
 interface StockSynthesisViewProps {
   data: DashboardData;
   user?: User | null;
+  situationTime?: string;
 }
 
 const SANG_GROUPS = ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"];
 
-export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, user }) => {
+export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, user, situationTime }) => {
   const [viewType, setViewType] = useState<'charts' | 'table'>('charts');
   const stock = data.stock || [];
 
@@ -237,7 +238,7 @@ export const StockSynthesisView: React.FC<StockSynthesisViewProps> = ({ data, us
               <h2 className="text-3xl lg:text-7xl font-[950] uppercase tracking-tighter leading-none mb-4">Synthèse Stock</h2>
               <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-6">
                 <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px] lg:text-[12px] flex items-center gap-3">
-                  <Clock size={16} /> Actualisé : {new Date().toLocaleTimeString()}
+                  <Clock size={16} /> {situationTime || `Actualisé : ${new Date().toLocaleTimeString()}`}
                 </p>
                 <div className="hidden lg:block h-1 w-1 rounded-full bg-white/20"></div>
                 <p className="text-white/40 font-black uppercase tracking-[0.5em] text-[10px] lg:text-[12px] flex items-center gap-3">

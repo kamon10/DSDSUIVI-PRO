@@ -11,7 +11,7 @@ import {
   CalendarDays, Zap, Award, Sparkles, TrendingDown, History
 } from 'lucide-react';
 import { COLORS } from '../constants';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 
 interface WeeklyViewProps {
@@ -151,27 +151,52 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({ data, user, branding }) 
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { 
+      const imgData = await domToPng(contentRef.current, { 
         scale: 2.5, 
-        useCORS: true, 
         backgroundColor: '#f8fafc',
-        onclone: (clonedDoc) => {
-          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
-          if (header) header.style.display = 'flex';
-        }
       });
-      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => (img.onload = resolve));
+
       const filename = `EVOLUTION_${viewMode}_${timeScale}`;
       if (type === 'image') {
         const link = document.createElement('a'); link.download = `${filename}.png`; link.href = imgData; link.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pw = pdf.internal.pageSize.getWidth();
-        const ratio = pw / (canvas.width / 2.5);
-        pdf.addImage(imgData, 'PNG', 0, 10, pw, (canvas.height / 2.5) * ratio);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const targetWidth = pdfWidth - (margin * 2);
+        
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+        heightLeft -= (pdfHeight - margin * 2);
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
+        }
+        
         pdf.save(`${filename}.pdf`);
       }
-    } catch (err) { console.error(err); } finally { setExporting(null); }
+    } catch (err) { 
+      console.error(err); 
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    } finally { setExporting(null); }
   };
 
   return (

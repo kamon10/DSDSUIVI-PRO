@@ -13,7 +13,7 @@ import {
   BarChart as ReBarChart, Bar, XAxis, YAxis, Tooltip, 
   ResponsiveContainer, CartesianGrid, Cell, PieChart as RePieChart, Pie, LabelList, Legend
 } from 'recharts';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 
 interface SiteSynthesisViewProps {
@@ -230,24 +230,50 @@ export const SiteSynthesisView: React.FC<SiteSynthesisViewProps> = ({ data, user
     setExporting(type);
     await new Promise(res => setTimeout(res, 500));
     try {
-      const canvas = await html2canvas(contentRef.current, { 
+      const imgData = await domToPng(contentRef.current, { 
         scale: 2, 
-        useCORS: true, 
         backgroundColor: '#f8fafc',
-        onclone: (clonedDoc) => {
-          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
-          if (header) header.style.display = 'flex';
-        }
       });
-      const img = canvas.toDataURL('image/png');
+
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => (img.onload = resolve));
+
       if (type === 'image') {
-        const l = document.createElement('a'); l.download = 'FOCUS.png'; l.href = img; l.click();
+        const l = document.createElement('a'); l.download = `SYNTHESE_SITES_${data.date.replace(/\//g, '-')}.png`; l.href = imgData; l.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pw = pdf.internal.pageSize.getWidth();
-        pdf.addImage(img, 'PNG', 0, 0, pw, (canvas.height / canvas.width) * pw);
-        pdf.save('FOCUS.pdf');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const targetWidth = pdfWidth - (margin * 2);
+        
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+        heightLeft -= (pdfHeight - margin * 2);
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
+        }
+        
+        pdf.save(`SYNTHESE_SITES_${data.date.replace(/\//g, '-')}.pdf`);
       }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
     } finally { setExporting(null); }
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Share, PlusSquare, X, Smartphone, Download } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const InstallPrompt: React.FC = () => {
   const [showPrompt, setShowPrompt] = useState(false);

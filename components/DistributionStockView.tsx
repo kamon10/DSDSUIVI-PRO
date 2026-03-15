@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { DashboardData, User } from '../types';
 import { Package, Truck, Search, Filter, Database, ArrowRight, Download, Info, Activity, Map as MapIcon, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { PRODUCT_COLORS, GROUP_COLORS } from '../constants';
 import DatePicker, { registerLocale } from "react-datepicker";
 import { fr } from 'date-fns/locale';

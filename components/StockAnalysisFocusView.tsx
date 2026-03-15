@@ -13,17 +13,18 @@ import {
 } from 'recharts';
 import { GROUP_COLORS, PRODUCT_COLORS, STOCK_FORECASTS } from '../constants.tsx';
 import { StockAlert } from './StockAlert.tsx';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface StockAnalysisFocusViewProps {
   data: DashboardData;
   user?: User | null;
+  situationTime?: string;
 }
 
 const SANG_GROUPS = ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"];
 const PRODUCT_TYPES = ["CGR ADULTE", "CGR PEDIATRIQUE", "CGR NOURRISSON", "CGR", "CONCENTRE DE PLAQUETTES", "PLASMA A USAGE THERAPEUTIQUE", "AUTRES"];
 
-export const StockAnalysisFocusView: React.FC<StockAnalysisFocusViewProps> = ({ data, user }) => {
+export const StockAnalysisFocusView: React.FC<StockAnalysisFocusViewProps> = ({ data, user, situationTime }) => {
   const stock = data.stock || [];
   const [selectedPres, setSelectedPres] = useState<string>("NATIONAL");
 
@@ -153,7 +154,7 @@ export const StockAnalysisFocusView: React.FC<StockAnalysisFocusViewProps> = ({ 
                 </span>
                 <div className="h-1 w-1 rounded-full bg-white/30"></div>
                 <p className="text-white/40 font-black uppercase tracking-[0.3em] text-[10px]">
-                  Analyse Stratégique & Prévisionnelle
+                  {situationTime || 'Analyse Stratégique & Prévisionnelle'}
                 </p>
               </div>
             </div>

@@ -10,6 +10,7 @@ interface StockViewProps {
   user: User | null;
   lastSync?: Date | null;
   onSyncRequest?: () => void;
+  situationTime?: string;
 }
 
 type GroupedStock = Record<string, { 
@@ -25,7 +26,7 @@ type GroupedStock = Record<string, {
 
 const SANG_GROUPS = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"];
 
-export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSyncRequest }) => {
+export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSyncRequest, situationTime }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [filterPres, setFilterPres] = useState('TOUS');
@@ -201,7 +202,7 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           <div>
             <h2 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">Gestion des Stocks</h2>
             <div className="flex items-center gap-3 mt-2">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">Inventaire National • Temps Réel</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">{situationTime || 'Inventaire National • Temps Réel'}</p>
               {lastSync && (
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/40 border-l border-white/10 pl-3">
                   MàJ: {lastSync.toLocaleTimeString()}

@@ -3,7 +3,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types';
 import { SITES_DATA } from '../constants';
 import { Truck, MapPin, ChevronRight, FileImage, FileText, Loader2, PackageOpen, Calendar as CalendarIcon, Filter, FileSpreadsheet } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
 import DatePicker, { registerLocale } from "react-datepicker";
@@ -239,28 +239,15 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
     await new Promise(res => setTimeout(res, 500));
     
     try {
-      const canvas = await html2canvas(contentRef.current, {
+      const imgData = await domToPng(contentRef.current, {
         scale: 2,
-        useCORS: true,
         backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: 1200, // Ensure consistent width for capture
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('export-container-dist');
-          if (el) {
-            el.style.padding = '20px';
-            el.style.borderRadius = '0px';
-            el.style.width = '1200px';
-          }
-        }
       });
       
       // Restore original width
       if (isMobile) {
         contentRef.current.style.width = originalWidth;
       }
-
-      const imgData = canvas.toDataURL('image/png');
       
       if (type === 'image') {
         const link = document.createElement('a');
@@ -271,32 +258,39 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const targetWidth = pdfWidth - (margin * 2);
         
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
+        const img = new Image();
+        img.src = imgData;
+        await new Promise((resolve) => (img.onload = resolve));
+
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
         
-        // Calculate the height of one PDF page in terms of canvas pixels
-        const pageHeightInCanvasPixels = (imgWidth * pdfHeight) / pdfWidth;
-        
-        let heightLeft = imgHeight;
-        let position = 0;
-        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
         // Add first page
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * pdfWidth) / imgWidth);
-        heightLeft -= pageHeightInCanvasPixels;
+        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+        heightLeft -= (pdfHeight - margin * 2);
         
         // Add subsequent pages if needed
         while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, (imgHeight * pdfWidth) / imgWidth);
-          heightLeft -= pageHeightInCanvasPixels;
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
         }
         
         pdf.save(`DETAIL_DISTRIBUTION_${dateStr}.pdf`);
       }
     } catch (error) {
       console.error('Export failed:', error);
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
     } finally {
       setExporting(null);
     }

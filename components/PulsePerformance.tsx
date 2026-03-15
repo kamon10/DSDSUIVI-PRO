@@ -1,10 +1,10 @@
 
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 /* Added User import */
 import { DashboardData, DistributionRecord, User } from '../types';
-import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User as UserIcon, Truck, Package, TrendingUp, ArrowUpRight, ArrowDownRight, Info, AlertTriangle, Bell, BellOff } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User as UserIcon, Truck, Package, TrendingUp, ArrowUpRight, ArrowDownRight, Info, AlertTriangle } from 'lucide-react';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { COLORS } from '../constants';
 import { StockAlert } from './StockAlert.tsx';
@@ -33,81 +33,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
   const [pulsePhase, setPulsePhase] = useState(0);
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
   const [showLiveFeed, setShowLiveFeed] = useState(true);
-  const [notificationStatus, setNotificationStatus] = useState<'default' | 'granted' | 'denied' | 'loading'>('loading');
-  const [isIframe, setIsIframe] = useState(false);
   const pulseRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setIsIframe(window.self !== window.top);
-    if ('Notification' in window) {
-      setNotificationStatus(Notification.permission as any);
-    } else {
-      setNotificationStatus('denied');
-    }
-  }, []);
-
-  const subscribeToNotifications = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert("Votre navigateur ne supporte pas les notifications.");
-      return;
-    }
-
-    if (isIframe) {
-      alert("Les notifications ne peuvent pas être activées depuis l'aperçu. Veuillez ouvrir l'application dans un nouvel onglet pour activer les alertes.");
-      return;
-    }
-
-    if (Notification.permission === 'denied') {
-      alert("Les notifications sont bloquées par votre navigateur. Veuillez réinitialiser les permissions dans les paramètres du site (cliquez sur le cadenas à côté de l'URL).");
-      setNotificationStatus('denied');
-      return;
-    }
-
-    setNotificationStatus('loading');
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationStatus(permission as any);
-      
-      if (permission === 'granted') {
-        const registration = await navigator.serviceWorker.ready;
-        
-        // Public VAPID key from server
-        const publicVapidKey = "BDDJwlL-37_7jGw-6N9mctOrgvHJwDILLNZo99U0vMfW2Zu8o7BUV4xzUodE_lPZ0QSBdtwse5bZCdsiiIyZX_4";
-        
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-        });
-
-        const response = await fetch('/api/notifications/subscribe', {
-          method: 'POST',
-          body: JSON.stringify(subscription),
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!response.ok) throw new Error("Erreur lors de l'enregistrement sur le serveur");
-        
-        console.log("Subscribed to push notifications");
-      } else if (permission === 'denied') {
-        alert("Permission refusée. Vous ne recevrez pas d'alertes en temps réel.");
-      }
-    } catch (err: any) {
-      console.error("Failed to subscribe:", err);
-      alert(`Erreur d'abonnement : ${err.message || "Vérifiez que vous n'êtes pas en navigation privée."}`);
-      setNotificationStatus(Notification.permission as any);
-    }
-  };
-
-  function urlBase64ToUint8Array(base64String: string) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
 
   const availableYears = useMemo(() => {
     const years = new Set<string>();
@@ -208,26 +134,51 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const canvas = await html2canvas(pulseRef.current, { 
+      const imgData = await domToPng(pulseRef.current, { 
         scale: 2, 
-        useCORS: true, 
         backgroundColor: '#f8fafc',
-        onclone: (clonedDoc) => {
-          const header = clonedDoc.querySelector('.export-header') as HTMLElement;
-          if (header) header.style.display = 'flex';
-        }
       });
-      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      const img = new Image();
+      img.src = imgData;
+      await new Promise((resolve) => (img.onload = resolve));
+
       if (type === 'image') {
         const link = document.createElement('a'); link.download = `PULSE_${viewMode}.png`; link.href = imgData; link.click();
       } else {
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const ratio = pageWidth / (canvas.width / 2);
-        pdf.addImage(imgData, 'PNG', 0, 10, pageWidth, (canvas.height / 2) * ratio);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        const targetWidth = pdfWidth - (margin * 2);
+        
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        const imgHeightInPdf = (imgHeight * targetWidth) / imgWidth;
+        
+        let heightLeft = imgHeightInPdf;
+        let position = margin;
+        let page = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+        heightLeft -= (pdfHeight - margin * 2);
+        
+        // Add subsequent pages if needed
+        while (heightLeft > 0) {
+          page++;
+          position = margin - (page * (pdfHeight - margin * 2));
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position, targetWidth, imgHeightInPdf);
+          heightLeft -= (pdfHeight - margin * 2);
+        }
+        
         pdf.save(`PULSE_${viewMode}.pdf`);
       }
-    } catch (err) { console.error(err); } finally { setExporting(null); }
+    } catch (err) { 
+      console.error(err); 
+      alert('Erreur lors de l\'export. Veuillez réessayer.');
+    } finally { setExporting(null); }
   };
 
   return (
@@ -324,19 +275,6 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
              </select>
            </div>
            <div className="flex gap-2">
-             {notificationStatus !== 'granted' && (
-               <button 
-                 onClick={subscribeToNotifications} 
-                 disabled={notificationStatus === 'loading'}
-                 className={`p-3 rounded-xl transition-all shadow-sm flex items-center gap-2 ${notificationStatus === 'denied' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
-                 title={notificationStatus === 'denied' ? "Notifications bloquées" : "Activer les notifications"}
-               >
-                 {notificationStatus === 'loading' ? <Loader2 size={16} className="animate-spin" /> : (notificationStatus === 'denied' ? <BellOff size={16} /> : <Bell size={16} />)}
-                 <span className="text-[10px] font-black uppercase hidden sm:inline">
-                   {notificationStatus === 'denied' ? 'Bloqué' : 'Alertes'}
-                 </span>
-               </button>
-             )}
              <button onClick={() => handleExport('image')} disabled={!!exporting} className="p-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-all shadow-sm">
                {exporting === 'image' ? <Loader2 size={16} className="animate-spin" /> : <FileImage size={16} />}
              </button>
