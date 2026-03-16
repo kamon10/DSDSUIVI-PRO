@@ -27,6 +27,7 @@ import { DistributionStockView } from './components/DistributionStockView.tsx';
 import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
+import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight } from 'lucide-react';
@@ -520,6 +521,7 @@ const App: React.FC = () => {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-28 pb-32 pb-safe">
+        <StockAlert data={fullData} user={currentUser} className="mb-8" />
         {loading && !fullData.dailyHistory.length ? (
           <div className="flex flex-col items-center justify-center py-48 gap-6">
              <Activity size={60} className="text-blue-600 animate-pulse" />

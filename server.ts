@@ -29,7 +29,7 @@ function getWhatsAppConfig() {
   } catch (err) {
     console.error("Error reading whatsapp config:", err);
   }
-  return { numbers: [], lastAlertSent: 0, alertThreshold: 12000, apiUrl: "", apiKey: "" };
+  return { numbers: [], lastAlertSent: 0, alertThreshold: 12000, apiUrl: "", groupApiUrl: "", groupId: "", apiKey: "" };
 }
 
 function saveWhatsAppConfig(config: any) {
@@ -97,9 +97,14 @@ app.get("/api/proxy", async (req, res) => {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
+      console.error(`[Proxy] Error fetching ${targetUrl}: ${response.status} ${response.statusText}`);
       return res.status(response.status).send(`Proxy error: ${response.statusText}`);
     }
     const text = await response.text();
+    console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 100)}... (${text.length} bytes)`);
+    if (text.includes("<!DOCTYPE")) {
+      console.warn(`[Proxy] Warning: Received HTML instead of CSV from ${targetUrl.substring(0, 100)}...`);
+    }
     res.set('Content-Type', 'text/plain');
     res.send(text);
   } catch (err: any) {
@@ -140,11 +145,17 @@ app.post("/api/notifications/broadcast-alert", async (req, res) => {
   
   // WhatsApp
   const config = getWhatsAppConfig();
+  const prefix = "[DSDCNTSCI] ";
+  const message = `${prefix}🚨 ${title || 'ALERTE'} : ${body || 'Alerte stock critique'}`;
+  
   if (config.numbers.length > 0) {
-    const message = `🚨 ${title || 'ALERTE'} : ${body || 'Alerte stock critique'}`;
     for (const number of config.numbers) {
       await sendWhatsAppMessage(number, message, config);
     }
+  }
+
+  if (config.groupId && config.groupApiUrl) {
+    await sendWhatsAppGroupMessage(config.groupId, message, config);
   }
 
   res.status(200).json({ success: true });
@@ -158,6 +169,58 @@ app.post("/api/admin/whatsapp-config", (req, res) => {
   const config = req.body;
   const current = getWhatsAppConfig();
   saveWhatsAppConfig({ ...current, ...config });
+  res.json({ success: true });
+});
+
+app.post("/api/admin/whatsapp-test", async (req, res) => {
+  const config = getWhatsAppConfig();
+  const { number, message } = req.body;
+  
+  if (!config.apiUrl || (!number && !config.groupId)) {
+    return res.status(400).json({ success: false, error: "Configuration incomplète ou numéro manquant." });
+  }
+
+  const results: any[] = [];
+  const testMsg = message || "Message de test HS";
+  const prefix = "[DSDCNTSCI] ";
+  const finalMsg = testMsg.startsWith(prefix) ? testMsg : prefix + testMsg;
+
+  try {
+    if (number) {
+      const cleanNumber = number.replace(/\D/g, '');
+      const url = config.apiUrl
+        .replace('[NUMBER]', cleanNumber)
+        .replace('[MESSAGE]', encodeURIComponent(finalMsg))
+        .replace('[APIKEY]', config.apiKey || '');
+      
+      console.log(`Testing WhatsApp to ${cleanNumber}...`);
+      const response = await fetch(url);
+      const text = await response.text();
+      results.push({ target: cleanNumber, status: response.status, response: text });
+    }
+
+    if (config.groupId && config.groupApiUrl) {
+      const url = config.groupApiUrl
+        .replace('[GROUP]', config.groupId)
+        .replace('[MESSAGE]', encodeURIComponent(finalMsg))
+        .replace('[APIKEY]', config.apiKey || '');
+      
+      console.log(`Testing WhatsApp Group to ${config.groupId}...`);
+      const response = await fetch(url);
+      const text = await response.text();
+      results.push({ target: config.groupId, status: response.status, response: text });
+    }
+
+    res.json({ success: true, results });
+  } catch (err: any) {
+    console.error("WhatsApp Test Error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/admin/whatsapp-check-now", async (req, res) => {
+  console.log("Forcing data check...");
+  await checkDataChanges();
   res.json({ success: true });
 });
 
@@ -204,10 +267,15 @@ async function checkDataChanges() {
         // Alert every 4 hours if stock is still low
         if (now - config.lastAlertSent > 4 * 60 * 60 * 1000) {
           console.log("CRITICAL STOCK DETECTED! Sending WhatsApp alerts...");
-          const message = `🚨 ALERTE STOCK CRITIQUE : Le stock national est à ${totalStock.toLocaleString()} poches. Seuil de sécurité (${config.alertThreshold.toLocaleString()}) non atteint.`;
+          const prefix = "[DSDCNTSCI] ";
+          const message = `${prefix}🚨 ALERTE STOCK CRITIQUE : Le stock national est à ${totalStock.toLocaleString()} poches. Seuil de sécurité (${config.alertThreshold.toLocaleString()}) non atteint.`;
           
           for (const number of config.numbers) {
             await sendWhatsAppMessage(number, message, config);
+          }
+
+          if (config.groupId && config.groupApiUrl) {
+            await sendWhatsAppGroupMessage(config.groupId, message, config);
           }
           
           config.lastAlertSent = now;
@@ -253,29 +321,41 @@ function calculateTotalStock(csvText: string): number {
 }
 
 async function sendWhatsAppMessage(number: string, message: string, config: any) {
-  if (!number) return;
+  if (!number || !config.apiUrl) return;
   
   // Clean number (remove +, spaces, etc)
   const cleanNumber = number.replace(/\D/g, '');
   
   console.log(`Sending WhatsApp to ${cleanNumber}: ${message}`);
 
-  // If user provided a custom API (like CallMeBot or a private gateway)
-  if (config.apiUrl) {
-    try {
-      const url = config.apiUrl
-        .replace('[NUMBER]', cleanNumber)
-        .replace('[MESSAGE]', encodeURIComponent(message))
-        .replace('[APIKEY]', config.apiKey || '');
-      
-      await fetch(url);
-      console.log(`WhatsApp sent to ${cleanNumber} via custom API`);
-    } catch (err) {
-      console.error(`Failed to send WhatsApp to ${cleanNumber}:`, err);
-    }
-  } else {
-    // Default: Log it if no API is configured
-    console.log("WhatsApp API not configured. Message logged only.");
+  try {
+    const url = config.apiUrl
+      .replace('[NUMBER]', cleanNumber)
+      .replace('[MESSAGE]', encodeURIComponent(message))
+      .replace('[APIKEY]', config.apiKey || '');
+    
+    await fetch(url);
+    console.log(`WhatsApp sent to ${cleanNumber} via custom API`);
+  } catch (err) {
+    console.error(`Failed to send WhatsApp to ${cleanNumber}:`, err);
+  }
+}
+
+async function sendWhatsAppGroupMessage(groupId: string, message: string, config: any) {
+  if (!groupId || !config.groupApiUrl) return;
+  
+  console.log(`Sending WhatsApp Group message to ${groupId}: ${message}`);
+
+  try {
+    const url = config.groupApiUrl
+      .replace('[GROUP]', groupId)
+      .replace('[MESSAGE]', encodeURIComponent(message))
+      .replace('[APIKEY]', config.apiKey || '');
+    
+    await fetch(url);
+    console.log(`WhatsApp Group message sent to ${groupId}`);
+  } catch (err) {
+    console.error(`Failed to send WhatsApp Group message to ${groupId}:`, err);
   }
 }
 
