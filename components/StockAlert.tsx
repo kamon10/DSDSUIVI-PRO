@@ -1,14 +1,15 @@
 
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Send, Loader2, CheckCircle2 } from 'lucide-react';
-import { DashboardData } from '../types';
+import { DashboardData, User } from '../types';
 
 interface StockAlertProps {
   data: DashboardData;
+  user?: User | null;
   className?: string;
 }
 
-export const StockAlert: React.FC<StockAlertProps> = ({ data, className = "" }) => {
+export const StockAlert: React.FC<StockAlertProps> = ({ data, user, className = "" }) => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -59,16 +60,18 @@ export const StockAlert: React.FC<StockAlertProps> = ({ data, className = "" }) 
           <span className="text-[10px] font-bold text-rose-400 uppercase ml-2">Poches manquantes</span>
         </div>
 
-        <button 
-          onClick={handleBroadcast}
-          disabled={sending || sent}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
-            sent ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white hover:bg-rose-700 active:scale-95'
-          }`}
-        >
-          {sending ? <Loader2 size={14} className="animate-spin" /> : sent ? <CheckCircle2 size={14} /> : <Send size={14} />}
-          {sent ? 'Diffusé' : 'Notifier tout le monde'}
-        </button>
+        {user && (user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
+          <button 
+            onClick={handleBroadcast}
+            disabled={sending || sent}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+              sent ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white hover:bg-rose-700 active:scale-95'
+            }`}
+          >
+            {sending ? <Loader2 size={14} className="animate-spin" /> : sent ? <CheckCircle2 size={14} /> : <Send size={14} />}
+            {sent ? 'Diffusé' : 'Notifier tout le monde'}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, S
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { COLORS } from '../constants';
-import { StockAlert } from './StockAlert.tsx';
 
 const MONTHS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -214,7 +213,6 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
 
   return (
     <div className="space-y-12 lg:space-y-16 pb-10">
-      <StockAlert data={data} />
       <div className="flex flex-col items-center gap-8">
         <motion.div 
           initial={{ y: -20, opacity: 0 }}

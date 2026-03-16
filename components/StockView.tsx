@@ -2,8 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { DashboardData, User, StockRecord } from '../types.ts';
 import { Package, Search, Filter, Database, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, List, LayoutGrid, HeartPulse, Clock, Info } from 'lucide-react';
-import { StockAlert } from './StockAlert.tsx';
 import { PRODUCT_COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants.tsx';
+import { StockWhatsAppCapsules } from './StockWhatsAppCapsules.tsx';
 
 interface StockViewProps {
   data: DashboardData;
@@ -238,9 +238,6 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
           </div>
         </div>
       </div>
-
-      {/* Alerte Stock Bas */}
-      <StockAlert data={data} className="mb-8" />
 
       {/* Synthèse Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -539,6 +536,14 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
             </tfoot>
           </table>
         </div>
+      </div>
+
+      {/* CAPSULES WHATSAPP */}
+      <div className="mt-12">
+        <StockWhatsAppCapsules 
+          data={data} 
+          situationTime={situationTime} 
+        />
       </div>
     </div>
   );

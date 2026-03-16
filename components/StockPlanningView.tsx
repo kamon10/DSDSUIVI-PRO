@@ -2,7 +2,6 @@
 import React, { useMemo, useState } from 'react';
 import { DashboardData, User, SiteRecord, StockRecord } from '../types';
 import { SITES_DATA, COLORS, STOCK_FORECASTS } from '../constants';
-import { StockAlert } from './StockAlert.tsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Package, ShieldCheck, AlertTriangle, CheckCircle2, Search, Info, TrendingUp, Clock, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -86,7 +85,6 @@ export const StockPlanningView: React.FC<StockPlanningViewProps> = ({ data, user
 
   return (
     <div className="space-y-8">
-      <StockAlert data={data} />
       {/* Header & Filters */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>

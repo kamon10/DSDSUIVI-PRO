@@ -10,7 +10,7 @@ import {
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants';
-import { StockAlert } from './StockAlert.tsx';
+import { StockWhatsAppCapsules } from './StockWhatsAppCapsules.tsx';
 
 interface StockSummaryViewProps {
   data: DashboardData;
@@ -211,7 +211,6 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
       </div>
 
       <div ref={contentRef} className="space-y-10 p-1">
-        <StockAlert data={data} />
         {/* HEADER EXPORT */}
         <div className="hidden export-header flex items-center justify-between border-b-2 border-slate-900 pb-6 mb-8">
           <div className="flex items-center gap-6">
@@ -407,6 +406,13 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
             })}
           </div>
         </div>
+        
+        {/* CAPSULES WHATSAPP */}
+        <StockWhatsAppCapsules 
+          data={data} 
+          situationTime={situationTime} 
+          branding={branding} 
+        />
 
         {/* LIENS RAPIDES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData, AppTab, User } from '../types.ts';
 import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package } from 'lucide-react';
 import { COLORS } from '../constants.tsx';
-import { StockAlert } from './StockAlert.tsx';
 
 const getPerfColor = (perc: number) => {
   if (perc >= 100) return 'text-emerald-500';
@@ -114,7 +113,6 @@ export const VisualDashboard: React.FC<{
 
   return (
     <div className="space-y-8 pb-24 animate-in fade-in duration-700">
-      <StockAlert data={data} />
       <div className="flex justify-center mb-4">
         <div className="bg-white p-1.5 rounded-2xl shadow-xl border border-slate-100 flex gap-2">
            <button onClick={() => setViewMode('donations')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
