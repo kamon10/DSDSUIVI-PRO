@@ -26,7 +26,8 @@ export const StockAlert: React.FC<StockAlertProps> = ({ data, user, className = 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: "🚨 ALERTE STOCK CRITIQUE",
-          body: `Urgent : Le stock national est à ${stats.total.toLocaleString()} poches. Seuil de sécurité non atteint.`
+          body: `Urgent : Le stock national est à ${stats.total.toLocaleString()} poches. Seuil de sécurité non atteint.`,
+          userRole: user?.role
         })
       });
       if (response.ok) {
