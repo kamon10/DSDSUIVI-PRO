@@ -1,9 +1,11 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData, GtsRecord } from '../types.ts';
-import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, ChevronRight, Filter, Search, PlusCircle } from 'lucide-react';
+import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, ChevronRight, Filter, Search, PlusCircle, Download, FileText, Image as ImageIcon, Loader2, TrendingUp, Users, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSiteByInput } from '../constants.tsx';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 interface CollectionPlanningViewProps {
   data: DashboardData;
@@ -13,6 +15,10 @@ interface CollectionPlanningViewProps {
 export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ data, branding }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRegion, setFilterRegion] = useState('TOUS');
+  const [isExporting, setIsExporting] = useState(false);
+  const [showAllPlanning, setShowAllPlanning] = useState(false);
+  const [showEventSuccess, setShowEventSuccess] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const gtsData = data.gts || [];
 
@@ -80,6 +86,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
   const proposedPlanning = useMemo(() => {
     const planning: { 
       date: string; 
+      sortDate: Date;
       site: string; 
       lieu: string; 
       region: string; 
@@ -104,6 +111,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
         
         planning.push({
           date: finalDate.toLocaleDateString('fr-FR'),
+          sortDate: finalDate,
           site: h.site,
           lieu: h.lieu,
           region: h.region,
@@ -115,8 +123,44 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
       }
     });
 
-    return planning.sort((a, b) => a.date.split('/').reverse().join('-').localeCompare(b.date.split('/').reverse().join('-')));
+    return planning.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime());
   }, [siteLieuHistory]);
+
+  const stats = useMemo(() => {
+    const today = new Date();
+    const next7Days = new Date();
+    next7Days.setDate(today.getDate() + 7);
+
+    return {
+      totalSites: siteLieuHistory.length,
+      overdue: proposedPlanning.filter(p => p.priority === 'HAUTE' || p.priority === 'MOYENNE').length,
+      upcomingWeek: proposedPlanning.filter(p => p.sortDate <= next7Days).length,
+      totalPoches: siteLieuHistory.reduce((acc, curr) => acc + curr.totalMobile, 0)
+    };
+  }, [siteLieuHistory, proposedPlanning]);
+
+  const exportToPDF = async () => {
+    if (!dashboardRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(dashboardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f8fafc',
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Planning_Collectes_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const filteredHistory = siteLieuHistory.filter(h => {
     const matchesSearch = h.site.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -140,18 +184,123 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
     return groups;
   }, [filteredHistory]);
 
+  const timelineDays = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toLocaleDateString('fr-FR');
+      const planned = proposedPlanning.filter(p => p.date === dateStr);
+      days.push({
+        date: d,
+        dateStr,
+        dayName: d.toLocaleDateString('fr-FR', { weekday: 'short' }),
+        dayNum: d.getDate(),
+        planned
+      });
+    }
+    return days;
+  }, [proposedPlanning]);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" ref={dashboardRef}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <Calendar className="text-indigo-600" size={28} />
-            GESTION DES COLLECTES MOBILES
+            TABLEAU DE BORD PLANNING
           </h2>
-          <p className="text-slate-500 font-medium">Analyse des réalisations mobiles et proposition de planning (Cycle: 2 mois)</p>
+          <p className="text-slate-500 font-medium">Optimisation des collectes mobiles & Cycle de 2 mois</p>
         </div>
-        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
-          <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportToPDF}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+          >
+            {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />}
+            EXPORTER PDF
+          </button>
+          <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
+            <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <MapPin size={20} />
+            </div>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Sites Suivis</p>
+          </div>
+          <p className="text-3xl font-black text-slate-900">{stats.totalSites}</p>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+              <AlertCircle size={20} />
+            </div>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">En Retard</p>
+          </div>
+          <p className="text-3xl font-black text-rose-600">{stats.overdue}</p>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+              <Clock size={20} />
+            </div>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">7 Prochains Jours</p>
+          </div>
+          <p className="text-3xl font-black text-blue-600">{stats.upcomingWeek}</p>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+              <TrendingUp size={20} />
+            </div>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Total Poches Mobiles</p>
+          </div>
+          <p className="text-3xl font-black text-emerald-600">{stats.totalPoches}</p>
+        </div>
+      </div>
+
+      {/* Timeline View */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+            <Calendar size={20} className="text-indigo-600" />
+            Aperçu des 30 Prochains Jours
+          </h3>
+          <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-indigo-500" />
+              Collecte Prévue
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+          {timelineDays.map((day, idx) => (
+            <div 
+              key={day.dateStr}
+              className={`flex-shrink-0 w-16 h-24 rounded-2xl border flex flex-col items-center justify-center transition-all ${
+                day.planned.length > 0 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                  : 'bg-slate-50 border-slate-100 text-slate-400'
+              }`}
+            >
+              <span className="text-[10px] font-black uppercase opacity-60">{day.dayName}</span>
+              <span className="text-xl font-black my-1">{day.dayNum}</span>
+              {day.planned.length > 0 && (
+                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-black">
+                  {day.planned.length}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -275,12 +424,16 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             
             <div className="space-y-4 relative z-10">
               {proposedPlanning.length > 0 ? (
-                proposedPlanning.slice(0, 8).map((p, idx) => (
+                (showAllPlanning ? proposedPlanning : proposedPlanning.slice(0, 8)).map((p, idx) => (
                   <motion.div 
                     key={`${p.date}_${p.site}_${p.lieu}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onClick={() => {
+                      setShowEventSuccess(true);
+                      setTimeout(() => setShowEventSuccess(false), 3000);
+                    }}
                     className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl hover:bg-white/15 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -314,10 +467,33 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             </div>
 
             {proposedPlanning.length > 8 && (
-              <button className="w-full mt-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
-                Voir tout le planning
+              <button 
+                onClick={() => setShowAllPlanning(!showAllPlanning)}
+                className="w-full mt-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10"
+              >
+                {showAllPlanning ? 'Réduire la liste' : `Voir tout le planning (${proposedPlanning.length})`}
               </button>
             )}
+
+            {/* Success Toast */}
+            <AnimatePresence>
+              {showEventSuccess && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="absolute bottom-8 left-8 right-8 bg-emerald-500 text-white p-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3"
+                >
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <CheckCircle2 size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black uppercase tracking-tight">Événement Créé</span>
+                    <span className="text-[10px] font-bold opacity-80">La collecte a été ajoutée au planning.</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl">
