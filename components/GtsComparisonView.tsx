@@ -1,8 +1,10 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types.ts';
-import { Truck, RefreshCw, AlertCircle, CheckCircle2, Search, Calendar, MapPin, Package } from 'lucide-react';
+import { Truck, RefreshCw, AlertCircle, CheckCircle2, Search, Calendar, MapPin, Package, Download, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 interface GtsComparisonViewProps {
   data: DashboardData;
@@ -14,6 +16,8 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
   const todayStr = new Date().toLocaleDateString('en-CA');
   const [startDate, setStartDate] = useState<string>(todayStr);
   const [endDate, setEndDate] = useState<string>(todayStr);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   // Create a site-to-region lookup map
   const siteRegionMap = useMemo(() => {
@@ -180,8 +184,63 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
     }), { prelFixe: 0, prelMobile: 0, gtsFixe: 0, gtsMobile: 0 });
   }, [comparisonData]);
 
+  const exportToPNG = async () => {
+    if (!exportRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2, // High definition
+        useCORS: true,
+        backgroundColor: '#f8fafc', // slate-50
+        logging: false,
+      });
+      const link = document.createElement('a');
+      link.download = `Comparaison_GTS_${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Export PNG failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportToPDF = async () => {
+    if (!exportRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f8fafc',
+        logging: false,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      // If content is longer than one page, we might need multiple pages
+      // But for a dashboard view, usually we scale it to fit or just one long page
+      // Here we'll just put it on the first page, scaled to width
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Comparaison_GTS_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Export PDF failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" ref={exportRef}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
@@ -190,8 +249,28 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
           </h2>
           <p className="text-slate-500 font-medium">Vérification de la cohérence entre saisies et transports</p>
         </div>
-        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
-          <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportToPNG}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+            >
+              {isExporting ? <Loader2 className="animate-spin" size={14} /> : <ImageIcon size={14} />}
+              PNG
+            </button>
+            <button
+              onClick={exportToPDF}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-xs font-black text-white hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50"
+            >
+              {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />}
+              PDF A4
+            </button>
+          </div>
+          <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
+            <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+          </div>
         </div>
       </div>
 
