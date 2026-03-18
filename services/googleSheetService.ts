@@ -1,5 +1,5 @@
 
-import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats, ActivityLog, StockRecord } from "../types.ts";
+import { DashboardData, DailyHistoryRecord, DailyHistorySite, RegionData, SiteRecord, User, UserRole, DistributionRecord, DistributionStats, ActivityLog, StockRecord, GtsRecord } from "../types.ts";
 import { getSiteObjectives, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from "../constants.tsx";
 
 const MONTHS_FR = [
@@ -381,7 +381,79 @@ export const fetchStock = async (url: string): Promise<StockRecord[] | null> => 
   }
 };
 
-export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string): Promise<DashboardData | null> => {
+export const parseGts = (text: string): GtsRecord[] | null => {
+  try {
+    const rows = parseCSV(text);
+    if (rows.length < 2) return null;
+
+    const headers = rows[0].map(h => normalizeHeader(h));
+    console.log("[Parser] GTS Headers:", headers);
+    
+    const idxDate = headers.findIndex(h => h.includes('CO_DCOLLECTE') || h.includes('DATE') || h.includes('JOUR'));
+    const idxSite = headers.findIndex(h => h.includes('SI_CODE') || h.includes('SITE') || h.includes('STRUCTURE'));
+    const idxLieu = headers.findIndex(h => h.includes('LI_NOM') || h.includes('LIEU') || h.includes('LIBELLE'));
+    const idxCaCode = headers.findIndex(h => h.includes('CA_CODE'));
+    const idxPvCode = headers.findIndex(h => h.includes('PV_CODE') || h.includes('TYPE PRELEVE'));
+    const idxQty = headers.findIndex(h => h.includes('NOMBRE') || h.includes('QTE') || h.includes('QUANTITE'));
+
+    const records: GtsRecord[] = [];
+    rows.slice(1).forEach(row => {
+      const date = normalizeDate(row[idxDate >= 0 ? idxDate : 6]);
+      if (!date) return;
+
+      const qty = cleanNum(row[idxQty >= 0 ? idxQty : 0]);
+      const caCode = cleanStr(row[idxCaCode >= 0 ? idxCaCode : 2]).toUpperCase();
+      const pvCode = cleanNum(row[idxPvCode >= 0 ? idxPvCode : 5]);
+      const siteInput = cleanStr(row[idxSite >= 0 ? idxSite : 1]);
+      const siteInfo = getSiteByInput(siteInput);
+      
+      const isFixe = caCode === 'Z';
+      
+      let fixe = 0;
+      let mobile = 0;
+      let autoTransfusion = 0;
+
+      if (pvCode === 1 || pvCode === 3) {
+        if (isFixe) fixe = qty;
+        else mobile = qty;
+      } else if (pvCode === 2 || pvCode === 4) {
+        autoTransfusion = qty;
+      }
+
+      records.push({
+        date,
+        site: siteInfo?.name || siteInput || "SITE INCONNU",
+        region: siteInfo?.region || "AUTRES",
+        lieu: cleanStr(row[idxLieu >= 0 ? idxLieu : 7]),
+        caCode,
+        pvCode,
+        fixe,
+        mobile,
+        autoTransfusion,
+        total: fixe + mobile
+      });
+    });
+
+    return records;
+  } catch (e) {
+    console.error("Error parsing GTS data:", e);
+    return null;
+  }
+};
+
+export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
+  if (!url || !url.startsWith('http')) return null;
+  try {
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    if (!response.ok) return null;
+    const text = await response.text();
+    return parseGts(text);
+  } catch (e) {
+    return null;
+  }
+};
+
+export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string, gtsUrl?: string): Promise<DashboardData | null> => {
   try {
     const fetchWithRetry = async (targetUrl: string, key: string, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
       if (!targetUrl || !targetUrl.startsWith('http')) {
@@ -441,6 +513,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const collecteResult = await fetchWithRetry(url, 'collecte');
     const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE') : { text: '', hasChanged: false, error: false };
     const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK') : { text: '', hasChanged: false, error: false };
+    const gtsResult = gtsUrl ? await fetchWithRetry(gtsUrl, 'GTS') : { text: '', hasChanged: false, error: false };
 
     if (stockResult.error && stockUrl) {
       console.warn(`[Sync] Échec de récupération pour STOCK. Utilisation du cache si disponible.`);
@@ -455,7 +528,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       throw new Error("Impossible de charger la source principale (Collecte)");
     }
 
-    if (!force && !collecteResult.hasChanged && !distResult.hasChanged && !stockResult.hasChanged) {
+    if (!force && !collecteResult.hasChanged && !distResult.hasChanged && !stockResult.hasChanged && !gtsResult.hasChanged) {
       return null;
     }
 
@@ -611,6 +684,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
 
     const distributions = distResult.text ? parseDistributions(distResult.text) : undefined;
     const stock = stockResult.text ? parseStock(stockResult.text) : undefined;
+    const gts = gtsResult.text ? parseGts(gtsResult.text) : undefined;
 
     return {
       date: latestDateStr,
@@ -640,7 +714,8 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       dailyHistory,
       regions,
       distributions: distributions || undefined,
-      stock: stock || undefined
+      stock: stock || undefined,
+      gts: gts || undefined
     };
   } catch (err: any) {
     console.error("Erreur fatale lors du chargement des données du tableau de bord:", err.message || err);
