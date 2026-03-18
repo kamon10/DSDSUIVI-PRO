@@ -101,6 +101,20 @@ export interface DailyHistoryRecord {
   sites: DailyHistorySite[];
 }
 
+export interface GtsRecord {
+  date: string;
+  site: string;
+  region?: string;
+  fixe: number;
+  mobile: number;
+  total: number;
+  autoTransfusion: number;
+  lieu?: string;
+  caCode?: string;
+  pvCode?: number;
+  [key: string]: any;
+}
+
 export interface DashboardData {
   date: string;
   month: string;
@@ -115,7 +129,8 @@ export interface DashboardData {
     stats: DistributionStats;
   };
   stock?: StockRecord[];
+  gts?: GtsRecord[];
 }
 
 // Added 'recap-dist' to support the separate flux summary view
-export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed' | 'global-report';
+export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed' | 'global-report' | 'gts' | 'gts-synthesis' | 'gts-comparison' | 'collection-planning';

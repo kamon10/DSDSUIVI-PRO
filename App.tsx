@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_LINK_STOCK, DEFAULT_SCRIPT_URL, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from './constants.tsx';
+import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS, DEFAULT_SCRIPT_URL, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from './constants.tsx';
 import { VisualDashboard } from './components/VisualDashboard.tsx';
 import { PerformanceView } from './components/PerformanceView.tsx';
 import { RecapView } from './components/RecapView.tsx';
@@ -25,12 +25,16 @@ import { StockPlanningView } from './components/StockPlanningView.tsx';
 import { GlobalSynthesisReportView } from './components/GlobalSynthesisReportView.tsx';
 import { DistributionStockView } from './components/DistributionStockView.tsx';
 import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
+import { GtsView } from './components/GtsView.tsx';
+import { GtsSynthesis } from './components/GtsSynthesis.tsx';
+import { GtsComparisonView } from './components/GtsComparisonView.tsx';
+import { CollectionPlanningView } from './components/CollectionPlanningView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
@@ -113,7 +117,7 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK);
+      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS);
       
       if (dataResult) {
         setFullData(dataResult);
@@ -313,6 +317,10 @@ const App: React.FC = () => {
     { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
     { id: 'distribution-detailed', icon: <ClipboardList size={18} />, label: 'Détail Dist', public: false },
     { id: 'distribution-stock', icon: <Database size={18} />, label: 'Stock & Dist', public: false },
+    { id: 'gts', icon: <Truck size={18} />, label: 'GTS', public: false },
+    { id: 'gts-synthesis', icon: <PieChart size={18} />, label: 'Synthèse GTS', public: false },
+    { id: 'gts-comparison', icon: <RefreshCw size={18} />, label: 'Comparaison GTS', public: false },
+    { id: 'collection-planning', icon: <Calendar size={18} />, label: 'Planning Mobiles', public: false },
     { id: 'stock-summary', icon: <Layout size={18} />, label: 'Résumé Stock', public: false },
     { id: 'stock', icon: <Package size={18} />, label: 'Stock', public: false },
     { id: 'stock-focus', icon: <Zap size={18} />, label: 'Focus Analyse', public: false },
@@ -341,6 +349,7 @@ const App: React.FC = () => {
     const groups = [
       { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
+      { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison', 'collection-planning'] },
       { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
       { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'global-report', 'contact'] }
     ];
@@ -553,6 +562,10 @@ const App: React.FC = () => {
                   {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} />}
                   {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
+                  {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
+                  {activeTab === 'gts-synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
+                  {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
+                  {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
                   {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
                   {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
                   {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
