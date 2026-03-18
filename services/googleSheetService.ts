@@ -24,18 +24,42 @@ const cleanStr = (s: any): string => {
 const normalizeDate = (d: string): string => {
   const s = cleanStr(d);
   if (!s) return "";
-  if (s.includes('-') && s.length >= 10) {
-    const parts = s.split('-');
-    if (parts.length >= 3) return `${parts[2].substring(0,2).padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+  
+  // Format ISO YYYY-MM-DD ou YYYY/MM/DD
+  const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (isoMatch) {
+    return `${isoMatch[3].padStart(2, '0')}/${isoMatch[2].padStart(2, '0')}/${isoMatch[1]}`;
   }
-  const parts = s.split('/');
-  if (parts.length === 3) {
-    let day = parts[0].padStart(2, '0');
-    let month = parts[1].padStart(2, '0');
-    let year = parts[2];
+  
+  // Format DD/MM/YYYY ou MM/DD/YYYY ou DD-MM-YYYY
+  const commonMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
+  if (commonMatch) {
+    let part1 = commonMatch[1].padStart(2, '0');
+    let part2 = commonMatch[2].padStart(2, '0');
+    let year = commonMatch[3];
     if (year.length === 2) year = "20" + year;
+    
+    const p1 = parseInt(part1);
+    const p2 = parseInt(part2);
+    
+    // Heuristique pour distinguer DD/MM de MM/DD
+    // Si p2 > 12, alors p2 est forcément le jour, donc format MM/DD/YYYY
+    if (p2 > 12 && p1 <= 12) {
+      return `${part2}/${part1}/${year}`;
+    }
+    // Par défaut on assume DD/MM/YYYY (standard FR)
+    return `${part1}/${part2}/${year}`;
+  }
+  
+  // Tentative de parsing natif pour les formats texte (ex: "18 Mar 2026")
+  const nativeDate = new Date(s);
+  if (!isNaN(nativeDate.getTime())) {
+    const day = nativeDate.getDate().toString().padStart(2, '0');
+    const month = (nativeDate.getMonth() + 1).toString().padStart(2, '0');
+    const year = nativeDate.getFullYear();
     return `${day}/${month}/${year}`;
   }
+
   return s;
 };
 
@@ -184,7 +208,7 @@ export const parseDistributions = (text: string): {records: DistributionRecord[]
     console.log("[Parser] BASE Headers détectés:", headers);
 
     const idxCode = headers.findIndex(h => h.includes('CODE') || h.includes('ID'));
-    const idxDate = headers.findIndex(h => h.includes('DATE') || h.includes('JOUR') || h.includes('DATE DIST') || h.includes('DATE_DIST'));
+    const idxDate = headers.findIndex(h => h.includes('DATE') || h.includes('JOUR') || h.includes('DATE DIST') || h.includes('DATE_DIST') || h.includes('PERIODE') || h.includes('TIME'));
     const idxSite = headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE') || h.includes('SOURCE') || h.includes('SITE SOURCE'));
     const idxQty = headers.findIndex(h => h.includes('QUANTITE') || h.includes('QTE') || h.includes('NB') || h.includes('NOMBRE'));
     const idxProd = headers.findIndex(h => h.includes('PRODUIT') || h.includes('TYPE') || h.includes('PSL'));
@@ -389,7 +413,7 @@ export const parseGts = (text: string): GtsRecord[] | null => {
     const headers = rows[0].map(h => normalizeHeader(h));
     console.log("[Parser] GTS Headers:", headers);
     
-    const idxDate = headers.findIndex(h => h.includes('CO_DCOLLECTE') || h.includes('DATE') || h.includes('JOUR'));
+    const idxDate = headers.findIndex(h => h.includes('CO_DCOLLECTE') || h.includes('DATE') || h.includes('JOUR') || h.includes('PERIODE') || h.includes('TIME'));
     const idxSite = headers.findIndex(h => h.includes('SI_CODE') || h.includes('SITE') || h.includes('STRUCTURE'));
     const idxLieu = headers.findIndex(h => h.includes('LI_NOM') || h.includes('LIEU') || h.includes('LIBELLE'));
     const idxCaCode = headers.findIndex(h => h.includes('CA_CODE'));
@@ -545,7 +569,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     console.log("[Parser] COLLECTE Headers détectés:", headers);
 
     const col = {
-      date: headers.findIndex(h => h.includes('DATE') || h.includes('JOUR')),
+      date: headers.findIndex(h => h.includes('DATE') || h.includes('JOUR') || h.includes('PERIODE') || h.includes('TIME')),
       code: headers.findIndex(h => h.includes('CODE') || h.includes('ID')),
       site: headers.findIndex(h => h.includes('SITE') || h.includes('STRUCTURE')),
       fixe: headers.findIndex(h => h.includes('FIXE')),
@@ -554,7 +578,18 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     };
 
     // Fallback sur les index par défaut si non trouvés
-    if (col.date === -1) col.date = 0;
+    if (col.date === -1) {
+      // Tentative de détection automatique de la colonne date
+      for (let i = 0; i < (rows[1]?.length || 0); i++) {
+        const val = normalizeDate(rows[1][i]);
+        if (val.includes('/') && val.split('/').length === 3) {
+          col.date = i;
+          console.log(`[Parser] Colonne DATE auto-détectée à l'index ${i}`);
+          break;
+        }
+      }
+      if (col.date === -1) col.date = 0;
+    }
     if (col.code === -1) col.code = 1;
     if (col.site === -1) col.site = 2;
     if (col.fixe === -1) col.fixe = 5;
@@ -567,8 +602,13 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     rows.slice(1).forEach(row => {
       const dateStr = normalizeDate(row[col.date]);
       if (!dateStr) return;
-      const [d, m, y] = dateStr.split('/').map(Number);
+      
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) return;
+      
+      const [d, m, y] = parts.map(Number);
       const dateObj = new Date(y, m - 1, d);
+      
       if (!isNaN(dateObj.getTime())) {
         if (dateObj > latestDateObj) latestDateObj = dateObj;
         validRows.push({ row, dateObj, dateStr });
