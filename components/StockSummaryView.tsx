@@ -362,7 +362,7 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
           </div>
         </div>
 
-        {/* VISION PAR GROUPE (BARRES D'AUTONOMIE) */}
+        {/* ANALYSE PAR GROUPE (BARRES D'AUTONOMIE) */}
         <div className="space-y-8">
           <div className="flex items-center gap-4 px-6">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
@@ -453,7 +453,7 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
             </div>
             <div className="text-left">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Détail Stock</span>
-              <span className="text-base font-black text-slate-900 uppercase tracking-tighter">Vision Granulaire</span>
+              <span className="text-base font-black text-slate-900 uppercase tracking-tighter">STOCK Granulaire</span>
             </div>
             <ChevronRight size={20} className="ml-auto text-slate-300" />
           </button>

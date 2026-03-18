@@ -331,7 +331,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
                   <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-orange-400">Synthèse Groupes</h2>
                   <div className="flex items-baseline gap-4">
                     <span className="text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
-                      Vision 10 J
+                      STOCK 10 J
                     </span>
                   </div>
                 </div>

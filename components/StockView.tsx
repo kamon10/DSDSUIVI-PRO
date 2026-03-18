@@ -429,7 +429,7 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
         <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 duration-300">
           <Info size={16} className="text-orange-600 shrink-0" />
           <p className="text-[10px] font-bold text-orange-800 uppercase tracking-wide">
-            Le périmètre Abidjan inclut : Treichville, Cocody, Yopougon, Abobo, Port-Bouët, Anyama, Bingerville. (Sont exclus de cette vision : Bonoua, Aboisso, Adzopé, Agboville, Dabou)
+            Le périmètre Abidjan inclut : Treichville, Cocody, Yopougon, Abobo, Port-Bouët, Anyama, Bingerville. (Sont exclus de cette analyse : Bonoua, Aboisso, Adzopé, Agboville, Dabou)
           </p>
         </div>
       )}

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Command, X, ArrowRight, Activity, LayoutDashboard, Map, PlusSquare, Package, UserCheck, History, BarChart3, Settings, TrendingUp, Zap, ShieldCheck } from 'lucide-react';
+import { Search, Command, X, ArrowRight, Activity, LayoutDashboard, Map, PlusSquare, Package, UserCheck, History, BarChart3, Settings, TrendingUp, Zap, ShieldCheck, Truck, PieChart, RefreshCw, Calendar } from 'lucide-react';
 import { AppTab, SiteRecord } from '../types';
 
 interface CommandPaletteProps {
@@ -45,12 +45,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     { id: 'entry', label: 'Saisie - Nouveau Rapport', icon: <PlusSquare size={16} /> },
     { id: 'stock', label: 'Stock - Inventaire National', icon: <Package size={16} /> },
     { id: 'stock-focus', label: 'Focus Analyse Stock - Insights Stratégiques', icon: <Zap size={16} /> },
-    { id: 'stock-synthesis', label: 'Synthèse Stock - Vision Prévisionnelle', icon: <TrendingUp size={16} /> },
+    { id: 'stock-synthesis', label: 'Synthèse Stock - STOCK Prévisionnelle', icon: <TrendingUp size={16} /> },
     { id: 'stock-planning', label: 'Planning Stock - Autonomie par Site', icon: <ShieldCheck size={16} /> },
     { id: 'capacity-planning', label: 'Capacité - Prévisions de Prélèvement', icon: <Zap size={16} /> },
     { id: 'site-focus', label: 'Focus - Analyse par Site', icon: <UserCheck size={16} /> },
     { id: 'history', label: 'Historique - Rapports Passés', icon: <History size={16} /> },
     { id: 'performance', label: 'Performance - Classement', icon: <BarChart3 size={16} /> },
+    { id: 'gts', label: 'GTS - Suivi des Transports', icon: <Truck size={16} /> },
+    { id: 'gts-synthesis', label: 'Synthèse GTS - Analyse Globale Transports', icon: <PieChart size={16} /> },
+    { id: 'gts-comparison', label: 'Comparaison GTS - Prélèvement vs Transport', icon: <RefreshCw size={16} /> },
+    { id: 'collection-planning', label: 'Planning Mobiles - Gestion des Collectes Mobiles', icon: <Calendar size={16} /> },
   ];
 
   const filteredNav = navigationItems.filter(item => 

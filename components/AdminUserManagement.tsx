@@ -1,79 +1,622 @@
 
-import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Send, Loader2, CheckCircle2 } from 'lucide-react';
-import { DashboardData, User } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ShieldCheck, User, Mail, Building2, UserPlus, Trash2, CheckCircle2, AlertCircle, RefreshCw, Search, Filter, Shield, UserCog, MoreVertical, Image as ImageIcon, Type, Sparkles, Save, RotateCcw, Upload, Phone, MapPin, Edit3, Clock, Database, LogIn, Send } from 'lucide-react';
+import { fetchUsers, fetchLogs, saveRecordToSheet } from '../services/googleSheetService';
+import { User as UserType, UserRole, ActivityLog } from '../types';
 
-interface StockAlertProps {
-  data: DashboardData;
-  user?: User | null;
-  className?: string;
+interface AdminUserManagementProps {
+  scriptUrl: string;
+  onBrandingChange: (branding: {logo: string, hashtag: string}) => void;
+  currentBranding: {logo: string, hashtag: string};
+  sites: any[];
+  onSyncRequest?: () => void;
+  user: UserType | null;
 }
 
-export const StockAlert: React.FC<StockAlertProps> = ({ data, user, className = "" }) => {
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ scriptUrl, onBrandingChange, currentBranding, sites, onSyncRequest, user }) => {
+  const [activeTab, setActiveTab] = useState<'users' | 'branding' | 'sites' | 'logs' | 'whatsapp'>('users');
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [logSearchTerm, setLogSearchTerm] = useState("");
+  const [siteSearchTerm, setSiteSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("ALL");
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
+  const [editingSite, setEditingSite] = useState<any | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
-  const stats = useMemo(() => {
-    const total = data.stock?.reduce((acc, s) => acc + s.quantite, 0) || 0;
-    return { total };
-  }, [data.stock]);
+  const [tempHashtag, setTempHashtag] = useState(currentBranding.hashtag);
+  const [tempLogo, setTempLogo] = useState(currentBranding.logo);
 
-  const handleBroadcast = async () => {
-    setSending(true);
+  const [whatsappConfig, setWhatsappConfig] = useState<{
+    numbers: string[];
+    alertThreshold: number;
+    apiUrl: string;
+    groupApiUrl: string;
+    groupId: string;
+    apiKey: string;
+  }>({
+    numbers: [],
+    alertThreshold: 12000,
+    apiUrl: "",
+    groupApiUrl: "",
+    groupId: "",
+    apiKey: ""
+  });
+  const [newNumber, setNewNumber] = useState("");
+
+  const roles: UserRole[] = ['AGENT', 'PRES', 'ADMIN', 'SUPERADMIN'];
+  const regions = useMemo(() => ["TOUS LES PRES", ...Array.from(new Set(sites.map(s => s.region))).sort()], [sites]);
+
+  const loadData = async () => {
+    if (!scriptUrl) return;
+    setLoading(true);
     try {
-      const response = await fetch('/api/notifications/broadcast-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: "🚨 ALERTE STOCK CRITIQUE",
-          body: `Urgent : Le stock national est à ${stats.total.toLocaleString()} poches. Seuil de sécurité non atteint.`,
-          userRole: user?.role
-        })
-      });
-      if (response.ok) {
-        setSent(true);
-        setTimeout(() => setSent(false), 3000);
-      }
+      const [usersData, logsData, waConfig] = await Promise.all([
+        fetchUsers(scriptUrl),
+        fetchLogs(scriptUrl),
+        fetch(`/api/admin/whatsapp-config?userRole=${user?.role}`).then(res => res.json())
+      ]);
+      setUsers(usersData);
+      setLogs(logsData.reverse()); // Plus récents d'abord
+      if (waConfig) setWhatsappConfig(waConfig);
     } catch (err) {
-      console.error("Failed to broadcast alert:", err);
+      console.error("Erreur chargement:", err);
     } finally {
-      setSending(false);
+      setLoading(false);
     }
   };
 
-  if (stats.total >= 12000) return null;
+  useEffect(() => { loadData(); }, [scriptUrl]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const matchSearch = (u.nom + " " + u.prenoms + " " + u.email).toLowerCase().includes(searchTerm.toLowerCase());
+      const matchRole = filterRole === "ALL" || u.role === filterRole;
+      return matchSearch && matchRole;
+    });
+  }, [users, searchTerm, filterRole]);
+
+  const filteredLogs = useMemo(() => {
+    return logs.filter(l => 
+      l.user.toLowerCase().includes(logSearchTerm.toLowerCase()) || 
+      l.details.toLowerCase().includes(logSearchTerm.toLowerCase()) ||
+      l.action.toLowerCase().includes(logSearchTerm.toLowerCase())
+    );
+  }, [logs, logSearchTerm]);
+
+  const filteredSites = useMemo(() => {
+    return sites.filter(s => 
+      s.name.toLowerCase().includes(siteSearchTerm.toLowerCase()) || 
+      s.code.toLowerCase().includes(siteSearchTerm.toLowerCase()) ||
+      s.manager.toLowerCase().includes(siteSearchTerm.toLowerCase())
+    );
+  }, [siteSearchTerm, sites]);
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setSubmitting(true);
+    try {
+      await saveRecordToSheet(scriptUrl, { type: 'UPDATE_USER', ...editingUser });
+      setStatus({ type: 'success', msg: `Utilisateur mis à jour.` });
+      setEditingUser(null);
+      await loadData();
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Échec mise à jour." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateSite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSite) return;
+    setSubmitting(true);
+    try {
+      await saveRecordToSheet(scriptUrl, { type: 'UPDATE_SITE_INFO', ...editingSite });
+      setStatus({ type: 'success', msg: `Informations du site ${editingSite.name} mises à jour.` });
+      setEditingSite(null);
+      if (onSyncRequest) onSyncRequest();
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Échec de la modification." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.size <= 150000) {
+      const reader = new FileReader();
+      reader.onloadend = () => setTempLogo(reader.result as string);
+      reader.readAsDataURL(file);
+    } else if (file) {
+      setStatus({ type: 'error', msg: "Image trop lourde (> 150ko)." });
+    }
+  };
+
+  const handleSaveBranding = async () => {
+    setSubmitting(true);
+    try {
+      await saveRecordToSheet(scriptUrl, { type: 'UPDATE_BRANDING', logo: tempLogo, hashtag: tempHashtag });
+      onBrandingChange({ logo: tempLogo, hashtag: tempHashtag });
+      setStatus({ type: 'success', msg: "Branding synchronisé." });
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Erreur branding." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveWhatsApp = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/admin/whatsapp-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...whatsappConfig, userRole: user?.role })
+      });
+      if (res.ok) {
+        setStatus({ type: 'success', msg: "Configuration WhatsApp enregistrée." });
+      } else {
+        throw new Error("Erreur serveur");
+      }
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Erreur lors de l'enregistrement WhatsApp." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (whatsappConfig.numbers.length === 0 && !whatsappConfig.groupId) {
+      setStatus({ type: 'error', msg: "Ajoutez au moins un numéro ou un ID de groupe pour tester." });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/admin/whatsapp-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          number: whatsappConfig.numbers[0], // Test with first number
+          message: "Test de connexion HS - TextMeBot",
+          userRole: user?.role
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const result = data.results[0];
+        if (result.status === 200) {
+          setStatus({ type: 'success', msg: `Test réussi ! Réponse API: ${result.response}` });
+        } else {
+          setStatus({ type: 'error', msg: `Erreur API (${result.status}): ${result.response}` });
+        }
+      } else {
+        setStatus({ type: 'error', msg: `Erreur: ${data.error}` });
+      }
+    } catch (err) {
+      setStatus({ type: 'error', msg: "Erreur lors de la communication avec le serveur." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const addWhatsAppNumber = () => {
+    if (!newNumber) return;
+    if (whatsappConfig.numbers.includes(newNumber)) return;
+    setWhatsappConfig({
+      ...whatsappConfig,
+      numbers: [...whatsappConfig.numbers, newNumber]
+    });
+    setNewNumber("");
+  };
+
+  const removeWhatsAppNumber = (num: string) => {
+    setWhatsappConfig({
+      ...whatsappConfig,
+      numbers: whatsappConfig.numbers.filter(n => n !== num)
+    });
+  };
+
+  const getRoleBadge = (role: UserRole) => {
+    switch (role) {
+      case 'SUPERADMIN': return 'bg-red-600 text-white';
+      case 'ADMIN': return 'bg-slate-900 text-white';
+      case 'PRES': return 'bg-blue-600 text-white';
+      case 'AGENT': return 'bg-emerald-500 text-white';
+      default: return 'bg-slate-100 text-slate-500';
+    }
+  };
+
+  const getLogIcon = (action: string) => {
+    if (action === 'CONNEXION') return <LogIn size={16} className="text-blue-500" />;
+    if (action === 'SAISIE') return <Database size={16} className="text-emerald-500" />;
+    if (action === 'MISE_A_JOUR') return <Edit3 size={16} className="text-orange-500" />;
+    return <Clock size={16} className="text-slate-400" />;
+  };
 
   return (
-    <div className={`bg-rose-50 border-2 border-rose-200 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-pulse shadow-lg ${className}`}>
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
-          <AlertTriangle className="text-white" size={24} />
-        </div>
-        <div>
-          <h3 className="text-lg font-black uppercase tracking-tighter text-rose-600 leading-none">Alerte Stock Critique</h3>
-          <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-1">Le volume total est inférieur au seuil de sécurité (12 000 poches)</p>
+    <div className="space-y-10 animate-in fade-in duration-700 pb-12">
+      <div className="bg-[#0f172a] rounded-[3.5rem] p-10 lg:p-14 text-white shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 blur-[120px] rounded-full -mr-32 -mt-32"></div>
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-10">
+          <div className="flex items-center gap-8">
+            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-red-600 rounded-3xl flex items-center justify-center shadow-xl shadow-red-900/40">
+              <ShieldCheck size={36} />
+            </div>
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tighter leading-none mb-3">Centre de Commandement</h2>
+              <p className="text-white/40 font-black uppercase tracking-[0.4em] text-[9px]">Gestion des privilèges, de l'identité et des structures</p>
+            </div>
+          </div>
+          
+          <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl overflow-x-auto no-scrollbar">
+             <button onClick={() => setActiveTab('users')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Agents</button>
+             <button onClick={() => setActiveTab('sites')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sites' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Structures</button>
+             <button onClick={() => setActiveTab('logs')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'logs' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Journaux</button>
+             <button onClick={() => setActiveTab('whatsapp')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'whatsapp' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>WhatsApp</button>
+             <button onClick={() => setActiveTab('branding')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'branding' ? 'bg-white text-slate-900 shadow-xl' : 'text-white/40 hover:text-white'}`}>Branding</button>
+          </div>
         </div>
       </div>
-      
-      <div className="flex items-center gap-6">
-        <div className="text-right">
-          <span className="text-2xl font-black text-rose-600 tracking-tighter">-{ (12000 - stats.total).toLocaleString() }</span>
-          <span className="text-[10px] font-bold text-rose-400 uppercase ml-2">Poches manquantes</span>
-        </div>
 
-        {user && (user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
-          <button 
-            onClick={handleBroadcast}
-            disabled={sending || sent}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
-              sent ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white hover:bg-rose-700 active:scale-95'
-            }`}
-          >
-            {sending ? <Loader2 size={14} className="animate-spin" /> : sent ? <CheckCircle2 size={14} /> : <Send size={14} />}
-            {sent ? 'Diffusé' : 'Notifier tout le monde'}
-          </button>
-        )}
-      </div>
+      {activeTab === 'users' && (
+        <>
+          <div className="flex flex-col lg:flex-row gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 items-center justify-between">
+             <div className="relative flex-1 w-full lg:w-auto">
+                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Rechercher un agent..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none" />
+             </div>
+             <div className="flex items-center gap-4 w-full lg:w-auto">
+                <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-[10px] font-black uppercase outline-none cursor-pointer">
+                  <option value="ALL">Tous les rôles</option>
+                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <button onClick={loadData} className="p-3 bg-slate-900 text-white rounded-xl shadow-lg"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
+             </div>
+          </div>
+          <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden overflow-x-auto">
+            <table className="w-full">
+              <thead><tr className="bg-slate-50 border-b"><th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Identité</th><th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Rôle</th><th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Rattachement</th><th className="px-8 py-6 text-right text-[10px] font-black text-slate-400 uppercase">Actions</th></tr></thead>
+              <tbody className="divide-y">
+                {loading ? <tr><td colSpan={4} className="py-20 text-center opacity-30">Chargement...</td></tr> : filteredUsers.map((u, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-8 py-6"><p className="text-[12px] font-black uppercase">{u.nom} {u.prenoms}</p><p className="text-[10px] text-slate-400">{u.email}</p></td>
+                    <td className="px-8 py-6 text-center"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${getRoleBadge(u.role)}`}>{u.role}</span></td>
+                    <td className="px-8 py-6 text-center text-[10px] font-black uppercase">{u.site || u.region || 'NATIONAL'}</td>
+                    <td className="px-8 py-6 text-right"><button onClick={() => setEditingUser(u)} className="p-2 border rounded-lg text-slate-400 hover:text-slate-900"><UserCog size={18} /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'logs' && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4">
+          <div className="flex flex-col lg:flex-row gap-6 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 items-center justify-between">
+             <div className="relative flex-1 w-full lg:w-auto">
+                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input value={logSearchTerm} onChange={(e) => setLogSearchTerm(e.target.value)} placeholder="Filtrer l'activité (Nom, Action, Détail)..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none" />
+             </div>
+             <button onClick={loadData} className="p-3 bg-slate-900 text-white rounded-xl shadow-lg flex items-center gap-2 px-6">
+               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+               <span className="text-[10px] font-black uppercase">Actualiser</span>
+             </button>
+          </div>
+          <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden overflow-x-auto">
+             <table className="w-full">
+                <thead>
+                   <tr className="bg-slate-50 border-b">
+                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Date & Heure</th>
+                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Utilisateur</th>
+                      <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Action</th>
+                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Détails de l'activité</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y">
+                   {loading ? (
+                     <tr><td colSpan={4} className="py-20 text-center opacity-30">Chargement des journaux...</td></tr>
+                   ) : filteredLogs.length > 0 ? filteredLogs.map((log, i) => (
+                     <tr key={i} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-8 py-6">
+                           <p className="text-[11px] font-black text-slate-900">{log.timestamp}</p>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="text-[11px] font-black uppercase text-slate-800">{log.user}</p>
+                           <p className="text-[9px] text-slate-400">{log.email}</p>
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                           <div className="flex flex-col items-center gap-1">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mb-1">
+                                 {getLogIcon(log.action)}
+                              </div>
+                              <span className="text-[8px] font-black uppercase text-slate-500 tracking-tighter">{log.action.replace(/_/g, ' ')}</span>
+                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <p className="text-[11px] text-slate-600 font-medium italic">{log.details}</p>
+                        </td>
+                     </tr>
+                   )) : (
+                     <tr><td colSpan={4} className="py-20 text-center text-slate-300 italic">Aucune activité enregistrée.</td></tr>
+                   )}
+                </tbody>
+             </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'sites' && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4">
+          <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+             <div className="relative">
+                <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input value={siteSearchTerm} onChange={(e) => setSiteSearchTerm(e.target.value)} placeholder="Filtrer les structures (Nom, Code, Responsable)..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none" />
+             </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+             {filteredSites.map((site, idx) => (
+               <div key={idx} className="bg-white rounded-[2.5rem] p-8 shadow-warm border border-slate-100 hover:border-red-200 transition-all group">
+                  <div className="flex justify-between items-start mb-6">
+                     <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center group-hover:bg-red-50 group-hover:text-red-600 transition-colors shadow-inner"><Building2 size={24} /></div>
+                     <button onClick={() => setEditingSite(site)} className="p-3 bg-slate-100 text-slate-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Edit3 size={18}/></button>
+                  </div>
+                  <div className="space-y-4">
+                     <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{site.code} • {site.region}</p>
+                        <h4 className="text-sm font-black text-slate-800 uppercase leading-tight">{site.name}</h4>
+                     </div>
+                     <div className="pt-4 border-t border-slate-50 space-y-2">
+                        <div className="flex items-center gap-2"><User size={12} className="text-slate-300"/><span className="text-[10px] font-bold text-slate-600 uppercase">{site.manager}</span></div>
+                        <div className="flex items-center gap-2"><Phone size={12} className="text-slate-300"/><span className="text-[10px] font-bold text-slate-600">{site.phone}</span></div>
+                        <div className="flex items-center gap-2"><Mail size={12} className="text-slate-300"/><span className="text-[10px] font-bold text-slate-600 truncate">{site.email}</span></div>
+                     </div>
+                  </div>
+               </div>
+             ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'branding' && (
+        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in slide-in-from-bottom-4">
+           <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col items-center">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8"><ImageIcon size={32}/></div>
+              <h3 className="text-xl font-black uppercase mb-10">Logo App</h3>
+              <div className="w-48 h-48 rounded-[2.5rem] border-2 border-dashed border-slate-200 overflow-hidden mb-8 relative bg-slate-50">
+                 <img src={tempLogo} alt="Logo" className="w-full h-full object-contain p-6 relative z-10" />
+                 <label className="absolute inset-0 bg-slate-900/60 opacity-0 hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity z-20"><Upload size={24} className="text-white"/><input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" /></label>
+              </div>
+           </div>
+           <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col justify-between">
+              <div>
+                 <h3 className="text-xl font-black uppercase mb-6">Hashtag Global</h3>
+                 <input value={tempHashtag} onChange={(e) => setTempHashtag(e.target.value.toUpperCase())} className="w-full px-8 py-5 bg-slate-50 border rounded-2xl font-black outline-none" />
+              </div>
+              <div className="pt-10 flex gap-4">
+                 <button onClick={handleSaveBranding} disabled={submitting} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase shadow-xl hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-2">
+                    {submitting ? <RefreshCw className="animate-spin" /> : <Save size={14} />} Synchroniser
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {activeTab === 'whatsapp' && (
+        <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-bottom-4">
+           <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner">
+                  <Phone size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tighter">Alertes WhatsApp Automatiques</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Configuration des notifications critiques</p>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">Seuil d'alerte (Poches)</label>
+                    <input 
+                      type="number" 
+                      value={whatsappConfig.alertThreshold} 
+                      onChange={e => setWhatsappConfig({...whatsappConfig, alertThreshold: parseInt(e.target.value)})} 
+                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-black outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">Ajouter un numéro (ex: 2250707070707)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        value={newNumber} 
+                        onChange={e => setNewNumber(e.target.value)} 
+                        placeholder="Numéro avec indicatif"
+                        className="flex-1 px-6 py-4 bg-slate-50 border rounded-2xl font-black outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      />
+                      <button onClick={addWhatsAppNumber} className="px-6 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Ajouter</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">Numéros configurés</label>
+                  <div className="flex flex-wrap gap-3">
+                    {whatsappConfig.numbers.length > 0 ? whatsappConfig.numbers.map(num => (
+                      <div key={num} className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
+                        <span className="text-xs font-black text-slate-700">{num}</span>
+                        <button onClick={() => removeWhatsAppNumber(num)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
+                      </div>
+                    )) : (
+                      <p className="text-xs text-slate-400 italic">Aucun numéro configuré.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-8 border-t border-slate-100 space-y-6">
+                  <h4 className="text-sm font-black uppercase tracking-tighter text-slate-900">Configuration de la Passerelle API</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">L'application enverra une requête GET à l'URL suivante en remplaçant les balises [NUMBER], [MESSAGE] et [APIKEY].</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">URL API Individuelle (ex: ...?phone=[NUMBER]&...)</label>
+                      <input 
+                        value={whatsappConfig.apiUrl} 
+                        onChange={e => setWhatsappConfig({...whatsappConfig, apiUrl: e.target.value})} 
+                        placeholder="https://api.example.com/send?to=[NUMBER]&msg=[MESSAGE]"
+                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">URL API Groupe (ex: ...?user=[GROUP]&...)</label>
+                      <input 
+                        value={whatsappConfig.groupApiUrl} 
+                        onChange={e => setWhatsappConfig({...whatsappConfig, groupApiUrl: e.target.value})} 
+                        placeholder="https://api.example.com/group?id=[GROUP]&msg=[MESSAGE]"
+                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">ID du Groupe WhatsApp (Optionnel)</label>
+                    <input 
+                      value={whatsappConfig.groupId} 
+                      onChange={e => setWhatsappConfig({...whatsappConfig, groupId: e.target.value})} 
+                      placeholder="Ex: 12036302456789@g.us"
+                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                    />
+                    <p className="text-[9px] text-slate-400 mt-1 italic">Pour TextMeBot, ajoutez le bot au groupe et envoyez /groupid pour obtenir cet identifiant.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-2 block">Clé API (Optionnel)</label>
+                    <input 
+                      type="password"
+                      value={whatsappConfig.apiKey} 
+                      onChange={e => setWhatsappConfig({...whatsappConfig, apiKey: e.target.value})} 
+                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-6 flex gap-4">
+                  <button onClick={handleSaveWhatsApp} disabled={submitting} className="flex-[2] py-5 bg-emerald-600 text-white rounded-[2rem] font-black text-[10px] uppercase shadow-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-3">
+                    {submitting ? <RefreshCw className="animate-spin" /> : <Save size={18} />} Enregistrer la configuration
+                  </button>
+                  <button onClick={handleTestWhatsApp} disabled={submitting} className="flex-1 py-5 bg-slate-100 text-slate-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <Send size={18} /> Tester
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      setSubmitting(true);
+                      try {
+                        await fetch('/api/admin/whatsapp-check-now', { 
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userRole: user?.role })
+                        });
+                        setStatus({ type: 'success', msg: "Vérification forcée lancée." });
+                      } catch (err) {
+                        setStatus({ type: 'error', msg: "Erreur lors de la vérification." });
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }} 
+                    disabled={submitting} 
+                    className="flex-1 py-5 bg-blue-50 text-blue-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3"
+                  >
+                    <RefreshCw size={18} className={submitting ? 'animate-spin' : ''} /> Vérifier Stock
+                  </button>
+                </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Modal Edition Utilisateur */}
+      {editingUser && (
+        <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
+           <div className="bg-white rounded-[3.5rem] max-w-lg w-full shadow-3xl overflow-hidden animate-in zoom-in-95">
+              <div className="bg-slate-900 p-8 text-white flex justify-between items-center"><h3 className="text-2xl font-black uppercase tracking-tighter">Profil Agent</h3><button onClick={() => setEditingUser(null)}>×</button></div>
+              <form onSubmit={handleUpdateUser} className="p-10 space-y-6">
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Rôle</label><select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase">{roles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Région (PRES)</label><select value={editingUser.region || ""} onChange={e => setEditingUser({...editingUser, region: e.target.value})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase"><option value="">Aucune</option>{regions.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                 </div>
+                 <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase">Site (AGENT)</label><select value={editingUser.site || ""} onChange={e => setEditingUser({...editingUser, site: e.target.value})} className="w-full bg-slate-50 border p-4 rounded-xl text-xs font-black uppercase"><option value="">Tous les sites</option>{sites.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}</select></div>
+                 <button disabled={submitting} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">{submitting ? <RefreshCw className="animate-spin" /> : <Shield size={18} />} Enregistrer</button>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* Modal Edition Site */}
+      {editingSite && (
+        <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
+           <div className="bg-white rounded-[3.5rem] max-w-lg w-full shadow-3xl overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="bg-red-600 p-8 text-white flex justify-between items-center">
+                 <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><Building2 size={24}/></div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">Édition Structure</h3>
+                 </div>
+                 <button onClick={() => setEditingSite(null)} className="text-white hover:rotate-90 transition-transform text-2xl font-black">×</button>
+              </div>
+              <form onSubmit={handleUpdateSite} className="p-10 space-y-6">
+                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Code structure</p>
+                    <p className="text-lg font-black text-slate-900 uppercase">{editingSite.name} ({editingSite.code})</p>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    <div className="space-y-1">
+                       <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Responsable du Site</label>
+                       <div className="relative">
+                          <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
+                          <input required value={editingSite.manager} onChange={e => setEditingSite({...editingSite, manager: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-red-50 transition-all"/>
+                       </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Téléphone</label>
+                          <div className="relative">
+                             <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
+                             <input required value={editingSite.phone} onChange={e => setEditingSite({...editingSite, phone: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-red-50 transition-all"/>
+                          </div>
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Email</label>
+                          <div className="relative">
+                             <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
+                             <input required type="email" value={editingSite.email} onChange={e => setEditingSite({...editingSite, email: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-red-50 transition-all"/>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <button disabled={submitting} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black uppercase text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 mt-8">
+                    {submitting ? <RefreshCw className="animate-spin" /> : <Save size={18} />} Mettre à jour la structure
+                 </button>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {status && (
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[400] px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 ${status.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white'}`}>
+           {status.type === 'success' ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
+           <p className="text-[11px] font-black uppercase">{status.msg}</p>
+           <button onClick={() => setStatus(null)} className="ml-4 opacity-50">×</button>
+        </div>
+      )}
     </div>
   );
 };
