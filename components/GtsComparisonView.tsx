@@ -3,7 +3,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types.ts';
 import { Truck, RefreshCw, AlertCircle, CheckCircle2, Search, Calendar, MapPin, Package, Download, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 
 interface GtsComparisonViewProps {
@@ -188,15 +188,22 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2, // High definition
-        useCORS: true,
-        backgroundColor: '#f8fafc', // slate-50
-        logging: false,
+      // Small delay to ensure any UI changes are settled
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const dataUrl = await domToPng(exportRef.current, {
+        scale: 2,
+        backgroundColor: '#f8fafc',
+        filter: (node) => {
+          if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
+            return false;
+          }
+          return true;
+        }
       });
       const link = document.createElement('a');
       link.download = `Comparaison_GTS_${new Date().toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = dataUrl;
       link.click();
     } catch (error) {
       console.error('Export PNG failed:', error);
@@ -209,28 +216,52 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(exportRef.current, {
+      // Small delay to ensure any UI changes are settled
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const dataUrl = await domToPng(exportRef.current, {
         scale: 2,
-        useCORS: true,
         backgroundColor: '#f8fafc',
-        logging: false,
+        filter: (node) => {
+          if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
+            return false;
+          }
+          return true;
+        }
       });
       
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
 
-      const imgProps = pdf.getImageProperties(imgData);
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => (img.onload = resolve));
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = img.width;
+      const imgHeight = img.height;
+      const ratio = pdfWidth / imgWidth;
+      const imgHeightInPdf = imgHeight * ratio;
       
-      // If content is longer than one page, we might need multiple pages
-      // But for a dashboard view, usually we scale it to fit or just one long page
-      // Here we'll just put it on the first page, scaled to width
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      let heightLeft = imgHeightInPdf;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+      heightLeft -= pdfHeight;
+
+      // Add subsequent pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeightInPdf;
+        pdf.addPage();
+        pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+        heightLeft -= pdfHeight;
+      }
+
       pdf.save(`Comparaison_GTS_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Export PDF failed:', error);
@@ -254,6 +285,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
             <button
               onClick={exportToPNG}
               disabled={isExporting}
+              data-html2canvas-ignore
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
             >
               {isExporting ? <Loader2 className="animate-spin" size={14} /> : <ImageIcon size={14} />}
@@ -262,6 +294,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
             <button
               onClick={exportToPDF}
               disabled={isExporting}
+              data-html2canvas-ignore
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-xs font-black text-white hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50"
             >
               {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />}
@@ -311,7 +344,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
-        <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex flex-col gap-6">
+        <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex flex-col gap-6" data-html2canvas-ignore>
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative w-full md:w-72">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
