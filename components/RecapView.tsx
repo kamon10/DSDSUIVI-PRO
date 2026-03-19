@@ -284,6 +284,15 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           totalJour += (daySiteData?.total || 0);
         });
 
+        // GTS Data
+        let totalGts = 0;
+        activeDates.forEach(date => {
+          const gtsRecords = data.gts?.filter(g => g.date === date && g.site.toUpperCase() === s.name.toUpperCase());
+          gtsRecords?.forEach(g => {
+            totalGts += (g.fixe || 0) + (g.mobile || 0);
+          });
+        });
+
         // Pour le cumul mois, on prend la date la plus récente de la sélection
         const referenceDate = activeDates.sort((a, b) => parseDate(b).getTime() - parseDate(a).getTime())[0];
         const parts = referenceDate.split('/').map(Number);
@@ -304,6 +313,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           mobile: totalMobile, 
           totalJour: totalJour, 
           totalMois: cumulMois, 
+          gts: totalGts,
           achievement: s.objMensuel > 0 ? (cumulMois / s.objMensuel) * 100 : 0 
         };
       });
@@ -315,7 +325,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         totalMoisPres: sitesWithDayData.reduce((acc, s) => acc + s.totalMois, 0),
         objMensPres: sitesWithDayData.reduce((acc, s) => acc + s.objMensuel, 0),
         fixePres: sitesWithDayData.reduce((acc, s) => acc + s.fixe, 0),
-        mobilePres: sitesWithDayData.reduce((acc, s) => acc + s.mobile, 0)
+        mobilePres: sitesWithDayData.reduce((acc, s) => acc + s.mobile, 0),
+        gtsPres: sitesWithDayData.reduce((acc, s) => acc + (s.gts || 0), 0)
       };
     }).filter(r => r !== null);
   }, [data, filterRegion, filterSite, selectedDate, startDate, endDate, isPeriodMode, viewMode]);
@@ -326,8 +337,9 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
       mobile: acc.mobile + r.mobilePres,
       jour: acc.jour + r.totalJourPres,
       mois: acc.mois + r.totalMoisPres,
-      objectif: acc.objectif + r.objMensPres
-    }), { fixe: 0, mobile: 0, jour: 0, mois: 0, objectif: 0 });
+      objectif: acc.objectif + r.objMensPres,
+      gts: acc.gts + r.gtsPres
+    }), { fixe: 0, mobile: 0, jour: 0, mois: 0, objectif: 0, gts: 0 });
   }, [formattedCollecteData]);
 
   const handleExport = async (type: 'image' | 'pdf' | 'excel') => {
@@ -343,7 +355,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         
         if (viewMode === 'collecte') {
           // Headers
-          excelData.push(["PRES / RÉGION", "LIBELLÉ SITE", "FIXE", "MOB.", isPeriodMode ? "TOTAL" : "JOUR", "MOIS", "OBJECTIF/M", "TAUX/M"]);
+          excelData.push(["PRES / RÉGION", "LIBELLÉ SITE", "FIXE", "MOB.", isPeriodMode ? "TOTAL" : "TOTAL JOUR", "ENCODÉ GTS", "MOIS", "OBJECTIF/M", "TAUX/M"]);
           
           formattedCollecteData.forEach((region: any) => {
             region.sites.forEach((site: any) => {
@@ -353,6 +365,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                 site.fixe,
                 site.mobile,
                 site.totalJour,
+                site.gts,
                 site.totalMois,
                 site.objMensuel,
                 `${site.achievement.toFixed(0)}%`
@@ -366,6 +379,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
               region.fixePres,
               region.mobilePres,
               region.totalJourPres,
+              region.gtsPres,
               region.totalMoisPres,
               region.objMensPres,
               `${regTaux.toFixed(0)}%`
@@ -381,6 +395,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
             nationalTotals.fixe,
             nationalTotals.mobile,
             nationalTotals.jour,
+            nationalTotals.gts,
             nationalTotals.mois,
             nationalTotals.objectif,
             `${natTaux.toFixed(1)}%`
@@ -864,7 +879,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-left">LIBELLÉ SITE</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[70px]">FIXE</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[70px]">MOB.</th>
-                  <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">{isPeriodMode ? 'TOTAL' : 'JOUR'}</th>
+                  <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
+                  <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px] bg-indigo-900/50">ENCODÉ GTS</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[90px]">MOIS</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[100px]">OBJECTIF/M</th>
                   <th className="border border-slate-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">TAUX/M</th>
@@ -887,6 +903,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.fixe}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.mobile}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center font-black text-[#0f172a] text-[13px]">{site.totalJour}</td>
+                          <td className="border border-slate-400 px-4 py-2 text-center text-indigo-600 font-bold">{site.gts}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.totalMois.toLocaleString()}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.objMensuel.toLocaleString()}</td>
                           <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
@@ -897,6 +914,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.fixePres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.mobilePres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalJourPres}</td>
+                        <td className="border border-slate-400 px-4 py-2 text-center text-indigo-700 font-black">{region.gtsPres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalMoisPres.toLocaleString()}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.objMensPres.toLocaleString()}</td>
                         <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[15px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
@@ -911,6 +929,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   <td className="border border-slate-800 p-2 text-center text-lg">{nationalTotals.fixe.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-lg">{nationalTotals.mobile.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-2xl text-[#f87171]">{nationalTotals.jour.toLocaleString()}</td>
+                  <td className="border border-slate-800 p-2 text-center text-xl text-indigo-400">{nationalTotals.gts.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-2xl">{nationalTotals.mois.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-2xl">{nationalTotals.objectif.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-3xl text-[#f87171]">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
