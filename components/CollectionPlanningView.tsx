@@ -4,7 +4,7 @@ import { DashboardData, GtsRecord } from '../types.ts';
 import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, ChevronRight, Filter, Search, PlusCircle, Download, FileText, Image as ImageIcon, Loader2, TrendingUp, Users, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSiteByInput } from '../constants.tsx';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 
 interface CollectionPlanningViewProps {
@@ -143,17 +143,45 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
     if (!dashboardRef.current) return;
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(dashboardRef.current, {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const dataUrl = await domToPng(dashboardRef.current, {
         scale: 2,
-        useCORS: true,
         backgroundColor: '#f8fafc',
+        filter: (node) => {
+          if (node instanceof HTMLElement && node.hasAttribute('data-html2canvas-ignore')) {
+            return false;
+          }
+          return true;
+        }
       });
-      const imgData = canvas.toDataURL('image/png');
+      
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => (img.onload = resolve));
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = img.width;
+      const imgHeight = img.height;
+      const ratio = pdfWidth / imgWidth;
+      const imgHeightInPdf = imgHeight * ratio;
+      
+      let heightLeft = imgHeightInPdf;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+      heightLeft -= pdfHeight;
+
+      // Add subsequent pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeightInPdf;
+        pdf.addPage();
+        pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+        heightLeft -= pdfHeight;
+      }
+
       pdf.save(`Planning_Collectes_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Export failed:', error);
@@ -217,6 +245,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
           <button
             onClick={exportToPDF}
             disabled={isExporting}
+            data-html2canvas-ignore
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
           >
             {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />}
