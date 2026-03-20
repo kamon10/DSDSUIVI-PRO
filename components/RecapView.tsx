@@ -23,6 +23,7 @@ interface RecapViewProps {
   sites: any[];
   initialMode?: 'collecte' | 'distribution';
   branding?: { logo: string; hashtag: string };
+  situationTime?: string;
 }
 
 const MONTHS_FR = [
@@ -57,7 +58,7 @@ const parseDate = (dateStr: string) => {
   return new Date(y, m - 1, d);
 };
 
-export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user, branding }) => {
+export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user, branding, situationTime }) => {
   const viewMode = initialMode;
   // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
   const [distTimeScale, setDistTimeScale] = useState<'day' | 'month' | 'year'>('month');
@@ -839,6 +840,9 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
             <div className="bg-[#0f172a] text-white px-8 py-3 rounded-2xl text-center">
                <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">SITUATION AU</p>
                <p className="text-xl font-black">{currentPeriodLabel}</p>
+               {situationTime && (
+                 <p className="text-[8px] font-bold text-blue-400 mt-1 uppercase tracking-widest">{situationTime}</p>
+               )}
             </div>
           </div>
 

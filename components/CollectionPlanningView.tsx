@@ -1,11 +1,12 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData, GtsRecord } from '../types.ts';
-import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, ChevronRight, Filter, Search, PlusCircle, Download, FileText, Image as ImageIcon, Loader2, TrendingUp, Users, Target } from 'lucide-react';
+import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, ChevronRight, Filter, Search, PlusCircle, Download, FileText, Image as ImageIcon, Loader2, TrendingUp, Users, Target, LayoutGrid, List } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSiteByInput } from '../constants.tsx';
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
+import { CalendarView } from './CalendarView.tsx';
 
 interface CollectionPlanningViewProps {
   data: DashboardData;
@@ -18,6 +19,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
   const [isExporting, setIsExporting] = useState(false);
   const [showAllPlanning, setShowAllPlanning] = useState(false);
   const [showEventSuccess, setShowEventSuccess] = useState(false);
+  const [viewMode, setViewMode] = useState<'timeline' | 'calendar'>('calendar');
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   const gtsData = data.gts || [];
@@ -291,46 +293,84 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <TrendingUp size={20} />
             </div>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Total Poches Mobiles</p>
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">POCHES COL. MOB</p>
           </div>
           <p className="text-3xl font-black text-emerald-600">{stats.totalPoches}</p>
         </div>
       </div>
 
-      {/* Timeline View */}
-      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+      {/* Timeline / Calendar View */}
+      <div className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
             <Calendar size={20} className="text-indigo-600" />
-            Aperçu des 30 Prochains Jours
+            {viewMode === 'timeline' ? 'Aperçu des 30 Prochains Jours' : 'Calendrier des Collectes'}
           </h3>
-          <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-indigo-500" />
-              Collecte Prévue
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+              <button 
+                onClick={() => setViewMode('timeline')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'timeline' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                title="Vue Timeline"
+              >
+                <List size={16} />
+              </button>
+              <button 
+                onClick={() => setViewMode('calendar')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                title="Vue Calendrier"
+              >
+                <LayoutGrid size={16} />
+              </button>
+            </div>
+            <div className="hidden sm:flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                Collecte Prévue
+              </div>
             </div>
           </div>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-          {timelineDays.map((day, idx) => (
-            <div 
-              key={day.dateStr}
-              className={`flex-shrink-0 w-16 h-24 rounded-2xl border flex flex-col items-center justify-center transition-all ${
-                day.planned.length > 0 
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' 
-                  : 'bg-slate-50 border-slate-100 text-slate-400'
-              }`}
+        
+        <AnimatePresence mode="wait">
+          {viewMode === 'timeline' ? (
+            <motion.div 
+              key="timeline"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide"
             >
-              <span className="text-[10px] font-black uppercase opacity-60">{day.dayName}</span>
-              <span className="text-xl font-black my-1">{day.dayNum}</span>
-              {day.planned.length > 0 && (
-                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-black">
-                  {day.planned.length}
+              {timelineDays.map((day, idx) => (
+                <div 
+                  key={day.dateStr}
+                  className={`flex-shrink-0 w-16 h-24 rounded-2xl border flex flex-col items-center justify-center transition-all ${
+                    day.planned.length > 0 
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                      : 'bg-slate-50 border-slate-100 text-slate-400'
+                  }`}
+                >
+                  <span className="text-[10px] font-black uppercase opacity-60">{day.dayName}</span>
+                  <span className="text-xl font-black my-1">{day.dayNum}</span>
+                  {day.planned.length > 0 && (
+                    <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-black">
+                      {day.planned.length}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <CalendarView planning={proposedPlanning} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

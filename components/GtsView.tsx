@@ -155,11 +155,11 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
           <p className="text-2xl font-black text-slate-900">{stats.totalRecords}</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Poches Fixes</p>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">POCHES COL. FIXE</p>
           <p className="text-2xl font-black text-emerald-600">{stats.totalFixe}</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Poches Mobiles</p>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">POCHES COL. MOB</p>
           <p className="text-2xl font-black text-orange-600">{stats.totalMobile}</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
@@ -225,8 +225,8 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
               <tr className="bg-slate-50/50">
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">PRES / Site</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Collectes Réalisées</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Poches Fixes</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Poches Mobiles</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">POCHES COL. FIXE</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">POCHES COL. MOB</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Auto Transf.</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Total Poches</th>
               </tr>
