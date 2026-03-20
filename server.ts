@@ -5,6 +5,131 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import sql from "mssql";
+
+// Database connection pool
+const isDbConfigured = !!(process.env.DATABASE_URL || process.env.SQL_SERVER);
+let pool: sql.ConnectionPool | null = null;
+
+// Handle connection string conversion
+let connectionString = process.env.DATABASE_URL || "";
+
+// If separate variables are provided, build the connection string
+if (!connectionString && process.env.SQL_SERVER) {
+  const user = process.env.SQL_USER || "";
+  const password = process.env.SQL_PASSWORD || "";
+  const server = process.env.SQL_SERVER;
+  const database = process.env.SQL_DATABASE || "";
+  const port = process.env.SQL_PORT || "1433";
+  
+  // Build a standard mssql connection string
+  if (user && password) {
+    connectionString = `mssql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${server}:${port}/${database}`;
+  } else {
+    connectionString = `mssql://${server}:${port}/${database}`;
+  }
+}
+
+// Normalize prefixes
+if (connectionString.startsWith("postgres://")) {
+  connectionString = connectionString.replace("postgres://", "mssql://");
+}
+if (connectionString.startsWith("sqlserver://")) {
+  connectionString = connectionString.replace("sqlserver://", "mssql://");
+}
+
+// SQL Server configuration
+let sqlConfig: any = {
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+    connectTimeout: 30000, // 30 seconds
+    requestTimeout: 30000
+  }
+};
+
+if (connectionString.startsWith("mssql://")) {
+  if (connectionString.includes(";")) {
+    let raw = connectionString.replace("mssql://", "");
+    raw = raw.replace(/user=/gi, "User Id=");
+    raw = raw.replace(/password=/gi, "Password=");
+    
+    if (!raw.toLowerCase().startsWith("server=")) {
+      const parts = raw.split(";");
+      const hostPort = parts[0].replace(":", ",");
+      const rest = parts.slice(1).join(";");
+      raw = `Server=${hostPort};${rest}`;
+    }
+    
+    if (!raw.toLowerCase().includes("trustservercertificate")) raw += ";TrustServerCertificate=true";
+    if (!raw.toLowerCase().includes("encrypt")) raw += ";Encrypt=true";
+    if (!raw.toLowerCase().includes("connection timeout")) raw += ";Connection Timeout=30";
+    
+    sqlConfig = raw;
+  } else {
+    // Ensure basic options are present in the URL
+    if (!connectionString.includes("trustServerCertificate")) {
+      connectionString += (connectionString.includes("?") ? "&" : "?") + "trustServerCertificate=true";
+    }
+    if (!connectionString.includes("encrypt")) connectionString += "&encrypt=true";
+    if (!connectionString.includes("connectTimeout")) connectionString += "&connectTimeout=30000";
+    sqlConfig = connectionString;
+  }
+} else if (connectionString.includes(";")) {
+  sqlConfig = connectionString;
+  sqlConfig = sqlConfig.replace(/user=/gi, "User Id=");
+  sqlConfig = sqlConfig.replace(/password=/gi, "Password=");
+  if (!sqlConfig.toLowerCase().includes("trustservercertificate")) sqlConfig += ";TrustServerCertificate=true";
+  if (!sqlConfig.toLowerCase().includes("encrypt")) sqlConfig += ";Encrypt=true";
+  if (!sqlConfig.toLowerCase().includes("connection timeout")) sqlConfig += ";Connection Timeout=30";
+} else if (connectionString) {
+  sqlConfig.connectionString = connectionString;
+}
+
+// Function to get or create connection pool
+async function getPool() {
+  if (pool && pool.connected) return pool;
+  
+  if (!isDbConfigured) {
+    throw new Error("DATABASE_URL non configurée. Veuillez ajouter le secret DATABASE_URL.");
+  }
+
+  console.log("[DB] Tentative de connexion à SQL Server...");
+  try {
+    pool = await new sql.ConnectionPool(sqlConfig).connect();
+    console.log("[DB] Connexion SQL Server réussie");
+    return pool;
+  } catch (err: any) {
+    console.error("[DB] Erreur de connexion détaillée:", err);
+    
+    let userMessage = err.message;
+    const host = connectionString.match(/@([^;/?#]+)/)?.[1] || 'votre serveur';
+    
+    if (err.message.includes("ETIMEDOUT") || err.message.toLowerCase().includes("timeout") || err.message.includes("Failed to connect")) {
+      userMessage = `Impossible d'atteindre le serveur SQL à ${host}. `;
+      
+      if (host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.') || host.startsWith('192.0.') || host === 'localhost' || host === '127.0.0.1') {
+        userMessage += `L'adresse IP ${host} semble être une adresse locale ou privée. L'application étant hébergée dans le cloud, elle ne peut pas accéder directement à votre réseau local. Veuillez utiliser une IP publique ou un tunnel (ex: ngrok).`;
+      } else {
+        userMessage += "Vérifiez que l'IP est publique, que le serveur est allumé et que le port 1433 est ouvert dans votre pare-feu.";
+      }
+    } else if (err.message.includes("Login failed")) {
+      userMessage = "Échec de l'authentification SQL. Vérifiez l'utilisateur et le mot de passe dans DATABASE_URL.";
+    }
+    
+    pool = null;
+    throw new Error(userMessage);
+  }
+}
+
+// Initialize connection on startup
+if (isDbConfigured) {
+  getPool().catch(() => {
+    console.error("[DB] Initial connection failed. Will retry on first request.");
+  });
+} else {
+  console.warn("[DB] DATABASE_URL not set. SQL features will be disabled.");
+}
 
 console.log("[SERVER] Starting initialization...");
 
@@ -44,27 +169,45 @@ const app = express();
 const PORT = 3000;
 
 // VAPID keys should be generated and stored securely
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
+let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
+let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
 
 const vapidEmail = process.env.VAPID_EMAIL || "mailto:kadioamon@gmail.com";
 const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('http')) 
   ? vapidEmail 
   : `mailto:${vapidEmail}`;
 
-try {
-  console.log("[SERVER] Setting up VAPID details...");
-  webpush.setVapidDetails(
-    vapidSubject,
-    publicVapidKey,
-    privateVapidKey
-  );
-  console.log("[SERVER] VAPID details set successfully");
-} catch (err) {
-  console.error("[SERVER] Failed to set VAPID details:", err);
+function setupVapid() {
+  try {
+    console.log("[SERVER] Setting up VAPID details...");
+    webpush.setVapidDetails(
+      vapidSubject,
+      publicVapidKey,
+      privateVapidKey
+    );
+    console.log("[SERVER] VAPID details set successfully");
+  } catch (err) {
+    console.error("[SERVER] Failed to set VAPID details with provided keys, generating new ones...", err);
+    try {
+      const keys = webpush.generateVAPIDKeys();
+      publicVapidKey = keys.publicKey;
+      privateVapidKey = keys.privateKey;
+      webpush.setVapidDetails(
+        vapidSubject,
+        publicVapidKey,
+        privateVapidKey
+      );
+      console.log("[SERVER] VAPID details set successfully with generated keys");
+    } catch (innerErr) {
+      console.error("[SERVER] Fatal: Failed to set VAPID details even with generated keys:", innerErr);
+    }
+  }
 }
 
-app.use(bodyParser.json());
+setupVapid();
+
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // In-memory subscription storage (use a DB in production)
 let subscriptions: any[] = [];
@@ -72,6 +215,60 @@ let subscriptions: any[] = [];
 // API routes
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+// SQL API Routes
+app.get("/api/sql/prelevements", async (req, res) => {
+  try {
+    const pool = await getPool();
+    // Note: User should provide the correct table name if it's not 'prelevements'
+    const result = await pool.query('SELECT TOP 100 * FROM prelevements ORDER BY date_collecte DESC');
+    res.json(result.recordset);
+  } catch (err: any) {
+    console.error("[DB] Error fetching prelevements:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/sql/stocks", async (req, res) => {
+  try {
+    const pool = await getPool();
+    const result = await pool.query('SELECT TOP 100 * FROM dbo.T_STOCKS');
+    res.json(result.recordset);
+  } catch (err: any) {
+    console.error("[DB] Error fetching stocks:", err);
+    let message = err.message;
+    if (message.includes("Invalid object name 'dbo.T_STOCKS'")) {
+      message = "La table 'dbo.T_STOCKS' n'existe pas. Veuillez vérifier le nom exact.";
+    }
+    res.status(500).json({ error: message });
+  }
+});
+
+// Diagnostic endpoint to help user find table names and columns
+app.get("/api/sql/diagnostics", async (req, res) => {
+  try {
+    const pool = await getPool();
+    const tablesResult = await pool.query(`
+      SELECT TABLE_SCHEMA, TABLE_NAME 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_TYPE = 'BASE TABLE'
+    `);
+    
+    // Also get columns for T_STOCKS if it exists
+    const columnsResult = await pool.query(`
+      SELECT COLUMN_NAME, DATA_TYPE 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'T_STOCKS'
+    `);
+    
+    res.json({ 
+      tables: tablesResult.recordset,
+      columns: columnsResult.recordset
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get("/api/proxy", async (req, res) => {

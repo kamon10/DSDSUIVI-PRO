@@ -174,3 +174,8 @@ export const STOCK_FORECASTS: Record<string, Record<string, number>> = {
     "TOTAL": 500
   }
 };
+
+export const SALARY_CONSTANTS = {
+  VALEUR_POINT_INDICE: 233.457,
+  PRIME_EXCEPTIONNELLE_RATIO: 2/3
+};

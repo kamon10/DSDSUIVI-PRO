@@ -133,4 +133,30 @@ export interface DashboardData {
 }
 
 // Added 'recap-dist' to support the separate flux summary view
-export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed' | 'global-report' | 'gts' | 'gts-synthesis' | 'gts-comparison' | 'collection-planning';
+export interface Personnel {
+  statut: string;
+  matricule: string;
+  nomPrenom: string;
+  dateNaissance: string;
+  sexe: string;
+  age: number;
+  emploi: string;
+  site: string;
+  service: string;
+  dateEmbauche: string;
+  anciennete: string;
+  fonction: string;
+  pres: string;
+  categorieEmploi: string;
+  typeEmploi: string;
+  diplome: string;
+  indiceSalariale: number;
+  grade: string;
+  contact: string;
+  personneAContacter: string;
+  serviceAnterieur: string;
+  cessation: string;
+  observation: string;
+}
+
+export type AppTab = 'summary' | 'cockpit' | 'map' | 'history' | 'recap' | 'recap-dist' | 'distribution-stock' | 'stock' | 'stock-summary' | 'stock-focus' | 'stock-synthesis' | 'stock-planning' | 'capacity-planning' | 'weekly' | 'performance' | 'pulse' | 'evolution' | 'comparison' | 'objectives' | 'site-focus' | 'entry' | 'administration' | 'contact' | 'hemo-stats' | 'distribution-detailed' | 'stock-detailed' | 'global-report' | 'gts' | 'gts-synthesis' | 'gts-comparison' | 'collection-planning' | 'sql-test' | 'personnel';

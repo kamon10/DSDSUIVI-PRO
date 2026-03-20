@@ -29,6 +29,8 @@ import { GtsView } from './components/GtsView.tsx';
 import { GtsSynthesis } from './components/GtsSynthesis.tsx';
 import { GtsComparisonView } from './components/GtsComparisonView.tsx';
 import { CollectionPlanningView } from './components/CollectionPlanningView.tsx';
+import { SQLTestView } from './components/SQLTestView.tsx';
+import { PersonnelManagement } from './components/PersonnelManagement.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
@@ -335,6 +337,8 @@ const App: React.FC = () => {
     { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
     { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
     { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
+    { id: 'personnel', icon: <UserCheck size={18} />, label: 'Personnel', public: false, superOnly: true },
+    { id: 'sql-test', icon: <Database size={18} />, label: 'SQL Test', public: false, superOnly: true },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
   ];
 
@@ -351,7 +355,7 @@ const App: React.FC = () => {
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
       { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison', 'collection-planning'] },
       { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'global-report', 'contact'] }
+      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'personnel', 'global-report', 'contact', 'sql-test'] }
     ];
 
     return groups.map(group => ({
@@ -558,8 +562,8 @@ const App: React.FC = () => {
                   {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
                   {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
-                  {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} />}
-                  {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} />}
+                  {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} />}
+                  {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} />}
                   {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                   {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
                   {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
@@ -575,6 +579,8 @@ const App: React.FC = () => {
                   {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                   {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
+                  {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
+                  {activeTab === 'sql-test' && <SQLTestView data={filteredData} user={currentUser} />}
                   {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} user={currentUser} />}
                 </>
               )}
