@@ -11,6 +11,8 @@ import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { COLORS, GROUP_COLORS, STOCK_FORECASTS } from '../constants';
 import { StockWhatsAppCapsules } from './StockWhatsAppCapsules.tsx';
+import { SITES_DATA } from '../constants';
+import { MessageCircle } from 'lucide-react';
 
 interface StockSummaryViewProps {
   data: DashboardData;
@@ -86,6 +88,10 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
       return daily > 0 && (groupAbidjan[g] / daily) < 3;
     });
 
+    const sitesWithStock = new Set(stock.map(s => normalize(s.site || "")));
+    const allExpectedSites = SITES_DATA.filter(s => s.region !== "DIRECTION NATIONALE");
+    const missingSites = allExpectedSites.filter(s => !sitesWithStock.has(normalize(s.name)));
+
     return {
       totalNational,
       totalAbidjan,
@@ -96,7 +102,8 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
       criticalGroupsNational,
       criticalGroupsAbidjan,
       groupNational,
-      groupAbidjan
+      groupAbidjan,
+      missingSites
     };
   }, [data.stock]);
 
@@ -407,6 +414,40 @@ export const StockSummaryView: React.FC<StockSummaryViewProps> = ({ data, setAct
           </div>
         </div>
         
+        {/* SITES MANQUANTS & RAPPELS */}
+        {stockStats.missingSites.length > 0 && (
+          <div className="bg-rose-50 border border-rose-100 rounded-[3rem] p-8 lg:p-12 shadow-xl">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-rose-600 text-white rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+                  <AlertTriangle size={32} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tighter text-rose-900 leading-none">Sites en Retard d'Encodage</h3>
+                  <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-2">{stockStats.missingSites.length} sites n'ont pas encore transmis leur situation de stock</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 max-w-xl">
+                {stockStats.missingSites.map(site => (
+                  <span key={site.code} className="px-3 py-1.5 bg-white border border-rose-200 rounded-xl text-[9px] font-black text-rose-600 uppercase tracking-tighter">
+                    {site.name}
+                  </span>
+                ))}
+              </div>
+              <button 
+                onClick={() => {
+                  const names = stockStats.missingSites.map(s => s.name).join(', ');
+                  const text = `🚨 *RAPPEL STOCK - ${data.date}*\n\nLes sites suivants n'ont pas encore encodé leur situation de stock :\n\n*${names}*\n\nMerci de régulariser dès que possible pour la consolidation nationale.\n\n_Généré via HS Cockpit_`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+                className="flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+              >
+                <MessageCircle size={18} /> Rappel WhatsApp Global
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* CAPSULES WHATSAPP */}
         <StockWhatsAppCapsules 
           data={data} 

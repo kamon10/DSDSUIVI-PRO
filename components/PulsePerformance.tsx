@@ -2,7 +2,7 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 /* Added User import */
-import { DashboardData, DistributionRecord, User } from '../types';
+import { DashboardData, DistributionRecord, User, AppTab } from '../types';
 import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User as UserIcon, Truck, Package, TrendingUp, ArrowUpRight, ArrowDownRight, Info, AlertTriangle } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
@@ -25,9 +25,10 @@ interface PulsePerformanceProps {
   onLoginClick?: () => void;
   isConnected?: boolean;
   branding?: { logo: string; hashtag: string };
+  setActiveTab?: (tab: AppTab) => void;
 }
 
-export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLoginClick, isConnected, branding }) => {
+export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLoginClick, isConnected, branding, setActiveTab }) => {
   const [viewMode, setViewMode] = useState<'donations' | 'distribution'>('donations');
   const [pulsePhase, setPulsePhase] = useState(0);
   const [exporting, setExporting] = useState<'image' | 'pdf' | null>(null);
@@ -442,10 +443,13 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black text-xs shadow-sm">
                       0{i + 1}
                     </div>
-                    <div>
+                    <button 
+                      onClick={() => setActiveTab?.('site-focus')}
+                      className="text-left hover:opacity-70 transition-opacity"
+                    >
                       <p className="text-xs font-black text-slate-800 uppercase">{site.name}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{site.region}</p>
-                    </div>
+                    </button>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">

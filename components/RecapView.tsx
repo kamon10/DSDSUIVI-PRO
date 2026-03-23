@@ -3,7 +3,7 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { fr } from 'date-fns/locale/fr';
 import "react-datepicker/dist/react-datepicker.css";
-import { DashboardData, User, DistributionRecord } from '../types.ts';
+import { DashboardData, User, DistributionRecord, AppTab } from '../types.ts';
 import { PRODUCT_COLORS } from '../constants.tsx';
 import { 
   FileImage, FileText, Loader2, TableProperties, Printer, 
@@ -24,6 +24,7 @@ interface RecapViewProps {
   initialMode?: 'collecte' | 'distribution';
   branding?: { logo: string; hashtag: string };
   situationTime?: string;
+  setActiveTab?: (tab: AppTab) => void;
 }
 
 const MONTHS_FR = [
@@ -58,7 +59,7 @@ const parseDate = (dateStr: string) => {
   return new Date(y, m - 1, d);
 };
 
-export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user, branding, situationTime }) => {
+export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user, branding, situationTime, setActiveTab }) => {
   const viewMode = initialMode;
   // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
   const [distTimeScale, setDistTimeScale] = useState<'day' | 'month' | 'year'>('month');
@@ -907,7 +908,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.fixe}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.mobile}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center font-black text-[#0f172a] text-[13px]">{site.totalJour}</td>
-                          <td className="border border-slate-400 px-4 py-2 text-center text-indigo-600 font-black text-[13px]">{site.gts}</td>
+                          <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.gts === site.totalJour ? 'text-emerald-600' : 'text-indigo-600'}`}>{site.gts}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.totalMois.toLocaleString()}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.objMensuel.toLocaleString()}</td>
                           <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
@@ -918,7 +919,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.fixePres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.mobilePres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalJourPres}</td>
-                        <td className="border border-slate-400 px-4 py-2 text-center text-indigo-700 font-black text-[14px]">{region.gtsPres}</td>
+                        <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${region.gtsPres === region.totalJourPres ? 'text-emerald-700' : 'text-indigo-700'}`}>{region.gtsPres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalMoisPres.toLocaleString()}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.objMensPres.toLocaleString()}</td>
                         <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[15px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
@@ -933,7 +934,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   <td className="border border-slate-800 p-2 text-center text-lg">{nationalTotals.fixe.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-lg">{nationalTotals.mobile.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-2xl text-[#f87171]">{nationalTotals.jour.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-2xl text-indigo-400">{nationalTotals.gts.toLocaleString()}</td>
+                  <td className={`border border-slate-800 p-2 text-center text-2xl ${nationalTotals.gts === nationalTotals.jour ? 'text-emerald-400' : 'text-indigo-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-2xl">{nationalTotals.mois.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-2xl">{nationalTotals.objectif.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-3xl text-[#f87171]">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
