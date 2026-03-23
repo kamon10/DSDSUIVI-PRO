@@ -46,6 +46,8 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [sqlStatus, setSqlStatus] = useState<'connected' | 'error' | 'none'>('none');
+  const [sqlError, setSqlError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const lastOptimisticUpdateRef = useRef<number>(0);
@@ -100,6 +102,17 @@ const App: React.FC = () => {
   const handleSync = useCallback(async (isSilent = false, force = false) => {
     if (isSyncingRef.current) return;
     
+    // Check SQL status concurrently
+    fetch('/api/sql/health').then(res => res.json()).then(data => {
+      if (data.status === 'ok') {
+        setSqlStatus('connected');
+        setSqlError(null);
+      } else {
+        setSqlStatus('error');
+        setSqlError(data.error);
+      }
+    }).catch(() => setSqlStatus('none'));
+
     // Garde-fou réduit à 60s pour plus de réactivité si le cache Google est à jour
     if (isSilent && !force && (Date.now() - lastOptimisticUpdateRef.current < 60000)) {
        return;
@@ -484,6 +497,13 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-1.5 mt-1">
                      <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
                      <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
+                     {sqlStatus !== 'none' && (
+                       <>
+                         <div className="w-px h-2 bg-slate-200 mx-1"></div>
+                         <div className={`w-1.5 h-1.5 rounded-full ${sqlStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                         <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">SQL</span>
+                       </>
+                     )}
                   </div>
                </div>
             </div>
@@ -494,6 +514,11 @@ const App: React.FC = () => {
               </h2>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                 {getRelativeSyncTime()} <span className="opacity-60">({getFullSyncTime()})</span>
+                {sqlStatus === 'error' && (
+                  <span className="ml-3 text-amber-600 font-black flex items-inline gap-1">
+                    <Database size={10} /> SQL: {sqlError}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -617,7 +642,7 @@ const App: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowSettings(true)}
+            onClick={() => currentUser ? setActiveTab('entry') : setShowLogin(true)}
             className="w-14 h-14 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center justify-center group"
           >
             <Plus size={24} className="group-hover:rotate-90 transition-transform" />
