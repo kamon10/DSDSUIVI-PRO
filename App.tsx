@@ -36,7 +36,7 @@ import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
@@ -406,188 +406,224 @@ const App: React.FC = () => {
   }, [dynamicSites]);
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0">
-      <header className="fixed top-0 left-0 right-0 z-[100] px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl min-h-[5rem]">
-          <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActiveTab('pulse')}>
-             <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
-                <img 
-                  src={branding.logo} 
-                  alt="Logo" 
-                  className="w-full h-full object-contain p-1.5" 
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
-                  }}
-                />
-             </div>
-             <div className="flex flex-col">
-                <span className="font-black text-lg tracking-tighter uppercase text-slate-900 leading-none">HS</span>
-                <div className="flex items-center gap-1.5 mt-1">
-                   <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                   <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
-                    <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-                    <span className="text-[7px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
-                       {getRelativeSyncTime()} <span className="opacity-60">({getFullSyncTime()})</span>
-                    </span>
-                </div>
-             </div>
+    <div className="flex min-h-screen bg-[#f8fafc]">
+      {/* SIDEBAR DESKTOP */}
+      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-slate-100 h-screen sticky top-0 z-[110] overflow-y-auto">
+        <div className="p-8 flex items-center gap-4 border-b border-slate-50">
+          <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200">
+            <Activity className="text-white" size={24} />
           </div>
-          <nav className="hidden lg:flex items-center gap-1">
-            {groupedNavItems.map((group) => {
-              const isActive = group.navItems.some(item => activeTab === item.id);
-              const isOpen = openGroup === group.id;
-              
-              return (
-                <div 
-                  key={group.id} 
-                  className="relative"
-                  onMouseEnter={() => setOpenGroup(group.id)}
-                  onMouseLeave={() => setOpenGroup(null)}
-                >
-                  <button 
-                    onClick={() => setOpenGroup(isOpen ? null : group.id)}
-                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-300 active:scale-95 group ${isActive ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'}`}
-                  >
-                    <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'}`}>{group.icon}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest">{group.label}</span>
-                    <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} ${isActive ? 'text-white/50' : 'text-slate-300'}`} />
-                  </button>
-                  
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute top-full left-0 mt-2 w-72 bg-white rounded-[2rem] shadow-3xl border border-slate-100 p-3 z-[200] origin-top-left"
-                      >
-                        <div className="px-4 py-2 mb-2 border-b border-slate-50 flex items-center justify-between">
-                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em]">{group.label}</span>
-                          <span className="text-[6px] font-bold text-slate-300 uppercase tracking-tighter">MàJ: {getFullSyncTime()}</span>
-                        </div>
-                        <div className="space-y-1">
-                          {group.navItems.map((item) => (
-                            <button
-                              key={item.id}
-                              onClick={() => { setActiveTab(item.id as AppTab); setOpenGroup(null); }}
-                              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all group/item ${activeTab === item.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-50'}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className={`${activeTab === item.id ? 'text-white' : 'text-slate-400 group-hover/item:text-slate-900'}`}>{item.icon}</span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
-                              </div>
-                              {activeTab === item.id && <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-blue-400" />}
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </nav>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => handleSync(true, true)}
-              disabled={syncStatus === 'syncing'}
-              className={`p-2.5 rounded-2xl transition-all active:scale-95 ${syncStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'}`}
-              title="Actualiser les données"
-            >
-              <RefreshCw size={18} />
-            </button>
-            <button 
-              onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl text-slate-500 transition-all group"
-            >
-              <Search size={16} className="group-hover:text-slate-900" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Rechercher...</span>
-              <div className="flex items-center gap-1 ml-4">
-                <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">⌘</span>
-                <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">K</span>
-              </div>
-            </button>
-            {currentUser ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4">
-                  <span className="text-[10px] font-black uppercase tracking-tighter text-slate-900 leading-none">
-                    {currentUser.prenoms} {currentUser.nom}
-                  </span>
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500 mt-1">
-                    {currentUser.fonction}
-                  </span>
-                  <span className="text-[7px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
-                    {currentUser.role === 'AGENT' ? currentUser.site : currentUser.role === 'PRES' ? currentUser.region : 'DIRECTION NATIONALE'}
-                  </span>
-                </div>
-                <button onClick={handleLogout} className="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors shadow-sm">
-                  <LogOut size={16} />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => setShowLogin(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Connexion</button>
-            )}
-            <NotificationManager />
-            <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 shadow-sm"><Settings size={16} /></button>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter uppercase text-slate-900 leading-none">HEMO</h1>
+            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-500 mt-1 block">Cockpit Live</span>
           </div>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 pt-28 pb-32 pb-safe">
-        <StockAlert data={fullData} user={currentUser} className="mb-8" />
-        {loading && !fullData.dailyHistory.length ? (
-          <div className="flex flex-col items-center justify-center py-48 gap-6">
-             <Activity size={60} className="text-blue-600 animate-pulse" />
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
+
+        <nav className="flex-1 p-6 space-y-8">
+          {groupedNavItems.map((group) => (
+            <div key={group.id} className="space-y-3">
+              <div className="flex items-center justify-between px-4">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{group.label}</span>
+                <div className="w-8 h-[1px] bg-slate-100" />
+              </div>
+              <div className="space-y-1">
+                {group.navItems.map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id as AppTab)}
+                      className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${isActive ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                    >
+                      <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'}`}>{item.icon}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
+                      {isActive && <motion.div layoutId="sidebar-active" className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="p-6 border-t border-slate-50">
+          <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400">
+                <Clock size={14} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Dernière MàJ</span>
+                <span className="text-[9px] font-bold text-slate-900">{getFullSyncTime()}</span>
+              </div>
+            </div>
+            <p className="text-[8px] font-medium text-slate-400 leading-relaxed">
+              Les données sont synchronisées en temps réel avec les serveurs nationaux.
+            </p>
           </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div 
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="page-transition"
-            >
-              {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} />}
-              {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
-              {currentUser && (
-                <>
-                  {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
-                  {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
-                  {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                  {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
-                  {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
-                  {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                  {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
-                  {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
-                  {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} />}
-                  {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} />}
-                  {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
-                  {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
-                  {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
-                  {activeTab === 'gts-synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
-                  {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
-                  {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
-                  {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
-                  {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
-                  {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
-                  {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
-                  {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
-                  {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
-                  {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                  {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                  {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
-                  {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
-                  {activeTab === 'sql-test' && <SQLTestView data={filteredData} user={currentUser} />}
-                  {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} user={currentUser} />}
-                </>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="sticky top-0 z-[100] px-4 py-3 lg:px-6 lg:py-4 bg-[#f8fafc]/80 backdrop-blur-md">
+          <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl min-h-[5rem]">
+            <div className="flex items-center gap-4 cursor-pointer lg:hidden" onClick={() => setActiveTab('pulse')}>
+               <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
+                  <img 
+                    src={branding.logo} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain p-1.5" 
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
+                    }}
+                  />
+               </div>
+               <div className="flex flex-col">
+                  <span className="font-black text-lg tracking-tighter uppercase text-slate-900 leading-none">HS</span>
+                  <div className="flex items-center gap-1.5 mt-1">
+                     <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                     <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
+                  </div>
+               </div>
+            </div>
+
+            <div className="hidden lg:flex flex-col">
+              <h2 className="text-xl font-black uppercase tracking-tighter text-slate-900">
+                {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.navItems.find(i => i.id === activeTab)?.label || 'Cockpit'}
+              </h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                {getRelativeSyncTime()} <span className="opacity-60">({getFullSyncTime()})</span>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => handleSync(true, true)}
+                disabled={syncStatus === 'syncing'}
+                className={`p-2.5 rounded-2xl transition-all active:scale-95 ${syncStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'}`}
+                title="Actualiser les données"
+              >
+                <RefreshCw size={18} />
+              </button>
+              <button 
+                onClick={() => setIsCommandPaletteOpen(true)}
+                className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl text-slate-500 transition-all group"
+              >
+                <Search size={16} className="group-hover:text-slate-900" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Rechercher...</span>
+                <div className="flex items-center gap-1 ml-4">
+                  <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">⌘</span>
+                  <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">K</span>
+                </div>
+              </button>
+              {currentUser ? (
+                <div className="flex items-center gap-3">
+                  <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4">
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-slate-900 leading-none">
+                      {currentUser.prenoms} {currentUser.nom}
+                    </span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500 mt-1">
+                      {currentUser.fonction}
+                    </span>
+                  </div>
+                  <button onClick={handleLogout} className="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors shadow-sm">
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setShowLogin(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Connexion</button>
               )}
-            </motion.div>
-          </AnimatePresence>
-        )}
-      </main>
+              <NotificationManager />
+              <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 shadow-sm"><Settings size={16} /></button>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 pb-32 pb-safe">
+          <StockAlert data={fullData} user={currentUser} className="mb-8" />
+          {loading && !fullData.dailyHistory.length ? (
+            <div className="flex flex-col items-center justify-center py-48 gap-6">
+               <Activity size={60} className="text-blue-600 animate-pulse" />
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="page-transition"
+              >
+                {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} setActiveTab={setActiveTab} />}
+                {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
+                {currentUser && (
+                  <>
+                    {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
+                    {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
+                    {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
+                    {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
+                    {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
+                    {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
+                    {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
+                    {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
+                    {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
+                    {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
+                    {activeTab === 'gts-synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
+                    {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
+                    {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
+                    {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
+                    {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
+                    {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                    {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
+                    {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                    {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
+                    {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
+                    {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
+                    {activeTab === 'sql-test' && <SQLTestView data={filteredData} user={currentUser} />}
+                    {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} user={currentUser} />}
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </main>
+
+        {/* QUICK ACTIONS FLOATING */}
+        <div className="hidden lg:flex fixed bottom-8 right-8 z-[150] flex flex-col gap-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="w-14 h-14 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
+          >
+            <Search size={24} className="group-hover:text-blue-600 transition-colors" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleSync(true, true)}
+            className="w-14 h-14 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
+          >
+            <RefreshCw size={24} className={`${syncStatus === 'syncing' ? 'animate-spin' : ''} group-hover:text-emerald-600 transition-colors`} />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowSettings(true)}
+            className="w-14 h-14 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center justify-center group"
+          >
+            <Plus size={24} className="group-hover:rotate-90 transition-transform" />
+          </motion.button>
+        </div>
+      </div>
 
       <CommandPalette 
         isOpen={isCommandPaletteOpen} 
