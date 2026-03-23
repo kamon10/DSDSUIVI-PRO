@@ -46,6 +46,10 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState<'cockpit' | 'summary'>('cockpit');
+  const [gtsMode, setGtsMode] = useState<'list' | 'synthesis' | 'comparison'>('list');
+  const [stockMode, setStockMode] = useState<'summary' | 'table' | 'synthesis'>('summary');
   const [sqlStatus, setSqlStatus] = useState<'connected' | 'error' | 'none'>('none');
   const [sqlError, setSqlError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -74,7 +78,6 @@ const App: React.FC = () => {
     try { return JSON.parse(saved); } catch (e) { return null; }
   });
   const [error, setError] = useState<string | null>(null);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const scriptUrl = DEFAULT_SCRIPT_URL;
   const isSyncingRef = useRef(false);
@@ -102,7 +105,8 @@ const App: React.FC = () => {
   const handleSync = useCallback(async (isSilent = false, force = false) => {
     if (isSyncingRef.current) return;
     
-    // Check SQL status concurrently
+    // Check SQL status concurrently (DISABLED)
+    /*
     fetch('/api/sql/health').then(res => res.json()).then(data => {
       if (data.status === 'ok') {
         setSqlStatus('connected');
@@ -112,6 +116,7 @@ const App: React.FC = () => {
         setSqlError(data.error);
       }
     }).catch(() => setSqlStatus('none'));
+    */
 
     // Garde-fou réduit à 60s pour plus de réactivité si le cache Google est à jour
     if (isSilent && !force && (Date.now() - lastOptimisticUpdateRef.current < 60000)) {
@@ -324,26 +329,20 @@ const App: React.FC = () => {
 
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={18} />, label: 'Pulse', public: true },
-    { id: 'summary', icon: <Layout size={18} />, label: 'Résumé', public: false },
-    { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Cockpit', public: false },
+    { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Tableau de Bord', public: false },
     { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
-    { id: 'recap', icon: <FileText size={18} />, label: 'Récap Coll.', public: false },
-    { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
+    { id: 'recap', icon: <FileText size={18} />, label: 'Récapitulatif', public: false },
     { id: 'distribution-detailed', icon: <ClipboardList size={18} />, label: 'Détail Dist', public: false },
     { id: 'distribution-stock', icon: <Database size={18} />, label: 'Stock & Dist', public: false },
     { id: 'gts', icon: <Truck size={18} />, label: 'GTS', public: false },
-    { id: 'gts-synthesis', icon: <PieChart size={18} />, label: 'Synthèse GTS', public: false },
-    { id: 'gts-comparison', icon: <RefreshCw size={18} />, label: 'Comparaison GTS', public: false },
     { id: 'collection-planning', icon: <Calendar size={18} />, label: 'Planning Mobiles', public: false },
-    { id: 'stock-summary', icon: <Layout size={18} />, label: 'Résumé Stock', public: false },
-    { id: 'stock', icon: <Package size={18} />, label: 'Stock', public: false },
+    { id: 'stock', icon: <Package size={18} />, label: 'Gestion Stock', public: false },
     { id: 'stock-focus', icon: <Zap size={18} />, label: 'Focus Analyse', public: false },
     { id: 'stock-detailed', icon: <ClipboardList size={18} />, label: 'Détail Stock', public: false },
-    { id: 'stock-synthesis', icon: <TrendingUp size={18} />, label: 'Synthèse Stock', public: false },
     { id: 'stock-planning', icon: <ShieldCheck size={18} />, label: 'Planning Stock', public: false },
     { id: 'capacity-planning', icon: <Zap size={18} />, label: 'Capacité', public: false },
-    { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
+    { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus Site', public: false },
     { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
     { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
     { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
@@ -351,7 +350,6 @@ const App: React.FC = () => {
     { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
     { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
     { id: 'personnel', icon: <UserCheck size={18} />, label: 'Personnel', public: false, superOnly: true },
-    { id: 'sql-test', icon: <Database size={18} />, label: 'SQL Test', public: false, superOnly: true },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
   ];
 
@@ -364,11 +362,11 @@ const App: React.FC = () => {
 
   const groupedNavItems = useMemo(() => {
     const groups = [
-      { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
-      { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
-      { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison', 'collection-planning'] },
-      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'personnel', 'global-report', 'contact', 'sql-test'] }
+      { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
+      { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['distribution-detailed', 'distribution-stock'] },
+      { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'collection-planning'] },
+      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock', 'stock-focus', 'stock-detailed', 'stock-planning'] },
+      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'personnel', 'global-report', 'contact'] }
     ];
 
     return groups.map(group => ({
@@ -497,13 +495,6 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-1.5 mt-1">
                      <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
                      <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
-                     {sqlStatus !== 'none' && (
-                       <>
-                         <div className="w-px h-2 bg-slate-200 mx-1"></div>
-                         <div className={`w-1.5 h-1.5 rounded-full ${sqlStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-                         <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">SQL</span>
-                       </>
-                     )}
                   </div>
                </div>
             </div>
@@ -514,11 +505,6 @@ const App: React.FC = () => {
               </h2>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                 {getRelativeSyncTime()} <span className="opacity-60">({getFullSyncTime()})</span>
-                {sqlStatus === 'error' && (
-                  <span className="ml-3 text-amber-600 font-black flex items-inline gap-1">
-                    <Database size={10} /> SQL: {sqlError}
-                  </span>
-                )}
               </p>
             </div>
 
@@ -586,8 +572,29 @@ const App: React.FC = () => {
                 {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
                 {currentUser && (
                   <>
-                    {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
-                    {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'cockpit' && (
+                      <div className="space-y-8">
+                        <div className="flex bg-slate-100 p-1 rounded-2xl w-fit mx-auto">
+                          <button 
+                            onClick={() => setDashboardMode('cockpit')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dashboardMode === 'cockpit' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Cockpit Visuel
+                          </button>
+                          <button 
+                            onClick={() => setDashboardMode('summary')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dashboardMode === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Résumé Exécutif
+                          </button>
+                        </div>
+                        {dashboardMode === 'cockpit' ? (
+                          <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />
+                        ) : (
+                          <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />
+                        )}
+                      </div>
+                    )}
                     {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
                     {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
@@ -595,18 +602,65 @@ const App: React.FC = () => {
                     {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
                     {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
                     {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
-                    {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
                     {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                     {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
-                    {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
-                    {activeTab === 'gts-synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
-                    {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
+                    {activeTab === 'gts' && (
+                      <div className="space-y-8">
+                        <div className="flex bg-slate-100 p-1 rounded-2xl w-fit mx-auto">
+                          <button 
+                            onClick={() => setGtsMode('list')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${gtsMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Journal GTS
+                          </button>
+                          <button 
+                            onClick={() => setGtsMode('synthesis')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${gtsMode === 'synthesis' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Synthèse GTS
+                          </button>
+                          <button 
+                            onClick={() => setGtsMode('comparison')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${gtsMode === 'comparison' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Comparaison
+                          </button>
+                        </div>
+                        {gtsMode === 'list' && <GtsView data={filteredData} branding={branding} />}
+                        {gtsMode === 'synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
+                        {gtsMode === 'comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
+                      </div>
+                    )}
                     {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
-                    {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
+                    {activeTab === 'stock' && (
+                      <div className="space-y-8">
+                         <div className="flex bg-slate-100 p-1 rounded-2xl w-fit mx-auto">
+                          <button 
+                            onClick={() => setStockMode('summary')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${stockMode === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Résumé Stock
+                          </button>
+                          <button 
+                            onClick={() => setStockMode('table')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${stockMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Tableau de Stock
+                          </button>
+                          <button 
+                            onClick={() => setStockMode('synthesis')}
+                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${stockMode === 'synthesis' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            Synthèse
+                          </button>
+                        </div>
+                        {stockMode === 'summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
+                        {stockMode === 'table' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
+                        {stockMode === 'synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                      </div>
+                    )}
                     {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
                     {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
                     {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                     {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
