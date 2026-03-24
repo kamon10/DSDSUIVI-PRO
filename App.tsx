@@ -30,6 +30,7 @@ import { GtsSynthesis } from './components/GtsSynthesis.tsx';
 import { GtsComparisonView } from './components/GtsComparisonView.tsx';
 import { CollectionPlanningView } from './components/CollectionPlanningView.tsx';
 import { SQLTestView } from './components/SQLTestView.tsx';
+import { MonthlyEntryView } from './components/MonthlyEntryView.tsx';
 import { PersonnelManagement } from './components/PersonnelManagement.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
@@ -332,6 +333,7 @@ const App: React.FC = () => {
     { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Tableau de Bord', public: false },
     { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
     { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
+    { id: 'monthly-entry', icon: <Calendar size={18} />, label: 'Modif. Mensuelle', public: false },
     { id: 'recap', icon: <FileText size={18} />, label: 'Récapitulatif', public: false },
     { id: 'distribution-detailed', icon: <ClipboardList size={18} />, label: 'Détail Dist', public: false },
     { id: 'distribution-stock', icon: <Database size={18} />, label: 'Stock & Dist', public: false },
@@ -362,7 +364,7 @@ const App: React.FC = () => {
 
   const groupedNavItems = useMemo(() => {
     const groups = [
-      { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
+      { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'cockpit', 'map', 'entry', 'monthly-entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['distribution-detailed', 'distribution-stock'] },
       { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'collection-planning'] },
       { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock', 'stock-focus', 'stock-detailed', 'stock-planning'] },
@@ -597,6 +599,7 @@ const App: React.FC = () => {
                     )}
                     {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
+                    {activeTab === 'monthly-entry' && <MonthlyEntryView scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
                     {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
                     {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
