@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types.ts';
 import { Search, Filter, Truck, Calendar, MapPin, Package, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,11 +11,17 @@ interface GtsViewProps {
 
 export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const todayStr = new Date().toLocaleDateString('en-CA');
-  const [startDate, setStartDate] = useState<string>(todayStr);
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const firstDayOfYear = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+  const [startDate, setStartDate] = useState<string>(firstDayOfYear);
   const [endDate, setEndDate] = useState<string>(todayStr);
 
   const gtsData = data.gts || [];
+
+  useEffect(() => {
+    console.log("[GtsView] Données reçues:", gtsData.length, "enregistrements.");
+  }, [gtsData.length]);
 
   const filteredGts = useMemo(() => {
     return gtsData.filter(r => {
@@ -57,7 +63,7 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
   }, [gtsData, searchTerm, startDate, endDate]);
 
   const stats = useMemo(() => {
-    const totalRecords = filteredGts.filter(r => r.caCode !== 'Z' && r.pvCode !== 0).length;
+    const totalRecords = filteredGts.length;
     const totalFixe = filteredGts.reduce((acc, r) => acc + (Number(r.fixe) || 0), 0);
     const totalMobile = filteredGts.reduce((acc, r) => acc + (Number(r.mobile) || 0), 0);
     const totalAuto = filteredGts.reduce((acc, r) => acc + (Number(r.autoTransfusion) || 0), 0);
@@ -207,9 +213,9 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
                 />
               </div>
 
-              {(startDate !== todayStr || endDate !== todayStr) && (
+              {(startDate !== firstDayOfYear || endDate !== todayStr) && (
                 <button 
-                  onClick={() => { setStartDate(todayStr); setEndDate(todayStr); }}
+                  onClick={() => { setStartDate(firstDayOfYear); setEndDate(todayStr); }}
                   className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest"
                 >
                   Réinitialiser
@@ -302,6 +308,16 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <Truck size={48} className="opacity-20" />
                       <p className="font-bold">Aucune donnée trouvée</p>
+                      {gtsData.length > 0 && (
+                        <p className="text-[10px] uppercase tracking-widest opacity-60">
+                          {gtsData.length} enregistrements trouvés hors filtres de date ou recherche
+                        </p>
+                      )}
+                      {gtsData.length === 0 && (
+                        <p className="text-[10px] uppercase tracking-widest opacity-60">
+                          La source GTS semble vide ou n'a pas pu être chargée
+                        </p>
+                      )}
                     </div>
                   </td>
                 </tr>

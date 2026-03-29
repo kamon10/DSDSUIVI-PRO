@@ -12,8 +12,8 @@ interface GtsSynthesisProps {
 
 export const GtsSynthesis: React.FC<GtsSynthesisProps> = ({ data, branding }) => {
   const todayStr = new Date().toLocaleDateString('en-CA');
-  const [startDate, setStartDate] = useState<string>(todayStr);
-  const [endDate, setEndDate] = useState<string>(todayStr);
+  const [startDate, setStartDate] = useState<string>('2024-01-01');
+  const [endDate, setEndDate] = useState<string>('2026-12-31');
 
   const gtsData = data.gts || [];
 
@@ -51,7 +51,7 @@ export const GtsSynthesis: React.FC<GtsSynthesisProps> = ({ data, branding }) =>
   }, [gtsData, startDate, endDate]);
 
   const stats = useMemo(() => {
-    const totalRecords = filteredGtsData.filter(r => r.caCode !== 'Z' && r.pvCode !== 0).length;
+    const totalRecords = filteredGtsData.length;
     const totalFixe = filteredGtsData.reduce((acc, r) => acc + (Number(r.fixe) || 0), 0);
     const totalMobile = filteredGtsData.reduce((acc, r) => acc + (Number(r.mobile) || 0), 0);
     const totalAuto = filteredGtsData.reduce((acc, r) => acc + (Number(r.autoTransfusion) || 0), 0);

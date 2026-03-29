@@ -14,8 +14,8 @@ interface GtsComparisonViewProps {
 export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, branding }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const todayStr = new Date().toLocaleDateString('en-CA');
-  const [startDate, setStartDate] = useState<string>(todayStr);
-  const [endDate, setEndDate] = useState<string>(todayStr);
+  const [startDate, setStartDate] = useState<string>('2024-01-01');
+  const [endDate, setEndDate] = useState<string>('2026-12-31');
   const [isExporting, setIsExporting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +67,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
       prelMobile: number;
       gtsFixe: number;
       gtsMobile: number;
+      autoTransfusion: number;
     }> = {};
 
     // 1. Process Prélèvement data from dailyHistory
@@ -81,7 +82,8 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
             prelFixe: 0,
             prelMobile: 0,
             gtsFixe: 0,
-            gtsMobile: 0
+            gtsMobile: 0,
+            autoTransfusion: 0
           };
         }
         comparison[key].prelFixe += site.fixe;
@@ -100,11 +102,13 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
           prelFixe: 0,
           prelMobile: 0,
           gtsFixe: 0,
-          gtsMobile: 0
+          gtsMobile: 0,
+          autoTransfusion: 0
         };
       }
       comparison[key].gtsFixe += record.fixe;
       comparison[key].gtsMobile += record.mobile;
+      comparison[key].autoTransfusion += record.autoTransfusion;
     });
 
     return Object.values(comparison)
@@ -154,6 +158,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
         prelMobile: number;
         gtsFixe: number;
         gtsMobile: number;
+        autoTransfusion: number;
       }
     }> = {};
 
@@ -162,7 +167,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
       if (!regions[reg]) {
         regions[reg] = {
           items: [],
-          subtotal: { prelFixe: 0, prelMobile: 0, gtsFixe: 0, gtsMobile: 0 }
+          subtotal: { prelFixe: 0, prelMobile: 0, gtsFixe: 0, gtsMobile: 0, autoTransfusion: 0 }
         };
       }
       regions[reg].items.push(item);
@@ -170,6 +175,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
       regions[reg].subtotal.prelMobile += item.prelMobile;
       regions[reg].subtotal.gtsFixe += item.gtsFixe;
       regions[reg].subtotal.gtsMobile += item.gtsMobile;
+      regions[reg].subtotal.autoTransfusion += item.autoTransfusion;
     });
 
     return regions;
@@ -181,7 +187,8 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
       prelMobile: acc.prelMobile + curr.prelMobile,
       gtsFixe: acc.gtsFixe + curr.gtsFixe,
       gtsMobile: acc.gtsMobile + curr.gtsMobile,
-    }), { prelFixe: 0, prelMobile: 0, gtsFixe: 0, gtsMobile: 0 });
+      autoTransfusion: acc.autoTransfusion + curr.autoTransfusion
+    }), { prelFixe: 0, prelMobile: 0, gtsFixe: 0, gtsMobile: 0, autoTransfusion: 0 });
   }, [comparisonData]);
 
   const exportToPNG = async () => {
@@ -408,6 +415,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center bg-indigo-50/30">GTS Fixe</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center bg-emerald-50/30">Prél. Mob.</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center bg-indigo-50/30">GTS Mob.</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center bg-indigo-50/30">Auto Transf.</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Statut</th>
               </tr>
             </thead>
@@ -417,7 +425,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
                   {Object.entries(groupedData).map(([region, regionData], regIdx) => (
                     <React.Fragment key={region}>
                       <tr className="bg-indigo-50/30">
-                        <td colSpan={6} className="px-6 py-3">
+                        <td colSpan={7} className="px-6 py-3">
                           <div className="flex items-center gap-2 text-indigo-700 font-black text-xs uppercase tracking-widest">
                             <Package size={14} />
                             {region}
@@ -462,6 +470,9 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
                               {item.gtsMobile}
                             </td>
                             <td className="px-6 py-4 text-center">
+                              <span className="text-xs font-black text-indigo-600">{item.autoTransfusion}</span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
                               {hasDiff ? (
                                 <div className="inline-flex items-center gap-1 px-2 py-1 bg-rose-100 text-rose-700 rounded-lg text-[9px] font-black uppercase">
                                   <AlertCircle size={10} /> Écart
@@ -482,6 +493,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
                         <td className="px-6 py-4 text-center text-indigo-700">{regionData.subtotal.gtsFixe}</td>
                         <td className="px-6 py-4 text-center text-indigo-700">{regionData.subtotal.prelMobile}</td>
                         <td className="px-6 py-4 text-center text-indigo-700">{regionData.subtotal.gtsMobile}</td>
+                        <td className="px-6 py-4 text-center text-indigo-700">{regionData.subtotal.autoTransfusion}</td>
                         <td className="px-6 py-4 text-center">
                           {(regionData.subtotal.prelFixe - regionData.subtotal.gtsFixe !== 0 || 
                             regionData.subtotal.prelMobile - regionData.subtotal.gtsMobile !== 0) ? (
@@ -500,6 +512,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
                     <td className="px-6 py-6 text-center text-xl text-indigo-400">{totals.gtsFixe}</td>
                     <td className="px-6 py-6 text-center text-xl text-emerald-400">{totals.prelMobile}</td>
                     <td className="px-6 py-6 text-center text-xl text-indigo-400">{totals.gtsMobile}</td>
+                    <td className="px-6 py-6 text-center text-xl text-indigo-400">{totals.autoTransfusion}</td>
                     <td className="px-6 py-6 text-center">
                       {(totals.prelFixe - totals.gtsFixe !== 0 || 
                         totals.prelMobile - totals.gtsMobile !== 0) ? (
@@ -512,7 +525,7 @@ export const GtsComparisonView: React.FC<GtsComparisonViewProps> = ({ data, bran
                 </>
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <Truck size={48} className="opacity-20" />
                       <p className="font-bold">Aucune donnée trouvée</p>
