@@ -721,6 +721,11 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const mRealized = regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.totalMois, 0), 0);
     const mObjective = regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + s.objMensuel, 0), 0);
     const aObjective = SITES_DATA.reduce((acc, s) => acc + s.annualObjective, 0);
+    
+    // Calculate actual annual realized from all valid rows in the target year
+    const aRealized = validRows
+      .filter(({ dateObj }) => dateObj.getFullYear() === targetYear)
+      .reduce((acc, { row }) => acc + cleanNum(row[col.total]), 0);
 
     const distributions = distResult.text ? parseDistributions(distResult.text) : undefined;
     const stock = stockResult.text ? parseStock(stockResult.text) : undefined;
@@ -745,9 +750,9 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
         mobile: regions.reduce((acc, r) => acc + r.sites.reduce((sa, s) => sa + (s.monthlyMobile || 0), 0), 0)
       },
       annual: {
-        realized: mRealized,
+        realized: aRealized,
         objective: aObjective,
-        percentage: aObjective > 0 ? (mRealized / aObjective) * 100 : 0,
+        percentage: aObjective > 0 ? (aRealized / aObjective) * 100 : 0,
         fixed: 0,
         mobile: 0
       },
