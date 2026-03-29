@@ -80,10 +80,21 @@ const normalizeStr = (s: string) =>
 export const getSiteByInput = (input: string) => {
   if (!input) return null;
   const inputNorm = normalizeStr(input);
+  
+  // Try direct match by code
   const byCode = SITES_DATA.find(s => s.code === inputNorm);
   if (byCode) return byCode;
+  
+  // Try match by code removing leading zeros (e.g. "07" -> "7")
+  const inputNoLeadingZeros = inputNorm.replace(/^0+/, '');
+  if (inputNoLeadingZeros && inputNoLeadingZeros !== inputNorm) {
+    const byCodeNoZeros = SITES_DATA.find(s => s.code === inputNoLeadingZeros);
+    if (byCodeNoZeros) return byCodeNoZeros;
+  }
+  
   const byName = SITES_DATA.find(s => normalizeStr(s.name) === inputNorm);
   if (byName) return byName;
+  
   const byInclusion = SITES_DATA.find(s => {
     const sNameNorm = normalizeStr(s.name);
     return inputNorm.includes(sNameNorm) || sNameNorm.includes(inputNorm);

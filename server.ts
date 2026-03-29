@@ -11,33 +11,6 @@ import sql from "mssql";
 const isDbConfigured = !!(process.env.DATABASE_URL || process.env.SQL_SERVER);
 let pool: sql.ConnectionPool | null = null;
 
-// Handle connection string conversion
-let connectionString = process.env.DATABASE_URL || "";
-
-// If separate variables are provided, build the connection string
-if (!connectionString && process.env.SQL_SERVER) {
-  const user = process.env.SQL_USER || "";
-  const password = process.env.SQL_PASSWORD || "";
-  const server = process.env.SQL_SERVER;
-  const database = process.env.SQL_DATABASE || "";
-  const port = process.env.SQL_PORT || "1433";
-  
-  // Build a standard mssql connection string
-  if (user && password) {
-    connectionString = `mssql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${server}:${port}/${database}`;
-  } else {
-    connectionString = `mssql://${server}:${port}/${database}`;
-  }
-}
-
-// Normalize prefixes
-if (connectionString.startsWith("postgres://")) {
-  connectionString = connectionString.replace("postgres://", "mssql://");
-}
-if (connectionString.startsWith("sqlserver://")) {
-  connectionString = connectionString.replace("sqlserver://", "mssql://");
-}
-
 // SQL Server configuration
 let sqlConfig: any = {
   options: {
@@ -48,42 +21,22 @@ let sqlConfig: any = {
   }
 };
 
-if (connectionString.startsWith("mssql://")) {
-  if (connectionString.includes(";")) {
-    let raw = connectionString.replace("mssql://", "");
-    raw = raw.replace(/user=/gi, "User Id=");
-    raw = raw.replace(/password=/gi, "Password=");
-    
-    if (!raw.toLowerCase().startsWith("server=")) {
-      const parts = raw.split(";");
-      const hostPort = parts[0].replace(":", ",");
-      const rest = parts.slice(1).join(";");
-      raw = `Server=${hostPort};${rest}`;
-    }
-    
-    if (!raw.toLowerCase().includes("trustservercertificate")) raw += ";TrustServerCertificate=true";
-    if (!raw.toLowerCase().includes("encrypt")) raw += ";Encrypt=true";
-    if (!raw.toLowerCase().includes("connection timeout")) raw += ";Connection Timeout=30";
-    
-    sqlConfig = raw;
-  } else {
-    // Ensure basic options are present in the URL
-    if (!connectionString.includes("trustServerCertificate")) {
-      connectionString += (connectionString.includes("?") ? "&" : "?") + "trustServerCertificate=true";
-    }
-    if (!connectionString.includes("encrypt")) connectionString += "&encrypt=true";
-    if (!connectionString.includes("connectTimeout")) connectionString += "&connectTimeout=30000";
-    sqlConfig = connectionString;
+// Build configuration
+if (process.env.DATABASE_URL) {
+  sqlConfig = process.env.DATABASE_URL;
+  // If it's a string, we might need to append options if they are missing
+  if (typeof sqlConfig === 'string' && !sqlConfig.includes('trustServerCertificate')) {
+    sqlConfig += (sqlConfig.includes('?') ? '&' : '?') + 'trustServerCertificate=true';
   }
-} else if (connectionString.includes(";")) {
-  sqlConfig = connectionString;
-  sqlConfig = sqlConfig.replace(/user=/gi, "User Id=");
-  sqlConfig = sqlConfig.replace(/password=/gi, "Password=");
-  if (!sqlConfig.toLowerCase().includes("trustservercertificate")) sqlConfig += ";TrustServerCertificate=true";
-  if (!sqlConfig.toLowerCase().includes("encrypt")) sqlConfig += ";Encrypt=true";
-  if (!sqlConfig.toLowerCase().includes("connection timeout")) sqlConfig += ";Connection Timeout=30";
-} else if (connectionString) {
-  sqlConfig.connectionString = connectionString;
+  if (typeof sqlConfig === 'string' && !sqlConfig.includes('encrypt')) {
+    sqlConfig += '&encrypt=true';
+  }
+} else if (process.env.SQL_SERVER) {
+  sqlConfig.server = process.env.SQL_SERVER;
+  sqlConfig.user = process.env.SQL_USER;
+  sqlConfig.password = process.env.SQL_PASSWORD;
+  sqlConfig.database = process.env.SQL_DATABASE;
+  sqlConfig.port = parseInt(process.env.SQL_PORT || "1433", 10);
 }
 
 // Function to get or create connection pool
@@ -103,18 +56,35 @@ async function getPool() {
     console.error("[DB] Erreur de connexion détaillée:", err);
     
     let userMessage = err.message;
-    const host = connectionString.match(/@([^;/?#]+)/)?.[1] || 'votre serveur';
     
-    if (err.message.includes("ETIMEDOUT") || err.message.toLowerCase().includes("timeout") || err.message.includes("Failed to connect")) {
+    // Better host extraction
+    let host = 'votre serveur';
+    if (typeof sqlConfig === 'string') {
+      const urlMatch = sqlConfig.match(/@([^;/:?#]+)/);
+      if (urlMatch) host = urlMatch[1];
+    } else if (sqlConfig.server) {
+      host = sqlConfig.server;
+    }
+    
+    if (err.message.includes("ETIMEDOUT") || err.message.toLowerCase().includes("timeout") || err.message.includes("Failed to connect") || err.message.includes("Could not connect")) {
       userMessage = `Impossible d'atteindre le serveur SQL à ${host}. `;
       
-      if (host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.') || host.startsWith('192.0.') || host === 'localhost' || host === '127.0.0.1') {
-        userMessage += `L'adresse IP ${host} semble être une adresse locale ou privée. L'application étant hébergée dans le cloud, elle ne peut pas accéder directement à votre réseau local. Veuillez utiliser une IP publique ou un tunnel (ex: ngrok).`;
+      const isPrivate = host.startsWith('192.168.') || 
+                        host.startsWith('10.') || 
+                        host.startsWith('172.') || 
+                        host.startsWith('192.0.') || 
+                        host.startsWith('169.254.') ||
+                        host === 'localhost' || 
+                        host === '127.0.0.1';
+
+      if (isPrivate) {
+        userMessage += `L'adresse IP ${host} est une adresse PRIVÉE ou LOCALE. L'application étant hébergée dans le cloud (Google Cloud Run), elle ne peut pas "voir" votre ordinateur ou votre serveur local. \n\nSOLUTIONS :\n1. Utilisez une IP PUBLIQUE (fixe) pour votre serveur SQL.\n2. Ouvrez le port 1433 dans votre pare-feu.\n3. Utilisez un tunnel comme ngrok (ngrok tcp 1433) et utilisez l'adresse fournie par ngrok.`;
       } else {
-        userMessage += "Vérifiez que l'IP est publique, que le serveur est allumé et que le port 1433 est ouvert dans votre pare-feu.";
+        userMessage += `Vérifiez que l'IP ${host} est bien publique, que le serveur est allumé, et que le port 1433 est ouvert dans votre pare-feu (règles entrantes). `;
+        userMessage += "Si votre serveur nécessite un VPN pour être accessible, vous devez utiliser un tunnel comme ngrok (ngrok tcp 1433) car le cloud ne peut pas se connecter directement à votre VPN privé.";
       }
     } else if (err.message.includes("Login failed")) {
-      userMessage = "Échec de l'authentification SQL. Vérifiez l'utilisateur et le mot de passe dans DATABASE_URL.";
+      userMessage = "Échec de l'authentification SQL. Vérifiez l'utilisateur et le mot de passe dans vos variables d'environnement.";
     }
     
     pool = null;
@@ -122,12 +92,16 @@ async function getPool() {
   }
 }
 
-// Initialize connection on startup
+// Initialize connection on startup - DISABLED to avoid log spam if connection fails
+// It will retry on the first request that needs the DB
+/*
 if (isDbConfigured) {
   getPool().catch(() => {
     console.error("[DB] Initial connection failed. Will retry on first request.");
   });
-} else {
+}
+*/
+if (!isDbConfigured) {
   console.warn("[DB] DATABASE_URL not set. SQL features will be disabled.");
 }
 
@@ -217,6 +191,18 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/sql/health", async (req, res) => {
+  if (!isDbConfigured) {
+    return res.json({ status: "none", message: "SQL non configuré" });
+  }
+  try {
+    await getPool();
+    res.json({ status: "ok" });
+  } catch (err: any) {
+    res.json({ status: "error", error: err.message });
+  }
+});
+
 // SQL API Routes
 app.get("/api/sql/prelevements", async (req, res) => {
   try {
@@ -277,40 +263,55 @@ app.get("/api/proxy", async (req, res) => {
     return res.status(400).send("URL parameter is required");
   }
   
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const maxRetries = 2;
+  let lastError = null;
 
-  try {
-    const response = await fetch(targetUrl, {
-      headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/csv,text/plain,application/json,*/*',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      console.error(`[Proxy] Error fetching ${targetUrl}: ${response.status} ${response.statusText}`);
-      return res.status(response.status).send(`Proxy error: ${response.statusText}`);
+  for (let i = 0; i <= maxRetries; i++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout par tentative
+
+    try {
+      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
+      const response = await fetch(targetUrl, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/csv,text/plain,application/json,*/*',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const text = await response.text();
+        if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+          console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
+          // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
+          lastError = new Error("Received HTML instead of CSV");
+          continue;
+        }
+        
+        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} bytes)`);
+        res.set('Content-Type', 'text/plain');
+        return res.send(text);
+      } else {
+        console.error(`[Proxy] Error status ${response.status} for ${targetUrl.substring(0, 60)}`);
+        lastError = new Error(`Status ${response.status}: ${response.statusText}`);
+      }
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
     }
-    const text = await response.text();
-    console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 100)}... (${text.length} bytes)`);
-    if (text.includes("<!DOCTYPE")) {
-      console.warn(`[Proxy] Warning: Received HTML instead of CSV from ${targetUrl.substring(0, 100)}...`);
+
+    if (i < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    res.set('Content-Type', 'text/plain');
-    res.send(text);
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      return res.status(504).send("Proxy timeout: Target URL took too long to respond");
-    }
-    res.status(500).send(`Proxy exception: ${err.message}`);
   }
+  
+  res.status(500).send(`Proxy failed after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`);
 });
 
 app.post("/api/notifications/subscribe", (req, res) => {
