@@ -5,105 +5,9 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import sql from "mssql";
 
 // Database connection pool
-const isDbConfigured = !!(process.env.DATABASE_URL || process.env.SQL_SERVER);
-let pool: sql.ConnectionPool | null = null;
-
-// SQL Server configuration
-let sqlConfig: any = {
-  options: {
-    encrypt: true,
-    trustServerCertificate: true,
-    connectTimeout: 30000, // 30 seconds
-    requestTimeout: 30000
-  }
-};
-
-// Build configuration
-if (process.env.DATABASE_URL) {
-  sqlConfig = process.env.DATABASE_URL;
-  // If it's a string, we might need to append options if they are missing
-  if (typeof sqlConfig === 'string' && !sqlConfig.includes('trustServerCertificate')) {
-    sqlConfig += (sqlConfig.includes('?') ? '&' : '?') + 'trustServerCertificate=true';
-  }
-  if (typeof sqlConfig === 'string' && !sqlConfig.includes('encrypt')) {
-    sqlConfig += '&encrypt=true';
-  }
-} else if (process.env.SQL_SERVER) {
-  sqlConfig.server = process.env.SQL_SERVER;
-  sqlConfig.user = process.env.SQL_USER;
-  sqlConfig.password = process.env.SQL_PASSWORD;
-  sqlConfig.database = process.env.SQL_DATABASE;
-  sqlConfig.port = parseInt(process.env.SQL_PORT || "1433", 10);
-}
-
-// Function to get or create connection pool
-async function getPool() {
-  if (pool && pool.connected) return pool;
-  
-  if (!isDbConfigured) {
-    throw new Error("DATABASE_URL non configurée. Veuillez ajouter le secret DATABASE_URL.");
-  }
-
-  console.log("[DB] Tentative de connexion à SQL Server...");
-  try {
-    pool = await new sql.ConnectionPool(sqlConfig).connect();
-    console.log("[DB] Connexion SQL Server réussie");
-    return pool;
-  } catch (err: any) {
-    console.error("[DB] Erreur de connexion détaillée:", err);
-    
-    let userMessage = err.message;
-    
-    // Better host extraction
-    let host = 'votre serveur';
-    if (typeof sqlConfig === 'string') {
-      const urlMatch = sqlConfig.match(/@([^;/:?#]+)/);
-      if (urlMatch) host = urlMatch[1];
-    } else if (sqlConfig.server) {
-      host = sqlConfig.server;
-    }
-    
-    if (err.message.includes("ETIMEDOUT") || err.message.toLowerCase().includes("timeout") || err.message.includes("Failed to connect") || err.message.includes("Could not connect")) {
-      userMessage = `Impossible d'atteindre le serveur SQL à ${host}. `;
-      
-      const isPrivate = host.startsWith('192.168.') || 
-                        host.startsWith('10.') || 
-                        host.startsWith('172.') || 
-                        host.startsWith('192.0.') || 
-                        host.startsWith('169.254.') ||
-                        host === 'localhost' || 
-                        host === '127.0.0.1';
-
-      if (isPrivate) {
-        userMessage += `L'adresse IP ${host} est une adresse PRIVÉE ou LOCALE. L'application étant hébergée dans le cloud (Google Cloud Run), elle ne peut pas "voir" votre ordinateur ou votre serveur local. \n\nSOLUTIONS :\n1. Utilisez une IP PUBLIQUE (fixe) pour votre serveur SQL.\n2. Ouvrez le port 1433 dans votre pare-feu.\n3. Utilisez un tunnel comme ngrok (ngrok tcp 1433) et utilisez l'adresse fournie par ngrok.`;
-      } else {
-        userMessage += `Vérifiez que l'IP ${host} est bien publique, que le serveur est allumé, et que le port 1433 est ouvert dans votre pare-feu (règles entrantes). `;
-        userMessage += "Si votre serveur nécessite un VPN pour être accessible, vous devez utiliser un tunnel comme ngrok (ngrok tcp 1433) car le cloud ne peut pas se connecter directement à votre VPN privé.";
-      }
-    } else if (err.message.includes("Login failed")) {
-      userMessage = "Échec de l'authentification SQL. Vérifiez l'utilisateur et le mot de passe dans vos variables d'environnement.";
-    }
-    
-    pool = null;
-    throw new Error(userMessage);
-  }
-}
-
-// Initialize connection on startup - DISABLED to avoid log spam if connection fails
-// It will retry on the first request that needs the DB
-/*
-if (isDbConfigured) {
-  getPool().catch(() => {
-    console.error("[DB] Initial connection failed. Will retry on first request.");
-  });
-}
-*/
-if (!isDbConfigured) {
-  console.warn("[DB] DATABASE_URL not set. SQL features will be disabled.");
-}
+const isDbConfigured = false;
 
 console.log("[SERVER] Starting initialization...");
 
@@ -191,72 +95,6 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.get("/api/sql/health", async (req, res) => {
-  if (!isDbConfigured) {
-    return res.json({ status: "none", message: "SQL non configuré" });
-  }
-  try {
-    await getPool();
-    res.json({ status: "ok" });
-  } catch (err: any) {
-    res.json({ status: "error", error: err.message });
-  }
-});
-
-// SQL API Routes
-app.get("/api/sql/prelevements", async (req, res) => {
-  try {
-    const pool = await getPool();
-    // Note: User should provide the correct table name if it's not 'prelevements'
-    const result = await pool.query('SELECT TOP 100 * FROM prelevements ORDER BY date_collecte DESC');
-    res.json(result.recordset);
-  } catch (err: any) {
-    console.error("[DB] Error fetching prelevements:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get("/api/sql/stocks", async (req, res) => {
-  try {
-    const pool = await getPool();
-    const result = await pool.query('SELECT TOP 100 * FROM dbo.T_STOCKS');
-    res.json(result.recordset);
-  } catch (err: any) {
-    console.error("[DB] Error fetching stocks:", err);
-    let message = err.message;
-    if (message.includes("Invalid object name 'dbo.T_STOCKS'")) {
-      message = "La table 'dbo.T_STOCKS' n'existe pas. Veuillez vérifier le nom exact.";
-    }
-    res.status(500).json({ error: message });
-  }
-});
-
-// Diagnostic endpoint to help user find table names and columns
-app.get("/api/sql/diagnostics", async (req, res) => {
-  try {
-    const pool = await getPool();
-    const tablesResult = await pool.query(`
-      SELECT TABLE_SCHEMA, TABLE_NAME 
-      FROM INFORMATION_SCHEMA.TABLES 
-      WHERE TABLE_TYPE = 'BASE TABLE'
-    `);
-    
-    // Also get columns for T_STOCKS if it exists
-    const columnsResult = await pool.query(`
-      SELECT COLUMN_NAME, DATA_TYPE 
-      FROM INFORMATION_SCHEMA.COLUMNS 
-      WHERE TABLE_NAME = 'T_STOCKS'
-    `);
-    
-    res.json({ 
-      tables: tablesResult.recordset,
-      columns: columnsResult.recordset
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.get("/api/proxy", async (req, res) => {
   const targetUrl = req.query.url as string;
   if (!targetUrl) {
@@ -268,7 +106,7 @@ app.get("/api/proxy", async (req, res) => {
 
   for (let i = 0; i <= maxRetries; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout par tentative
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout par tentative
 
     try {
       console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
@@ -286,7 +124,7 @@ app.get("/api/proxy", async (req, res) => {
       
       if (response.ok) {
         const text = await response.text();
-        if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+        if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
           console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
           // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
           lastError = new Error("Received HTML instead of CSV");
