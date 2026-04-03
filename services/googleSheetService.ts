@@ -477,67 +477,69 @@ export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
   }
 };
 
+const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
+  if (!targetUrl || !targetUrl.startsWith('http')) {
+    console.warn(`Source ${key} URL invalide ou manquante.`);
+    return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+  }
+  
+  const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+  
+  for (let i = 0; i <= retries; i++) {
+    console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
+    
+    const strategies = [
+      async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
+      async () => fetch(urlWithCacheBusting, { 
+        method: 'GET',
+        headers: { 'Accept': 'text/csv, text/plain, */*' },
+        credentials: 'omit'
+      }),
+      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
+      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
+      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
+    ];
+
+    for (let j = 0; j < strategies.length; j++) {
+      try {
+        const response = await strategies[j]();
+        if (response.ok) {
+          const text = await response.text();
+          const trimmedText = text.trim();
+          
+          // Vérification plus robuste du contenu (pas de HTML, pas vide)
+          if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html") && trimmedText.length > 0) {
+            const hasChanged = force || text !== lastRawContent[key];
+            lastRawContent[key] = text;
+            return { text, hasChanged, error: false };
+          }
+          console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
+        } else {
+          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
+        }
+      } catch (e: any) {
+        console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
+      }
+    }
+
+    if (i < retries) {
+      const delay = 1000 * (i + 1);
+      console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative dans ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
+  console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives.`);
+  return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+};
+
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string, gtsUrl?: string): Promise<DashboardData | null> => {
   try {
-    const fetchWithRetry = async (targetUrl: string, key: string, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
-      if (!targetUrl || !targetUrl.startsWith('http')) {
-        console.warn(`Source ${key} URL invalide ou manquante.`);
-        return { text: lastRawContent[key] || '', hasChanged: false, error: true };
-      }
-      
-      const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
-      
-      for (let i = 0; i <= retries; i++) {
-        console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
-        
-        const strategies = [
-          async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
-          async () => fetch(urlWithCacheBusting, { 
-            method: 'GET',
-            headers: { 'Accept': 'text/csv, text/plain, */*' },
-            credentials: 'omit'
-          }),
-          async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-          async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-          async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
-        ];
-
-        for (let j = 0; j < strategies.length; j++) {
-          try {
-            const response = await strategies[j]();
-            if (response.ok) {
-              const text = await response.text();
-              if (text && !text.includes("<!DOCTYPE") && text.trim().length > 0) {
-                const hasChanged = force || text !== lastRawContent[key];
-                lastRawContent[key] = text;
-                return { text, hasChanged, error: false };
-              }
-              console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
-            } else {
-              console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
-            }
-          } catch (e: any) {
-            console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
-          }
-        }
-
-        if (i < retries) {
-          const delay = 1000 * (i + 1);
-          console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative dans ${delay}ms...`);
-          await new Promise(r => setTimeout(r, delay));
-        }
-      }
-
-      console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives.`);
-      // Si on a un cache, on l'utilise même si on marque une erreur
-      return { text: lastRawContent[key] || '', hasChanged: false, error: true };
-    };
-
     // Récupération séquentielle pour éviter les limites de connexion du navigateur
-    const collecteResult = await fetchWithRetry(url, 'collecte');
-    const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE') : { text: '', hasChanged: false, error: false };
-    const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK') : { text: '', hasChanged: false, error: false };
-    const gtsResult = gtsUrl ? await fetchWithRetry(gtsUrl, 'GTS') : { text: '', hasChanged: false, error: false };
+    const collecteResult = await fetchWithRetry(url, 'collecte', force);
+    const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE', force) : { text: '', hasChanged: false, error: false };
+    const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK', force) : { text: '', hasChanged: false, error: false };
+    const gtsResult = gtsUrl ? await fetchWithRetry(gtsUrl, 'GTS', force) : { text: '', hasChanged: false, error: false };
 
     if (stockResult.error && stockUrl) {
       console.warn(`[Sync] Échec de récupération pour STOCK. Utilisation du cache si disponible.`);
