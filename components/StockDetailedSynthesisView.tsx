@@ -59,6 +59,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
         }).reduce((acc, s) => acc + s.quantite, 0),
         oPlus: siteStock.filter(s => normalize(s.typeProduit).includes('CGR') && (s.groupeSanguin || "").replace(/\s/g, "").toUpperCase() === 'O+').reduce((acc, s) => acc + s.quantite, 0),
         oMoins: siteStock.filter(s => normalize(s.typeProduit).includes('CGR') && (s.groupeSanguin || "").replace(/\s/g, "").toUpperCase() === 'O-').reduce((acc, s) => acc + s.quantite, 0),
+        totalCgr: siteStock.filter(s => normalize(s.typeProduit).includes('CGR')).reduce((acc, s) => acc + s.quantite, 0),
         total: siteStock.reduce((acc, s) => acc + s.quantite, 0)
       };
 
@@ -70,6 +71,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
       g.totals.plaquettes += stats.plaquettes;
       g.totals.oPlus += stats.oPlus;
       g.totals.oMoins += stats.oMoins;
+      g.totals.totalCgr = (g.totals.totalCgr || 0) + stats.totalCgr;
       g.totals.total += stats.total;
     });
 
@@ -85,9 +87,10 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
       acc.plaquettes += reg.totals.plaquettes;
       acc.oPlus += reg.totals.oPlus;
       acc.oMoins += reg.totals.oMoins;
+      acc.totalCgr += reg.totals.totalCgr;
       acc.total += reg.totals.total;
       return acc;
-    }, { cgrAdulte: 0, cgrPedia: 0, cgrNourri: 0, plasma: 0, plaquettes: 0, oPlus: 0, oMoins: 0, total: 0 });
+    }, { cgrAdulte: 0, cgrPedia: 0, cgrNourri: 0, plasma: 0, plaquettes: 0, oPlus: 0, oMoins: 0, totalCgr: 0, total: 0 });
   }, [synthesisData]);
 
   const handleExport = async (type: 'image' | 'pdf' | 'excel') => {
@@ -96,7 +99,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
     
     const dateStr = new Date().toISOString().split('T')[0];
 
-    if (type === 'excel') {
+        if (type === 'excel') {
       try {
         const excelData: any[] = [];
         // Header
@@ -108,11 +111,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
           "CGR ADULTE", 
           "CGR PÉDIA.", 
           "CGR NOURRI.", 
-          "PLASMA", 
-          "PLAQUETTES", 
           "CGR (O+)", 
-          "CGR (O-)", 
-          "TOTAL"
+          "CGR (O-)",
+          "Total CGR",
+          "PLASMA", 
+          "PLAQUETTES"
         ]);
 
         synthesisData.forEach(region => {
@@ -123,11 +126,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
               site.cgrAdulte,
               site.cgrPedia,
               site.cgrNourri,
-              site.plasma,
-              site.plaquettes,
               site.oPlus,
               site.oMoins,
-              site.total
+              site.totalCgr,
+              site.plasma,
+              site.plaquettes
             ]);
           });
           // Region Total
@@ -137,11 +140,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
             region.totals.cgrAdulte,
             region.totals.cgrPedia,
             region.totals.cgrNourri,
-            region.totals.plasma,
-            region.totals.plaquettes,
             region.totals.oPlus,
             region.totals.oMoins,
-            region.totals.total
+            region.totals.totalCgr,
+            region.totals.plasma,
+            region.totals.plaquettes
           ]);
           excelData.push([]); // Spacer
         });
@@ -153,11 +156,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
           grandTotals.cgrAdulte,
           grandTotals.cgrPedia,
           grandTotals.cgrNourri,
-          grandTotals.plasma,
-          grandTotals.plaquettes,
           grandTotals.oPlus,
           grandTotals.oMoins,
-          grandTotals.total
+          grandTotals.totalCgr,
+          grandTotals.plasma,
+          grandTotals.plaquettes
         ]);
 
         const ws = utils.aoa_to_sheet(excelData);
@@ -352,11 +355,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                 <th className="px-2 py-6 text-center border-r border-white/10">CGR ADULTE</th>
                 <th className="px-2 py-6 text-center border-r border-white/10">CGR PÉDIA.</th>
                 <th className="px-2 py-6 text-center border-r border-white/10">CGR NOURRI.</th>
-                <th className="px-2 py-6 text-center border-r border-white/10">PLASMA</th>
-                <th className="px-2 py-6 text-center border-r border-white/10">PLAQUETTES</th>
                 <th className="px-2 py-6 text-center border-r border-white/10">CGR (O+)</th>
                 <th className="px-2 py-6 text-center border-r border-white/10">CGR (O-)</th>
-                <th className="px-4 py-6 text-center">TOTAL</th>
+                <th className="px-4 py-6 text-center border-r border-white/10 bg-emerald-600/20">Total CGR</th>
+                <th className="px-2 py-6 text-center border-r border-white/10">PLASMA</th>
+                <th className="px-2 py-6 text-center">PLAQUETTES</th>
               </tr>
             </thead>
             <tbody className="text-[15px] font-bold text-slate-700">
@@ -385,11 +388,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                       <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrAdulte || '-'}</td>
                       <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrPedia || '-'}</td>
                       <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrNourri || '-'}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plasma || '-'}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plaquettes || '-'}</td>
                       <td className="px-2 py-3 text-center border-r border-slate-100 font-black text-blue-600">{site.oPlus || '-'}</td>
                       <td className="px-2 py-3 text-center border-r border-slate-100 font-black text-red-600">{site.oMoins || '-'}</td>
-                      <td className="px-4 py-3 text-center font-black bg-slate-50/50">{site.total.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-center font-black bg-emerald-50 text-emerald-700 border-r border-slate-100">{site.totalCgr.toLocaleString()}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plasma || '-'}</td>
+                      <td className="px-2 py-3 text-center font-black">{site.plaquettes || '-'}</td>
                     </tr>
                   ))}
                   <tr className="bg-slate-100/80 font-black text-slate-900 border-b border-slate-200">
@@ -397,11 +400,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                     <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrAdulte.toLocaleString()}</td>
                     <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrPedia.toLocaleString()}</td>
                     <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrNourri.toLocaleString()}</td>
-                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plasma.toLocaleString()}</td>
-                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plaquettes.toLocaleString()}</td>
                     <td className="px-2 py-4 text-center border-r border-slate-200 text-blue-700 text-[16px]">{region.totals.oPlus.toLocaleString()}</td>
                     <td className="px-2 py-4 text-center border-r border-slate-200 text-red-700 text-[16px]">{region.totals.oMoins.toLocaleString()}</td>
-                    <td className="px-4 py-4 text-center bg-slate-200/50 text-[18px]">{region.totals.total.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-center bg-emerald-100 text-emerald-900 text-[18px] border-r border-slate-200">{region.totals.totalCgr.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plasma.toLocaleString()}</td>
+                    <td className="px-2 py-4 text-center text-[16px]">{region.totals.plaquettes.toLocaleString()}</td>
                   </tr>
                 </React.Fragment>
               ))}
@@ -412,11 +415,11 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                 <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrAdulte.toLocaleString()}</td>
                 <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrPedia.toLocaleString()}</td>
                 <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.cgrNourri.toLocaleString()}</td>
-                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plasma.toLocaleString()}</td>
-                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plaquettes.toLocaleString()}</td>
                 <td className="px-2 py-8 text-center border-r border-white/10 text-blue-400">{grandTotals.oPlus.toLocaleString()}</td>
                 <td className="px-2 py-8 text-center border-r border-white/10 text-red-400">{grandTotals.oMoins.toLocaleString()}</td>
-                <td className="px-4 py-8 text-center bg-white/10 text-[22px]">{grandTotals.total.toLocaleString()}</td>
+                <td className="px-4 py-8 text-center bg-emerald-600 text-white text-[22px] border-r border-white/10">{grandTotals.totalCgr.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center border-r border-white/10">{grandTotals.plasma.toLocaleString()}</td>
+                <td className="px-2 py-8 text-center">{grandTotals.plaquettes.toLocaleString()}</td>
               </tr>
             </tfoot>
           </table>
