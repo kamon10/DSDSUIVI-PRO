@@ -106,7 +106,10 @@ app.get("/api/proxy", async (req, res) => {
 
   for (let i = 0; i <= maxRetries; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout par tentative
+    const timeoutId = setTimeout(() => {
+      console.warn(`[Proxy] Timeout reached for ${targetUrl.substring(0, 60)}`);
+      controller.abort();
+    }, 120000); // Augmenté à 120s pour les gros fichiers
 
     try {
       console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
@@ -131,7 +134,8 @@ app.get("/api/proxy", async (req, res) => {
           continue;
         }
         
-        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} bytes)`);
+        const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
+        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${sizeMB} MB)`);
         res.set('Content-Type', 'text/plain');
         return res.send(text);
       } else {
@@ -141,7 +145,11 @@ app.get("/api/proxy", async (req, res) => {
     } catch (err: any) {
       clearTimeout(timeoutId);
       lastError = err;
-      console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
+      const isTimeout = err.name === 'AbortError';
+      console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}${isTimeout ? ' (Timeout)' : ''}`);
+      if (isTimeout) {
+        lastError = new Error("Délai d'attente dépassé (Timeout). Le fichier est peut-être trop volumineux.");
+      }
     }
 
     if (i < maxRetries) {

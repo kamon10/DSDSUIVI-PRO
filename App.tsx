@@ -32,6 +32,7 @@ import { GtsComparisonView } from './components/GtsComparisonView.tsx';
 import { CollectionPlanningView } from './components/CollectionPlanningView.tsx';
 import { EbookView } from './components/EbookView.tsx';
 import { PersonnelManagement } from './components/PersonnelManagement.tsx';
+import { DonorManagement } from './components/DonorManagement.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
@@ -341,6 +342,7 @@ const App: React.FC = () => {
     { id: 'ebook', icon: <Book size={18} />, label: 'E-Book Hebdo', public: false },
     { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
     { id: 'personnel', icon: <UserCheck size={18} />, label: 'Personnel', public: false, superOnly: true },
+    { id: 'donor', icon: <UserIcon size={18} />, label: 'Gestion Donneur', public: true },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
   ];
 
@@ -357,6 +359,7 @@ const App: React.FC = () => {
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
       { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison', 'collection-planning'] },
       { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
+      { id: 'donneurs', label: 'Donneurs', icon: <HeartPulse size={18} />, items: ['donor'] },
       { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'personnel', 'ebook', 'global-report', 'contact'] }
     ];
 
@@ -588,6 +591,7 @@ const App: React.FC = () => {
                     {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                     {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                    {activeTab === 'donor' && <DonorManagement />}
                     {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                     {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                     {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
