@@ -66,6 +66,10 @@ const App: React.FC = () => {
   };
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
+  const [sheetInputDist, setSheetInputDist] = useState(localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION);
+  const [sheetInputStock, setSheetInputStock] = useState(localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK);
+  const [sheetInputGts, setSheetInputGts] = useState(localStorage.getItem('gsheet_input_gts') || DEFAULT_LINK_GTS);
+  const [sheetInputDonor, setSheetInputDonor] = useState(localStorage.getItem('gsheet_input_donor') || "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv");
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -108,6 +112,10 @@ const App: React.FC = () => {
     }
 
     const currentInput = sheetInputRef.current;
+    const currentDist = localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION;
+    const currentStock = localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK;
+    const currentGts = localStorage.getItem('gsheet_input_gts') || DEFAULT_LINK_GTS;
+    
     isSyncingRef.current = true;
     
     if (!isSilent) setLoading(true);
@@ -121,7 +129,14 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS);
+      const dataResult = await fetchSheetData(
+        currentInput.trim(), 
+        force, 
+        currentDist.trim(), 
+        dynSitesResult || [], 
+        currentStock.trim(), 
+        currentGts.trim()
+      );
       
       if (dataResult) {
         setFullData(dataResult);
@@ -591,7 +606,7 @@ const App: React.FC = () => {
                     {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                     {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'donor' && <DonorManagement />}
+                    {activeTab === 'donor' && <DonorManagement csvUrl={sheetInputDonor} />}
                     {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                     {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                     {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
@@ -745,13 +760,23 @@ const App: React.FC = () => {
                </div>
                
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source BASE (Distribution) - Lecture seule</label>
-                 <input value={DEFAULT_LINK_DISTRIBUTION} readOnly className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none opacity-60 cursor-not-allowed" />
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source BASE (Distribution)</label>
+                 <input value={sheetInputDist} onChange={(e) => setSheetInputDist(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
                </div>
 
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source STOCK (Stock) - Lecture seule</label>
-                 <input value={DEFAULT_LINK_STOCK} readOnly className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none opacity-60 cursor-not-allowed" />
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source STOCK (Stock)</label>
+                 <input value={sheetInputStock} onChange={(e) => setSheetInputStock(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
+               </div>
+
+               <div>
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source GTS (GTS)</label>
+                 <input value={sheetInputGts} onChange={(e) => setSheetInputGts(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
+               </div>
+
+               <div>
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source DONNEURS (Gestion Donneur)</label>
+                 <input value={sheetInputDonor} onChange={(e) => setSheetInputDonor(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
                </div>
              </div>
 
@@ -760,6 +785,10 @@ const App: React.FC = () => {
                  <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
                  <button onClick={() => { 
                    localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
+                   localStorage.setItem('gsheet_input_dist', sheetInputDist.trim());
+                   localStorage.setItem('gsheet_input_stock', sheetInputStock.trim());
+                   localStorage.setItem('gsheet_input_gts', sheetInputGts.trim());
+                   localStorage.setItem('gsheet_input_donor', sheetInputDonor.trim());
                    setShowSettings(false); 
                    handleSync(false, true); 
                  }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
@@ -769,6 +798,8 @@ const App: React.FC = () => {
                    localStorage.removeItem('gsheet_input_1');
                    localStorage.removeItem('gsheet_input_dist');
                    localStorage.removeItem('gsheet_input_stock');
+                   localStorage.removeItem('gsheet_input_gts');
+                   localStorage.removeItem('gsheet_input_donor');
                    window.location.reload();
                  }}
                  className="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 rounded-xl font-black text-[9px] uppercase transition-all"
