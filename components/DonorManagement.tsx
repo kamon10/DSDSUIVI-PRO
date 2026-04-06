@@ -28,9 +28,13 @@ interface DonorData {
   Mois: string;
 }
 
-const DONOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?gid=1330907454&single=true&output=csv";
+const DONOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
 
-export const DonorManagement: React.FC = () => {
+interface DonorManagementProps {
+  csvUrl?: string;
+}
+
+export const DonorManagement: React.FC<DonorManagementProps> = ({ csvUrl }) => {
   const [data, setData] = useState<DonorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +47,8 @@ export const DonorManagement: React.FC = () => {
   const [eligibilityPage, setEligibilityPage] = useState(1);
   const itemsPerPage = 20;
   const [showEligibilityList, setShowEligibilityList] = useState(false);
+
+  const effectiveCsvUrl = useMemo(() => csvUrl || DONOR_CSV_URL, [csvUrl]);
 
   const years = useMemo(() => {
     const y = new Set<string>();
@@ -71,7 +77,7 @@ export const DonorManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(DONOR_CSV_URL)}`;
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(effectiveCsvUrl)}`;
       const response = await fetch(proxyUrl);
       if (!response.ok) {
         const errorText = await response.text();
