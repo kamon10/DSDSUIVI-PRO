@@ -477,7 +477,7 @@ export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
   }
 };
 
-const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
+export const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
   if (!targetUrl || !targetUrl.startsWith('http')) {
     console.warn(`Source ${key} URL invalide ou manquante.`);
     return { text: lastRawContent[key] || '', hasChanged: false, error: true };
@@ -486,18 +486,19 @@ const fetchWithRetry = async (targetUrl: string, key: string, force = false, ret
   const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
   
   for (let i = 0; i <= retries; i++) {
-    console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
+    const currentUrl = i === 0 ? urlWithCacheBusting : targetUrl; // Try with cache busting first, then without
+    console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key} (Cache-busting: ${i === 0})...`);
     
     const strategies = [
-      async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
-      async () => fetch(urlWithCacheBusting, { 
+      async () => fetch(`/api/proxy?url=${encodeURIComponent(currentUrl)}`),
+      async () => fetch(currentUrl, { 
         method: 'GET',
         headers: { 'Accept': 'text/csv, text/plain, */*' },
         credentials: 'omit'
       }),
-      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
+      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(currentUrl)}`, { credentials: 'omit' }),
+      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(currentUrl)}`, { credentials: 'omit' }),
+      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(currentUrl)}`, { credentials: 'omit' })
     ];
 
     for (let j = 0; j < strategies.length; j++) {
@@ -507,7 +508,6 @@ const fetchWithRetry = async (targetUrl: string, key: string, force = false, ret
           const text = await response.text();
           const trimmedText = text.trim();
           
-          // Vérification plus robuste du contenu (pas de HTML, pas vide)
           if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html") && trimmedText.length > 0) {
             const hasChanged = force || text !== lastRawContent[key];
             lastRawContent[key] = text;
@@ -516,6 +516,7 @@ const fetchWithRetry = async (targetUrl: string, key: string, force = false, ret
           console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
         } else {
           console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
+          // Si c'est une erreur 400 sur le proxy, on passe à la stratégie suivante immédiatement
         }
       } catch (e: any) {
         console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
@@ -523,7 +524,7 @@ const fetchWithRetry = async (targetUrl: string, key: string, force = false, ret
     }
 
     if (i < retries) {
-      const delay = 1000 * (i + 1);
+      const delay = 1500 * (i + 1);
       console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative dans ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
     }
