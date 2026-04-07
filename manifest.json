@@ -1,18 +1,60 @@
-
 {
-  "short_name": "HEMO-STATS",
-  "name": "HEMO-STATS",
+  "name": "Hemo-Stats CNTS CI",
+  "short_name": "Hemo-Stats",
+  "description": "Système professionnel de suivi des flux de prélèvements et stocks de sang.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#ef4444",
   "icons": [
     {
-      "src": "https://cdn-icons-png.sh/512/822/822143.png",
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#ef4444",
-  "background_color": "#ffffff",
   "orientation": "portrait"
 }
