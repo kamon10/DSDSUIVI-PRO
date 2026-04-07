@@ -14,23 +14,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   for (let i = 0; i <= maxRetries; i++) {
     let currentTargetUrl = targetUrl;
+    let headers: Record<string, string> = { 
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    };
     
-    // On the second and subsequent retries, try stripping cache-busting if we got a 400
-    if (i > 0 && lastError?.message?.includes("Status 400")) {
+    // Strategy adjustment based on attempt
+    if (i === 1) {
+      // Attempt 2: Strip cache-busting
       currentTargetUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
-      console.log(`[Vercel Proxy] Retrying without cache-busting: ${currentTargetUrl.substring(0, 100)}...`);
+      console.log(`[Vercel Proxy] Attempt 2: Stripping cache-busting -> ${currentTargetUrl.substring(0, 100)}...`);
+    } else if (i === 2) {
+      // Attempt 3: Minimal headers + No cache-busting
+      currentTargetUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
+      headers = { 'User-Agent': 'Mozilla/5.0' };
+      console.log(`[Vercel Proxy] Attempt 3: Minimal headers + No cache-busting`);
     }
 
     try {
       console.log(`[Vercel Proxy] Attempt ${i + 1} for ${currentTargetUrl.substring(0, 100)}...`);
       
       const response = await fetch(currentTargetUrl, {
-        headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': '*/*',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        },
+        headers,
         timeout: 180000 // 180s timeout
       });
       
@@ -56,10 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (i < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
   
   res.status(500).send(`Proxy failed after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`);
 }
-
