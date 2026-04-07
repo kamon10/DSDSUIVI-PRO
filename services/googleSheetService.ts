@@ -395,8 +395,9 @@ export const parseStock = (text: string): StockRecord[] | null => {
 
 export const fetchStock = async (url: string): Promise<StockRecord[] | null> => {
   if (!url || !url.startsWith('http')) return null;
+  const trimmedUrl = url.trim();
   try {
-    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    const response = await fetch(`${trimmedUrl}${trimmedUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) return null;
     const text = await response.text();
     return parseStock(text);
@@ -490,7 +491,11 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
     console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key} (Cache-busting: ${i === 0})...`);
     
     const strategies = [
-      async () => fetch(`/api/proxy?url=${encodeURIComponent(currentUrl)}`),
+      async () => fetch('/api/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: currentUrl })
+      }),
       async () => fetch(currentUrl, { 
         method: 'GET',
         headers: { 'Accept': 'text/csv, text/plain, */*' },
@@ -511,12 +516,13 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
           if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html") && trimmedText.length > 0) {
             const hasChanged = force || text !== lastRawContent[key];
             lastRawContent[key] = text;
+            console.log(`[Sync] Succès pour ${key} via stratégie ${j+1}. Taille: ${text.length} chars.`);
             return { text, hasChanged, error: false };
           }
-          console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
+          console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 100)}`);
         } else {
-          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
-          // Si c'est une erreur 400 sur le proxy, on passe à la stratégie suivante immédiatement
+          const errorText = await response.text().catch(() => "No error body");
+          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status}). Erreur: ${errorText.substring(0, 100)}`);
         }
       } catch (e: any) {
         console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
@@ -535,12 +541,17 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
 };
 
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string, gtsUrl?: string): Promise<DashboardData | null> => {
+  const trimmedUrl = url?.trim();
+  const trimmedDistUrl = distributionUrl?.trim();
+  const trimmedStockUrl = stockUrl?.trim();
+  const trimmedGtsUrl = gtsUrl?.trim();
+
   try {
     // Récupération séquentielle pour éviter les limites de connexion du navigateur
-    const collecteResult = await fetchWithRetry(url, 'collecte', force);
-    const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE', force) : { text: '', hasChanged: false, error: false };
-    const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK', force) : { text: '', hasChanged: false, error: false };
-    const gtsResult = gtsUrl ? await fetchWithRetry(gtsUrl, 'GTS', force) : { text: '', hasChanged: false, error: false };
+    const collecteResult = await fetchWithRetry(trimmedUrl, 'collecte', force);
+    const distResult = trimmedDistUrl ? await fetchWithRetry(trimmedDistUrl, 'BASE', force) : { text: '', hasChanged: false, error: false };
+    const stockResult = trimmedStockUrl ? await fetchWithRetry(trimmedStockUrl, 'STOCK', force) : { text: '', hasChanged: false, error: false };
+    const gtsResult = trimmedGtsUrl ? await fetchWithRetry(trimmedGtsUrl, 'GTS', force) : { text: '', hasChanged: false, error: false };
 
     if (stockResult.error && stockUrl) {
       console.warn(`[Sync] Échec de récupération pour STOCK. Utilisation du cache si disponible.`);
