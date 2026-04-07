@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import fetch from "node-fetch";
 
 // Database connection pool
 const isDbConfigured = false;
@@ -105,51 +106,36 @@ app.get("/api/proxy", async (req, res) => {
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.warn(`[Proxy] Timeout reached for ${targetUrl.substring(0, 60)}`);
-      controller.abort();
-    }, 120000); // Augmenté à 120s pour les gros fichiers
-
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
+      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 100)}...`);
       const response = await fetch(targetUrl, {
         headers: { 
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
           'Accept': 'text/csv,text/plain,application/json,*/*',
-          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Cache-Control': 'no-cache'
         },
-        signal: controller.signal
+        timeout: 30000 // 30 seconds timeout
       });
-      clearTimeout(timeoutId);
       
       if (response.ok) {
         const text = await response.text();
         if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
           console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
-          // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
-          lastError = new Error("Received HTML instead of CSV");
+          lastError = new Error("Received HTML instead of CSV (Check if the sheet is published as CSV)");
           continue;
         }
         
-        const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
-        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${sizeMB} MB)`);
+        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} chars)`);
         res.set('Content-Type', 'text/plain');
         return res.send(text);
       } else {
         console.error(`[Proxy] Error status ${response.status} for ${targetUrl.substring(0, 60)}`);
         lastError = new Error(`Status ${response.status}: ${response.statusText}`);
+        if (response.status === 404) break; // Don't retry on 404
       }
     } catch (err: any) {
-      clearTimeout(timeoutId);
       lastError = err;
-      const isTimeout = err.name === 'AbortError';
-      console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}${isTimeout ? ' (Timeout)' : ''}`);
-      if (isTimeout) {
-        lastError = new Error("Délai d'attente dépassé (Timeout). Le fichier est peut-être trop volumineux.");
-      }
+      console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
     }
 
     if (i < maxRetries) {
@@ -157,7 +143,7 @@ app.get("/api/proxy", async (req, res) => {
     }
   }
   
-  res.status(500).send(`Proxy failed after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`);
+  res.status(500).send(`Proxy failed. Last error: ${lastError?.message}`);
 });
 
 app.post("/api/notifications/subscribe", (req, res) => {
@@ -289,8 +275,8 @@ app.post("/api/admin/whatsapp-check-now", async (req, res) => {
 });
 
 // Polling logic to check for changes
-const COLLECTE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
-const STOCK_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=2055274680&single=true&output=csv";
+const COLLECTE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
+const STOCK_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
 
 let lastCollecteHash = "";
 let lastStockHash = "";
