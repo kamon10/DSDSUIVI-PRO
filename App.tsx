@@ -80,6 +80,34 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
+  // Migration for old spreadsheet ID
+  useEffect(() => {
+    const oldId = "2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN";
+    const newId = "2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih";
+    
+    const checkAndUpdate = (key: string, current: string, setter: (v: string) => void) => {
+      if (current.includes(oldId)) {
+        const updated = current.replace(oldId, newId);
+        setter(updated);
+        localStorage.setItem(key, updated);
+        return true;
+      }
+      return false;
+    };
+    
+    let changed = false;
+    changed = checkAndUpdate('gsheet_input_1', sheetInput, setSheetInput) || changed;
+    changed = checkAndUpdate('gsheet_input_dist', sheetInputDist, setSheetInputDist) || changed;
+    changed = checkAndUpdate('gsheet_input_stock', sheetInputStock, setSheetInputStock) || changed;
+    changed = checkAndUpdate('gsheet_input_gts', sheetInputGts, setSheetInputGts) || changed;
+    changed = checkAndUpdate('gsheet_input_donor', sheetInputDonor, setSheetInputDonor) || changed;
+    
+    if (changed) {
+      console.log("[Migration] Old Google Sheets links detected and updated.");
+      handleSync(true, true);
+    }
+  }, []);
+
   const scriptUrl = DEFAULT_SCRIPT_URL;
   const isSyncingRef = useRef(false);
   const sheetInputRef = useRef(sheetInput);
