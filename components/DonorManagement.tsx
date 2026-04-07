@@ -5,6 +5,7 @@ import { Search, User, Calendar, CheckCircle, XCircle, Clock, History, Phone, Ma
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, isAfter, parse, isValid, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { fetchWithRetry } from '../services/googleSheetService';
 
 interface DonorData {
   Do_nom: string;
@@ -28,13 +29,9 @@ interface DonorData {
   Mois: string;
 }
 
-const DONOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
+const DONOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?gid=1330907454&single=true&output=csv";
 
-interface DonorManagementProps {
-  csvUrl?: string;
-}
-
-export const DonorManagement: React.FC<DonorManagementProps> = ({ csvUrl }) => {
+export const DonorManagement: React.FC = () => {
   const [data, setData] = useState<DonorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +44,6 @@ export const DonorManagement: React.FC<DonorManagementProps> = ({ csvUrl }) => {
   const [eligibilityPage, setEligibilityPage] = useState(1);
   const itemsPerPage = 20;
   const [showEligibilityList, setShowEligibilityList] = useState(false);
-
-  const effectiveCsvUrl = useMemo(() => csvUrl || DONOR_CSV_URL, [csvUrl]);
 
   const years = useMemo(() => {
     const y = new Set<string>();
@@ -77,13 +72,13 @@ export const DonorManagement: React.FC<DonorManagementProps> = ({ csvUrl }) => {
     setLoading(true);
     setError(null);
     try {
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(effectiveCsvUrl)}`;
-      const response = await fetch(proxyUrl);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erreur serveur (${response.status}): ${errorText || "Impossible de récupérer les données"}`);
+      const result = await fetchWithRetry(DONOR_CSV_URL, 'donneurs', true);
+      
+      if (result.error && !result.text) {
+        throw new Error("Impossible de charger les données des donneurs après plusieurs tentatives.");
       }
-      const csvText = await response.text();
+      
+      const csvText = result.text;
       
       if (!csvText || csvText.trim().length === 0) {
         throw new Error("Le fichier de données est vide.");
