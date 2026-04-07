@@ -108,10 +108,18 @@ app.get("/api/proxy", async (req, res) => {
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
+    let currentTargetUrl = targetUrl;
+    
+    // On the second and subsequent retries, try stripping cache-busting if we got a 400
+    if (i > 0 && lastError?.message?.includes("Status 400")) {
+      currentTargetUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
+      console.log(`[Proxy] Retrying without cache-busting: ${currentTargetUrl.substring(0, 100)}...`);
+    }
+
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 100)}...`);
+      console.log(`[Proxy] Attempt ${i + 1} for ${currentTargetUrl.substring(0, 100)}...`);
       
-      const response = await fetch(targetUrl, {
+      const response = await fetch(currentTargetUrl, {
         headers: { 
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
           'Accept': '*/*',
@@ -124,32 +132,18 @@ app.get("/api/proxy", async (req, res) => {
       if (response.ok) {
         const text = await response.text();
         if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-          console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
+          console.warn(`[Proxy] Received HTML instead of CSV from ${currentTargetUrl.substring(0, 60)}...`);
           lastError = new Error("Received HTML instead of CSV (Google might be asking for login or blocking)");
           continue;
         }
         
         const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
-        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${sizeMB} MB)`);
+        console.log(`[Proxy] Success fetching ${currentTargetUrl.substring(0, 60)}... (${sizeMB} MB)`);
         res.set('Content-Type', 'text/plain; charset=utf-8');
         return res.send(text);
       } else {
-        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${targetUrl.substring(0, 100)}`);
+        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${currentTargetUrl.substring(0, 100)}`);
         lastError = new Error(`Status ${response.status}: ${response.statusText}`);
-        
-        // If it's a 400, maybe the URL is malformed or the sheet is not published
-        if (response.status === 400) {
-           // On tente une dernière fois sans cache-busting si présent
-           if (targetUrl.includes('_t=')) {
-              console.log("[Proxy] 400 error, retrying without cache-busting...");
-              const cleanUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
-              if (cleanUrl !== targetUrl) {
-                 // On relance la boucle avec l'URL propre
-                 // Mais on va juste laisser la boucle continuer au prochain tour si on change targetUrl
-                 // Pour simplifier, on ne change pas targetUrl ici mais on note l'erreur
-              }
-           }
-        }
       }
     } catch (err: any) {
       lastError = err;
