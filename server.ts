@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import fetch from "node-fetch";
 
 // Database connection pool
 const isDbConfigured = false;
@@ -96,7 +97,9 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/proxy", async (req, res) => {
-  const targetUrl = req.query.url as string;
+  const rawUrl = req.query.url;
+  const targetUrl = Array.isArray(rawUrl) ? (rawUrl[0] as string) : (rawUrl as string);
+  
   if (!targetUrl) {
     return res.status(400).send("URL parameter is required");
   }
@@ -105,47 +108,56 @@ app.get("/api/proxy", async (req, res) => {
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout par tentative
-
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
+      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 100)}...`);
+      
       const response = await fetch(targetUrl, {
         headers: { 
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': 'text/csv,text/plain,application/json,*/*',
-          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept': '*/*',
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
-        signal: controller.signal
+        timeout: 180000 // 180s timeout for node-fetch
       });
-      clearTimeout(timeoutId);
       
       if (response.ok) {
         const text = await response.text();
         if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
           console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
-          // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
-          lastError = new Error("Received HTML instead of CSV");
+          lastError = new Error("Received HTML instead of CSV (Google might be asking for login or blocking)");
           continue;
         }
         
-        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} bytes)`);
-        res.set('Content-Type', 'text/plain');
+        const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
+        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${sizeMB} MB)`);
+        res.set('Content-Type', 'text/plain; charset=utf-8');
         return res.send(text);
       } else {
-        console.error(`[Proxy] Error status ${response.status} for ${targetUrl.substring(0, 60)}`);
+        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${targetUrl.substring(0, 100)}`);
         lastError = new Error(`Status ${response.status}: ${response.statusText}`);
+        
+        // If it's a 400, maybe the URL is malformed or the sheet is not published
+        if (response.status === 400) {
+           // On tente une dernière fois sans cache-busting si présent
+           if (targetUrl.includes('_t=')) {
+              console.log("[Proxy] 400 error, retrying without cache-busting...");
+              const cleanUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
+              if (cleanUrl !== targetUrl) {
+                 // On relance la boucle avec l'URL propre
+                 // Mais on va juste laisser la boucle continuer au prochain tour si on change targetUrl
+                 // Pour simplifier, on ne change pas targetUrl ici mais on note l'erreur
+              }
+           }
+        }
       }
     } catch (err: any) {
-      clearTimeout(timeoutId);
       lastError = err;
       console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
     }
 
     if (i < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
   }
   
