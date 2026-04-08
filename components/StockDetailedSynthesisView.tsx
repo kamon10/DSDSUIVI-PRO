@@ -80,6 +80,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
       // Subtotal Abidjan Ville
       const abidjanVilleSites = [
         "CRTS DE TREICHVILLE",
+        "CDTS DE BINGERVILLE",
         "SP HG PORT BOUET",
         "SP FSU ABOBO BAOULE",
         "SP HG ANYAMA",
@@ -390,6 +391,7 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
               {synthesisData.map((region) => {
                 const abidjanVilleSites = [
                   "CRTS DE TREICHVILLE",
+                  "CDTS DE BINGERVILLE",
                   "SP HG PORT BOUET",
                   "SP FSU ABOBO BAOULE",
                   "SP HG ANYAMA",
