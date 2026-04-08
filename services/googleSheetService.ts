@@ -65,7 +65,11 @@ const normalizeDate = (d: string): string => {
 
 const parseCSV = (text: string): string[][] => {
   if (!text) return [];
-  const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+  const lines = text.split(/\r?\n/).filter(l => {
+    const trimmed = l.trim();
+    // Filter out truly empty lines AND lines that only contain separators (e.g. ,,,,,)
+    return trimmed !== "" && trimmed.replace(/[,;]/g, '').trim() !== "";
+  });
   if (lines.length === 0) return [];
   
   const firstLine = lines[0] || "";
@@ -485,6 +489,7 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
   }
   
   const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+  let lastErrorMsg = "Échec de toutes les tentatives.";
   
   for (let i = 0; i <= retries; i++) {
     const currentUrl = i === 0 ? urlWithCacheBusting : targetUrl; // Try with cache busting first, then without
@@ -519,10 +524,21 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
             console.log(`[Sync] Succès pour ${key} via stratégie ${j+1}. Taille: ${text.length} chars.`);
             return { text, hasChanged, error: false };
           }
-          console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 100)}`);
+          
+          let specificError = "Contenu invalide (HTML reçu au lieu de CSV).";
+          if (trimmedText.includes("docs.google.com") && trimmedText.includes("pub")) {
+            specificError = "Le lien Google Sheets semble pointer vers une page web au lieu d'un export CSV. Vérifiez la publication.";
+          }
+          console.warn(`[Sync] ${specificError} pour ${key} via stratégie ${j+1}.`);
+          lastErrorMsg = specificError;
         } else {
           const errorText = await response.text().catch(() => "No error body");
-          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status}). Erreur: ${errorText.substring(0, 100)}`);
+          let errorDetail = `Status: ${response.status}`;
+          if (response.status === 400) errorDetail = "400 Bad Request (Vérifiez le GID)";
+          if (response.status === 404) errorDetail = "404 Not Found (Vérifiez l'URL)";
+          
+          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (${errorDetail}).`);
+          lastErrorMsg = errorDetail;
         }
       } catch (e: any) {
         console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
@@ -536,8 +552,8 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
     }
   }
 
-  console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives.`);
-  return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+  console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives. Dernière erreur: ${lastErrorMsg}`);
+  throw new Error(`Impossible de charger la source ${key}: ${lastErrorMsg}`);
 };
 
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string, gtsUrl?: string): Promise<DashboardData | null> => {
@@ -778,7 +794,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     };
   } catch (err: any) {
     console.error("Erreur fatale lors du chargement des données du tableau de bord:", err.message || err);
-    return null;
+    throw err; // Re-throw to allow handleSync to show the error
   }
 };
 
