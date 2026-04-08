@@ -32,13 +32,12 @@ import { GtsComparisonView } from './components/GtsComparisonView.tsx';
 import { CollectionPlanningView } from './components/CollectionPlanningView.tsx';
 import { EbookView } from './components/EbookView.tsx';
 import { PersonnelManagement } from './components/PersonnelManagement.tsx';
-import { DonorManagement } from './components/DonorManagement.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, RotateCcw } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
@@ -342,7 +341,6 @@ const App: React.FC = () => {
     { id: 'ebook', icon: <Book size={18} />, label: 'E-Book Hebdo', public: false },
     { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
     { id: 'personnel', icon: <UserCheck size={18} />, label: 'Personnel', public: false, superOnly: true },
-    { id: 'donor', icon: <UserIcon size={18} />, label: 'Gestion Donneur', public: true },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
   ];
 
@@ -359,7 +357,6 @@ const App: React.FC = () => {
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
       { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison', 'collection-planning'] },
       { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'donneurs', label: 'Donneurs', icon: <HeartPulse size={18} />, items: ['donor'] },
       { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'personnel', 'ebook', 'global-report', 'contact'] }
     ];
 
@@ -547,29 +544,6 @@ const App: React.FC = () => {
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 pb-32 pb-safe">
           <StockAlert data={fullData} user={currentUser} className="mb-8" />
-          
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8 p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-center gap-4 text-rose-600 shadow-sm"
-            >
-              <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center shrink-0">
-                <AlertCircle size={24} />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-black uppercase tracking-tight mb-1">Erreur de Synchronisation</h4>
-                <p className="text-xs font-bold opacity-80 leading-relaxed">{error}</p>
-              </div>
-              <button 
-                onClick={() => handleSync(false, true)}
-                className="px-6 py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-rose-200 active:scale-95 transition-all"
-              >
-                Réessayer
-              </button>
-            </motion.div>
-          )}
-
           {loading && !fullData.dailyHistory.length ? (
             <div className="flex flex-col items-center justify-center py-48 gap-6">
                <Activity size={60} className="text-blue-600 animate-pulse" />
@@ -614,7 +588,6 @@ const App: React.FC = () => {
                     {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                     {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'donor' && <DonorManagement />}
                     {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                     {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                     {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
@@ -762,18 +735,9 @@ const App: React.FC = () => {
              </div>
              
              <div className="space-y-4 mb-8">
-               <div className="relative">
+               <div>
                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Collecte (CSV)</label>
-                 <div className="flex gap-2">
-                   <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="flex-1 bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
-                   <button 
-                     onClick={() => setSheetInput(DEFAULT_LINK_1)}
-                     className="px-4 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200 transition-colors"
-                     title="Réinitialiser"
-                   >
-                     <RotateCcw size={18} />
-                   </button>
-                 </div>
+                 <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
                </div>
                
                <div>

@@ -5,7 +5,6 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import fetch from "node-fetch";
 
 // Database connection pool
 const isDbConfigured = false;
@@ -48,8 +47,8 @@ const app = express();
 const PORT = 3000;
 
 // VAPID keys should be generated and stored securely
-let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BPLjXKH2h_m6gC9ZBoGc0fOzPryzRCVg2qp1lcUoXv0AZHmkFsnvkuieqivubuzKaxkF8Hyk9-_sBQgmKTuPJHQ";
-let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "oC3XvXYuTRaWpNXaF3i3Mu-RLCaKRKgwICOS3URD_o0";
+let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
+let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
 
 const vapidEmail = process.env.VAPID_EMAIL || "mailto:kadioamon@gmail.com";
 const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('http')) 
@@ -96,10 +95,8 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.all("/api/proxy", async (req, res) => {
-  const rawUrl = req.method === 'POST' ? req.body.url : req.query.url;
-  const targetUrl = Array.isArray(rawUrl) ? (rawUrl[0] as string) : (rawUrl as string);
-  
+app.get("/api/proxy", async (req, res) => {
+  const targetUrl = req.query.url as string;
   if (!targetUrl) {
     return res.status(400).send("URL parameter is required");
   }
@@ -108,65 +105,41 @@ app.all("/api/proxy", async (req, res) => {
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
-    let currentTargetUrl = targetUrl.trim();
-    let headers: Record<string, string> = { 
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      'Accept': '*/*',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    };
-    
-    // Strategy adjustment based on attempt
-    if (i === 1) {
-      // Attempt 2: Strip cache-busting
-      currentTargetUrl = currentTargetUrl.split('&_t=')[0].split('?_t=')[0];
-      console.log(`[Proxy] Attempt 2: Stripping cache-busting -> ${currentTargetUrl}`);
-    } else if (i === 2) {
-      // Attempt 3: Strip GID if it's a Google Sheets URL
-      if (currentTargetUrl.includes('docs.google.com') && currentTargetUrl.includes('gid=')) {
-        currentTargetUrl = currentTargetUrl.replace(/gid=\d+&?/, '').replace(/\?&/, '?').replace(/&$/, '');
-        console.log(`[Proxy] Attempt 3: Stripping GID -> ${currentTargetUrl}`);
-      } else {
-        // Fallback for non-google URLs: Minimal headers
-        headers = { 'User-Agent': 'Mozilla/5.0' };
-        console.log(`[Proxy] Attempt 3: Minimal headers`);
-      }
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout par tentative
 
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${currentTargetUrl}`);
-      
-      const response = await fetch(currentTargetUrl, {
-        headers,
-        timeout: 180000 // 180s timeout
+      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
+      const response = await fetch(targetUrl, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/csv,text/plain,application/json,*/*',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const text = await response.text();
-        const trimmedText = text.trim();
-        if (trimmedText.startsWith("<!DOCTYPE") || trimmedText.startsWith("<html")) {
-          console.warn(`[Proxy] Received HTML instead of CSV from ${currentTargetUrl}`);
-          lastError = new Error("Le lien Google Sheets renvoie une page HTML au lieu d'un CSV. Vérifiez que le document est bien 'Publié sur le Web' au format CSV et que le GID est correct.");
+        if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+          console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
+          // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
+          lastError = new Error("Received HTML instead of CSV");
           continue;
         }
         
-        const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
-        console.log(`[Proxy] Success fetching ${currentTargetUrl} (${sizeMB} MB)`);
-        res.set('Content-Type', 'text/plain; charset=utf-8');
+        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} bytes)`);
+        res.set('Content-Type', 'text/plain');
         return res.send(text);
       } else {
-        const errorBody = await response.text().catch(() => "No error body");
-        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${currentTargetUrl}. Body: ${errorBody.substring(0, 200)}`);
-        
-        if (response.status === 400) {
-          lastError = new Error(`Erreur 400 (Bad Request). Cela indique souvent un GID invalide ou un lien mal formé. Vérifiez votre URL.`);
-        } else if (response.status === 401 || response.status === 403) {
-          lastError = new Error(`Erreur ${response.status} (Accès refusé). Vérifiez que le document est publié sur le web.`);
-        } else {
-          lastError = new Error(`Status ${response.status}: ${response.statusText}. Body: ${errorBody.substring(0, 100)}`);
-        }
+        console.error(`[Proxy] Error status ${response.status} for ${targetUrl.substring(0, 60)}`);
+        lastError = new Error(`Status ${response.status}: ${response.statusText}`);
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       lastError = err;
       console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
     }

@@ -163,10 +163,10 @@ export const GROUP_COLORS: Record<string, string> = {
   "B-": "#4f46e5"  
 };
 
-export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
-export const DEFAULT_LINK_DISTRIBUTION = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
-export const DEFAULT_LINK_STOCK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
-export const DEFAULT_LINK_GTS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv";
+export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
+export const DEFAULT_LINK_DISTRIBUTION = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=237684642&single=true&output=csv";
+export const DEFAULT_LINK_STOCK = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4XC2svVnGtLwYDEomCtuwW2Ap_vHKP0M6ONojDQU5LKTJj8Srel5k1d1mD9UI3F5R6r_/pub?gid=2055274680&single=true&output=csv";
+export const DEFAULT_LINK_GTS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=1087438388&single=true&output=csv";
 export const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRrIftmEeSUAutygeL2GHngC_kqV_repT9ArEP9okIz4zZPMtOxPVIfEOg8KvGezAf/exec";
 
 export const STOCK_FORECASTS: Record<string, Record<string, number>> = {
