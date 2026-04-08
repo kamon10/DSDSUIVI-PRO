@@ -1,7 +1,7 @@
 
 import fetch from 'node-fetch';
 
-const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv&_t=" + Date.now();
+const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
 
 async function test() {
   const headersSets = [
@@ -23,6 +23,8 @@ async function test() {
       if (res.ok) {
         const text = await res.text();
         console.log(`Content length: ${text.length}`);
+        console.log(`First 3 lines:`);
+        console.log(text.split('\n').slice(0, 3).join('\n'));
       } else {
         const text = await res.text();
         console.log(`Error body start: ${text.substring(0, 100)}`);
