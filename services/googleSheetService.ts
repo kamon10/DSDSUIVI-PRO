@@ -65,11 +65,7 @@ const normalizeDate = (d: string): string => {
 
 const parseCSV = (text: string): string[][] => {
   if (!text) return [];
-  const lines = text.split(/\r?\n/).filter(l => {
-    const trimmed = l.trim();
-    // Filter out truly empty lines AND lines that only contain separators (e.g. ,,,,,)
-    return trimmed !== "" && trimmed.replace(/[,;]/g, '').trim() !== "";
-  });
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
   if (lines.length === 0) return [];
   
   const firstLine = lines[0] || "";
@@ -399,9 +395,8 @@ export const parseStock = (text: string): StockRecord[] | null => {
 
 export const fetchStock = async (url: string): Promise<StockRecord[] | null> => {
   if (!url || !url.startsWith('http')) return null;
-  const trimmedUrl = url.trim();
   try {
-    const response = await fetch(`${trimmedUrl}${trimmedUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
     if (!response.ok) return null;
     const text = await response.text();
     return parseStock(text);
@@ -482,33 +477,27 @@ export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
   }
 };
 
-export const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
+const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
   if (!targetUrl || !targetUrl.startsWith('http')) {
     console.warn(`Source ${key} URL invalide ou manquante.`);
     return { text: lastRawContent[key] || '', hasChanged: false, error: true };
   }
   
   const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
-  let lastErrorMsg = "Échec de toutes les tentatives.";
   
   for (let i = 0; i <= retries; i++) {
-    const currentUrl = i === 0 ? urlWithCacheBusting : targetUrl; // Try with cache busting first, then without
-    console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key} (Cache-busting: ${i === 0})...`);
+    console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
     
     const strategies = [
-      async () => fetch('/api/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: currentUrl })
-      }),
-      async () => fetch(currentUrl, { 
+      async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
+      async () => fetch(urlWithCacheBusting, { 
         method: 'GET',
         headers: { 'Accept': 'text/csv, text/plain, */*' },
         credentials: 'omit'
       }),
-      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(currentUrl)}`, { credentials: 'omit' }),
-      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(currentUrl)}`, { credentials: 'omit' }),
-      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(currentUrl)}`, { credentials: 'omit' })
+      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
+      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
+      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
     ];
 
     for (let j = 0; j < strategies.length; j++) {
@@ -518,27 +507,15 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
           const text = await response.text();
           const trimmedText = text.trim();
           
+          // Vérification plus robuste du contenu (pas de HTML, pas vide)
           if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html") && trimmedText.length > 0) {
             const hasChanged = force || text !== lastRawContent[key];
             lastRawContent[key] = text;
-            console.log(`[Sync] Succès pour ${key} via stratégie ${j+1}. Taille: ${text.length} chars.`);
             return { text, hasChanged, error: false };
           }
-          
-          let specificError = "Contenu invalide (HTML reçu au lieu de CSV).";
-          if (trimmedText.includes("docs.google.com") && trimmedText.includes("pub")) {
-            specificError = "Le lien Google Sheets semble pointer vers une page web au lieu d'un export CSV. Vérifiez la publication.";
-          }
-          console.warn(`[Sync] ${specificError} pour ${key} via stratégie ${j+1}.`);
-          lastErrorMsg = specificError;
+          console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
         } else {
-          const errorText = await response.text().catch(() => "No error body");
-          let errorDetail = `Status: ${response.status}`;
-          if (response.status === 400) errorDetail = "400 Bad Request (Vérifiez le GID)";
-          if (response.status === 404) errorDetail = "404 Not Found (Vérifiez l'URL)";
-          
-          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (${errorDetail}).`);
-          lastErrorMsg = errorDetail;
+          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
         }
       } catch (e: any) {
         console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
@@ -546,28 +523,23 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
     }
 
     if (i < retries) {
-      const delay = 1500 * (i + 1);
+      const delay = 1000 * (i + 1);
       console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative dans ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
     }
   }
 
-  console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives. Dernière erreur: ${lastErrorMsg}`);
-  throw new Error(`Impossible de charger la source ${key}: ${lastErrorMsg}`);
+  console.error(`[Sync] Échec définitif pour ${key} après toutes les tentatives.`);
+  return { text: lastRawContent[key] || '', hasChanged: false, error: true };
 };
 
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string, gtsUrl?: string): Promise<DashboardData | null> => {
-  const trimmedUrl = url?.trim();
-  const trimmedDistUrl = distributionUrl?.trim();
-  const trimmedStockUrl = stockUrl?.trim();
-  const trimmedGtsUrl = gtsUrl?.trim();
-
   try {
     // Récupération séquentielle pour éviter les limites de connexion du navigateur
-    const collecteResult = await fetchWithRetry(trimmedUrl, 'collecte', force);
-    const distResult = trimmedDistUrl ? await fetchWithRetry(trimmedDistUrl, 'BASE', force) : { text: '', hasChanged: false, error: false };
-    const stockResult = trimmedStockUrl ? await fetchWithRetry(trimmedStockUrl, 'STOCK', force) : { text: '', hasChanged: false, error: false };
-    const gtsResult = trimmedGtsUrl ? await fetchWithRetry(trimmedGtsUrl, 'GTS', force) : { text: '', hasChanged: false, error: false };
+    const collecteResult = await fetchWithRetry(url, 'collecte', force);
+    const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE', force) : { text: '', hasChanged: false, error: false };
+    const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK', force) : { text: '', hasChanged: false, error: false };
+    const gtsResult = gtsUrl ? await fetchWithRetry(gtsUrl, 'GTS', force) : { text: '', hasChanged: false, error: false };
 
     if (stockResult.error && stockUrl) {
       console.warn(`[Sync] Échec de récupération pour STOCK. Utilisation du cache si disponible.`);
@@ -794,7 +766,7 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     };
   } catch (err: any) {
     console.error("Erreur fatale lors du chargement des données du tableau de bord:", err.message || err);
-    throw err; // Re-throw to allow handleSync to show the error
+    return null;
   }
 };
 
