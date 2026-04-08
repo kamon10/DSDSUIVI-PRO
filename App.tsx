@@ -36,6 +36,7 @@ import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } fr
 import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
+import { SyncStatus } from './components/SyncStatus.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +48,11 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(() => {
+    const saved = localStorage.getItem('hemo_auto_refresh');
+    return saved === null ? true : saved === 'true';
+  });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const lastOptimisticUpdateRef = useRef<number>(0);
@@ -236,23 +242,24 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    localStorage.setItem('hemo_auto_refresh', autoRefresh.toString());
+  }, [autoRefresh]);
+
+  useEffect(() => {
     // Synchronisation initiale
     handleSync(false, true);
-    
-    // Polling automatique toutes les 2 minutes pour garder les données fraîches
-    const interval = setInterval(() => {
-      handleSync(true, false);
-    }, 120000);
-    
-    return () => clearInterval(interval);
   }, [handleSync]);
 
   useEffect(() => {
-    const refreshInterval = setInterval(() => {
+    if (!autoRefresh) return;
+    
+    // Polling automatique toutes les 30 secondes pour garder les données fraîches
+    const interval = setInterval(() => {
       handleSync(true, false);
     }, 30000);
-    return () => clearInterval(refreshInterval);
-  }, [handleSync]);
+    
+    return () => clearInterval(interval);
+  }, [handleSync, autoRefresh]);
 
   const filteredData = useMemo(() => {
     if (!currentUser || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') return fullData;
@@ -512,14 +519,14 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => handleSync(true, true)}
-                disabled={syncStatus === 'syncing'}
-                className={`p-3 rounded-2xl transition-all active:scale-95 shadow-sm border ${syncStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin border-slate-200' : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950 border-slate-200'}`}
-                title="Actualiser les données"
-              >
-                <RefreshCw size={20} />
-              </button>
+              <SyncStatus 
+                status={syncStatus}
+                isCloudSyncing={isCloudSyncing}
+                lastSync={lastSync}
+                onSync={(force) => handleSync(true, force)}
+                autoRefresh={autoRefresh}
+                onToggleAutoRefresh={setAutoRefresh}
+              />
               
               <button 
                 onClick={() => setIsCommandPaletteOpen(true)}
@@ -602,7 +609,7 @@ const App: React.FC = () => {
                     {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
                     {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} />}
+                    {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} onCloudSyncChange={setIsCloudSyncing} />}
                     {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
                     {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
