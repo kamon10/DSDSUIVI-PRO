@@ -107,6 +107,7 @@ const App: React.FC = () => {
     }
 
     const currentInput = sheetInputRef.current;
+    console.log(`[Sync] Synchronisation avec la source: ${currentInput}`);
     isSyncingRef.current = true;
     
     if (!isSilent) setLoading(true);
