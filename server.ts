@@ -5,7 +5,6 @@ import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import fetch from "node-fetch";
 
 // Database connection pool
 const isDbConfigured = false;
@@ -23,7 +22,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const CONFIG_PATH = path.join(__dirname, "whatsapp_config.json");
+const CONFIG_PATH = path.join(process.env.VERCEL ? "/tmp" : __dirname, "whatsapp_config.json");
 
 function getWhatsAppConfig() {
   try {
@@ -45,11 +44,11 @@ function saveWhatsAppConfig(config: any) {
 }
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // VAPID keys should be generated and stored securely
-let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BPLjXKH2h_m6gC9ZBoGc0fOzPryzRCVg2qp1lcUoXv0AZHmkFsnvkuieqivubuzKaxkF8Hyk9-_sBQgmKTuPJHQ";
-let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "oC3XvXYuTRaWpNXaF3i3Mu-RLCaKRKgwICOS3URD_o0";
+let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
+let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
 
 const vapidEmail = process.env.VAPID_EMAIL || "mailto:kadioamon@gmail.com";
 const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('http')) 
@@ -59,9 +58,6 @@ const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith(
 function setupVapid() {
   try {
     console.log("[SERVER] Setting up VAPID details...");
-    const isEnvSet = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
-    console.log(`[SERVER] Using ${isEnvSet ? 'environment variables' : 'hardcoded default keys'}`);
-    
     webpush.setVapidDetails(
       vapidSubject,
       publicVapidKey,
@@ -99,78 +95,56 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.all("/api/proxy", async (req, res) => {
-  const rawUrl = req.method === 'POST' ? req.body.url : req.query.url;
-  const targetUrl = Array.isArray(rawUrl) ? (rawUrl[0] as string) : (rawUrl as string);
-  
+app.get("/api/proxy", async (req, res) => {
+  const targetUrl = req.query.url as string;
   if (!targetUrl) {
     return res.status(400).send("URL parameter is required");
   }
+  
+  // Désactiver le cache pour Vercel
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   
   const maxRetries = 2;
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
-    let currentTargetUrl = targetUrl.trim();
-    let headers: Record<string, string> = { 
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      'Accept': '*/*',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    };
-    
-    // Strategy adjustment based on attempt
-    if (i === 1) {
-      // Attempt 2: Strip cache-busting
-      currentTargetUrl = currentTargetUrl.split('&_t=')[0].split('?_t=')[0];
-      console.log(`[Proxy] Attempt 2: Stripping cache-busting -> ${currentTargetUrl}`);
-    } else if (i === 2) {
-      // Attempt 3: Strip GID AND cache-busting
-      currentTargetUrl = currentTargetUrl.split('&_t=')[0].split('?_t=')[0];
-      if (currentTargetUrl.includes('docs.google.com') && currentTargetUrl.includes('gid=')) {
-        currentTargetUrl = currentTargetUrl.replace(/gid=\d+&?/, '').replace(/\?&/, '?').replace(/&$/, '');
-        console.log(`[Proxy] Attempt 3: Stripping GID and cache-busting -> ${currentTargetUrl}`);
-      } else {
-        // Fallback for non-google URLs: Minimal headers
-        headers = { 'User-Agent': 'Mozilla/5.0' };
-        console.log(`[Proxy] Attempt 3: Minimal headers`);
-      }
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout pour Vercel
 
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${currentTargetUrl}`);
-      
-      const response = await fetch(currentTargetUrl, {
-        headers,
-        timeout: 180000 // 180s timeout
+      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
+      const response = await fetch(targetUrl, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/csv,text/plain,application/json,*/*',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const text = await response.text();
-        const trimmedText = text.trim();
-        if (trimmedText.startsWith("<!DOCTYPE") || trimmedText.startsWith("<html")) {
-          console.warn(`[Proxy] Received HTML instead of CSV from ${currentTargetUrl}`);
-          lastError = new Error("Le lien Google Sheets renvoie une page HTML au lieu d'un CSV. Vérifiez que le document est bien 'Publié sur le Web' au format CSV et que le GID est correct.");
+        if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+          console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
+          // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
+          lastError = new Error("Received HTML instead of CSV");
           continue;
         }
         
-        const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
-        console.log(`[Proxy] Success fetching ${currentTargetUrl} (${sizeMB} MB)`);
-        res.set('Content-Type', 'text/plain; charset=utf-8');
+        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} bytes)`);
+        res.set('Content-Type', 'text/plain');
         return res.send(text);
       } else {
-        const errorBody = await response.text().catch(() => "No error body");
-        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${currentTargetUrl}. Body: ${errorBody.substring(0, 200)}`);
-        
-        if (response.status === 400) {
-          lastError = new Error(`Erreur 400 (Bad Request). Cela indique souvent un GID invalide ou un lien mal formé. Vérifiez votre URL.`);
-        } else if (response.status === 401 || response.status === 403) {
-          lastError = new Error(`Erreur ${response.status} (Accès refusé). Vérifiez que le document est publié sur le web.`);
-        } else {
-          lastError = new Error(`Status ${response.status}: ${response.statusText}. Body: ${errorBody.substring(0, 100)}`);
-        }
+        console.error(`[Proxy] Error status ${response.status} for ${targetUrl.substring(0, 60)}`);
+        lastError = new Error(`Status ${response.status}: ${response.statusText}`);
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       lastError = err;
       console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
     }
@@ -468,7 +442,7 @@ setTimeout(checkDataChanges, 30000);
 async function startServer() {
   console.log("[SERVER] startServer() called");
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     console.log("[SERVER] Starting Vite in middleware mode...");
     const viteInstance = await vite.createServer({
       server: { middlewareMode: true },
@@ -478,16 +452,34 @@ async function startServer() {
     console.log("[SERVER] Vite middleware attached");
   } else {
     console.log("[SERVER] Production mode: serving static files");
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*all", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
-    });
+    const distPath = path.join(process.cwd(), "dist");
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get("*all", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"));
+      });
+    } else {
+      // Fallback for Vercel if dist is not in current working directory
+      const fallbackDistPath = path.join(__dirname, "dist");
+      if (fs.existsSync(fallbackDistPath)) {
+        app.use(express.static(fallbackDistPath));
+        app.get("*all", (req, res) => {
+          res.sendFile(path.join(fallbackDistPath, "index.html"));
+        });
+      }
+    }
   }
 
+  if (!process.env.VERCEL) {
     console.log(`[SERVER] Attempting to listen on port ${PORT}...`);
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`[SERVER] Server successfully running on http://0.0.0.0:${PORT}`);
     });
+  }
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
