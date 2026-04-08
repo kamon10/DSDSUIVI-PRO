@@ -477,21 +477,21 @@ export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
   }
 };
 
-const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
+export const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
   if (!targetUrl || !targetUrl.startsWith('http')) {
     console.warn(`Source ${key} URL invalide ou manquante.`);
     return { text: lastRawContent[key] || '', hasChanged: false, error: true };
   }
   
-  // Cache busting plus agressif
-  const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  // Cache busting plus simple (uniquement des chiffres)
+  const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
   
-  for (let i = 0; i <= retries; i++) {
+    for (let i = 0; i <= retries; i++) {
     console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
     
     const strategies = [
-      async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`, { cache: 'no-store' }),
-      async () => fetch(urlWithCacheBusting, { 
+      (signal: AbortSignal) => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`, { cache: 'no-store', signal }),
+      (signal: AbortSignal) => fetch(urlWithCacheBusting, { 
         method: 'GET',
         headers: { 
           'Accept': 'text/csv, text/plain, */*',
@@ -500,16 +500,21 @@ const fetchWithRetry = async (targetUrl: string, key: string, force = false, ret
           'Expires': '0'
         },
         credentials: 'omit',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal
       }),
-      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store' }),
-      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store' }),
-      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store' })
+      (signal: AbortSignal) => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal }),
+      (signal: AbortSignal) => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal }),
+      (signal: AbortSignal) => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal })
     ];
 
     for (let j = 0; j < strategies.length; j++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout
+
       try {
-        const response = await strategies[j]();
+        const response = await strategies[j](controller.signal);
+        clearTimeout(timeoutId);
         if (response.ok) {
           const text = await response.text();
           const trimmedText = text.trim();
