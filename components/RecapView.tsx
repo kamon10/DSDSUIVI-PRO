@@ -4,7 +4,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import { fr } from 'date-fns/locale/fr';
 import "react-datepicker/dist/react-datepicker.css";
 import { DashboardData, User, DistributionRecord, AppTab } from '../types.ts';
-import { PRODUCT_COLORS } from '../constants.tsx';
+import { PRODUCT_COLORS, GROUP_COLORS } from '../constants.tsx';
 import { 
   FileImage, FileText, Loader2, TableProperties, Printer, 
   Calendar as CalendarIcon, Filter, Truck, Activity, ClipboardList, Search, 
@@ -922,7 +922,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                           <td className="border border-slate-400 px-4 py-2 uppercase text-[11px] text-[#0f172a]">{site.name}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.fixe}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.mobile}</td>
-                          <td className="border border-slate-400 px-4 py-2 text-center font-black text-[#0f172a] text-[13px]">{site.totalJour}</td>
+                          <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.totalJour === site.gts ? 'text-emerald-600' : 'text-rose-600'}`}>{site.totalJour}</td>
                           <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.gts === site.totalJour ? 'text-emerald-600' : 'text-indigo-600'}`}>{site.gts}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.totalMois.toLocaleString()}</td>
                           <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.objMensuel.toLocaleString()}</td>
@@ -943,16 +943,16 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   );
                 }) : null}
               </tbody>
-              <tfoot className="bg-[#0f172a] text-white font-black">
-                <tr className="h-16">
-                  <td colSpan={2} className="border border-slate-800 p-6 text-xl uppercase tracking-widest pl-12">TOTAL NATIONAL</td>
-                  <td className="border border-slate-800 p-2 text-center text-lg">{nationalTotals.fixe.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-lg">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-2xl text-[#f87171]">{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`border border-slate-800 p-2 text-center text-2xl ${nationalTotals.gts === nationalTotals.jour ? 'text-emerald-400' : 'text-indigo-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-2xl">{nationalTotals.mois.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-2xl">{nationalTotals.objectif.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-3xl text-[#f87171]">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
+              <tfoot className="bg-[#0f172a] text-white font-[950]">
+                <tr className="h-20">
+                  <td colSpan={2} className="border border-slate-800 p-6 text-2xl uppercase tracking-widest pl-12">TOTAL NATIONAL</td>
+                  <td className="border border-slate-800 p-2 text-center text-xl">{nationalTotals.fixe.toLocaleString()}</td>
+                  <td className="border border-slate-800 p-2 text-center text-xl">{nationalTotals.mobile.toLocaleString()}</td>
+                  <td className="border border-slate-800 p-2 text-center text-4xl text-[#f87171]">{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`border border-slate-800 p-2 text-center text-4xl ${nationalTotals.gts === nationalTotals.jour ? 'text-emerald-400' : 'text-indigo-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className="border border-slate-800 p-2 text-center text-3xl">{nationalTotals.mois.toLocaleString()}</td>
+                  <td className="border border-slate-800 p-2 text-center text-3xl">{nationalTotals.objectif.toLocaleString()}</td>
+                  <td className="border border-slate-800 p-2 text-center text-4xl text-[#f87171]">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
                 </tr>
               </tfoot>
             </table>
@@ -964,7 +964,15 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                         <th className="border-2 border-orange-700 p-4 text-left w-[180px] uppercase tracking-widest">Site Source</th>
                         <th className="border-2 border-orange-700 p-4 text-left w-[220px] uppercase tracking-widest">Structure Servie</th>
                         <th className="border-2 border-orange-700 p-4 text-left w-[150px] uppercase tracking-widest">Produit</th>
-                        {SANG_GROUPS.map(g => <th key={g} className="border-2 border-orange-700 p-2 text-center w-[50px] uppercase">{g}</th>)}
+                        {SANG_GROUPS.map(g => (
+                <th 
+                  key={g} 
+                  className="border-2 border-slate-800 p-2 text-center w-[50px] uppercase text-slate-950"
+                  style={{ backgroundColor: GROUP_COLORS[g] || '#f1f5f9' }}
+                >
+                  {g}
+                </th>
+              ))}
                         <th className="border-2 border-orange-700 p-4 text-right w-[70px] uppercase text-red-100">Rendu</th>
                         <th className="border-2 border-orange-700 p-4 text-right w-[90px] uppercase bg-white/10 text-orange-200">Total</th>
                      </tr>
@@ -987,17 +995,35 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                                <React.Fragment key={destName}>
                                  {Object.entries(destData.products).sort().map(([prodName, prodMetrics]: [string, any], pIdx) => {
                                    const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
+                                   const isPlasma = prodName.toUpperCase().includes('PLASMA');
+                                   const isCgr = prodName.toUpperCase().includes('CGR');
+                                   
+                                   let rowBg = '';
+                                   if (isPlasma) rowBg = 'bg-[#FFFF00]';
+                                   else if (prodName.toUpperCase().includes('CGR ADULTE')) rowBg = 'bg-[#E65100] text-white';
+                                   else if (prodName.toUpperCase().includes('CGR NOURRISSON')) rowBg = 'bg-[#FB8C00] text-white';
+                                   else if (prodName.toUpperCase().includes('CGR PEDIATRIQUE')) rowBg = 'bg-[#FFB74D] text-white';
+
                                    return (
-                                     <tr key={`${destName}-${prodName}`} className="hover:bg-orange-50/50 transition-colors group">
+                                     <tr key={`${destName}-${prodName}`} className={`${rowBg || (pIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')} border-b border-slate-200 hover:opacity-90 transition-opacity group`}>
                                        {dIdx === 0 && pIdx === 0 && (
                                          <td rowSpan={rowCount + 1} className="border-2 border-slate-200 p-4 align-top font-[900] text-orange-700 bg-orange-50/20 uppercase text-[12px]">{sitName}</td>
                                        )}
                                        {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="border-2 border-slate-200 p-4 align-top text-slate-800 uppercase font-[900] text-[11px]">{destName}</td>}
                                        <td className="border-2 border-slate-200 p-3">
-                                         <span className="px-2 py-1.5 rounded text-[9px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
+                                         <span className="px-2 py-1.5 rounded text-[9px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: isCgr || isPlasma ? 'inherit' : (PRODUCT_COLORS[prodName] || '#64748b'), borderColor: isCgr || isPlasma ? 'currentColor' : `${PRODUCT_COLORS[prodName]}33`, backgroundColor: isCgr || isPlasma ? 'transparent' : `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
                                        </td>
                                        {SANG_GROUPS.map(g => (
-                                         <td key={g} className={`border-2 border-slate-200 p-2 text-center text-[12px] ${prodMetrics.groups[g] > 0 ? 'text-slate-950 font-black' : 'text-slate-200'}`}>{prodMetrics.groups[g] || '-'}</td>
+                                         <td 
+                                           key={g} 
+                                           className={`border-2 border-slate-200 p-2 text-center text-[12px] ${prodMetrics.groups[g] > 0 ? 'font-[950]' : 'text-slate-200'}`}
+                                           style={{ 
+                                             backgroundColor: prodMetrics.groups[g] > 0 ? GROUP_COLORS[g] : 'transparent',
+                                             color: prodMetrics.groups[g] > 0 ? (['AB+', 'B-', 'O-', 'AB-'].includes(g) ? '#fff' : '#000') : 'inherit'
+                                           }}
+                                         >
+                                           {prodMetrics.groups[g] || '-'}
+                                         </td>
                                        ))}
                                        <td className="border-2 border-slate-200 p-3 text-right font-black text-red-600 text-[12px]">{prodMetrics.rendu || '-'}</td>
                                        <td className="border-2 border-slate-200 p-3 text-right font-black text-slate-900 bg-slate-50/50 text-[13px]">{rowGrossTotal}</td>

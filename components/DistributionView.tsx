@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { DashboardData, DistributionRecord, User } from '../types';
-import { Truck, Search, RefreshCw, ClipboardList, Box } from 'lucide-react';
+import { Truck, Search, RefreshCw, ClipboardList, Box, ChevronDown } from 'lucide-react';
 import { PRODUCT_COLORS } from '../constants';
 
 const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -120,45 +120,48 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 pb-20">
-      <div className="bg-[#0f172a] rounded-[4rem] p-10 lg:p-14 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px] -mr-40 -mt-40"></div>
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
-          <div className="flex items-center gap-10">
-            <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] flex items-center justify-center shadow-2xl border border-white/10">
-              <ClipboardList size={40} className="text-white" />
+    <div className="space-y-12 animate-in fade-in duration-1000 pb-24">
+      <div className="bg-slate-950 rounded-[4rem] p-12 lg:p-16 text-white shadow-2xl relative overflow-hidden border border-white/5">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[150px] -mr-60 -mt-60 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-600/5 rounded-full blur-[100px] -ml-20 -mb-20"></div>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-16">
+          <div className="flex items-center gap-12">
+            <div className="w-24 h-24 lg:w-28 lg:h-28 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2.5rem] flex items-center justify-center shadow-2xl border border-white/10 group hover:scale-105 transition-transform duration-500">
+              <ClipboardList size={48} className="text-white group-hover:rotate-12 transition-transform" />
             </div>
             <div>
-              <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-none mb-3">REGISTRE DE DISTRIBUTION</h2>
-              <div className="flex items-center gap-3">
-                 <span className="text-indigo-400/60 font-black uppercase tracking-[0.4em] text-[12px]">
+              <h2 className="text-4xl lg:text-6xl font-display font-black uppercase tracking-tighter leading-none mb-4">Registre Distribution</h2>
+              <div className="flex items-center gap-4">
+                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                 <span className="text-blue-400/60 font-display font-bold uppercase tracking-[0.4em] text-[11px]">
                    {user?.role === 'AGENT' ? `SITE : ${user.site}` : user?.role === 'PRES' ? `PRES : ${user.region}` : 'Journal Matriciel National'}
                  </span>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-             <div className="bg-white/5 backdrop-blur-md px-8 py-6 rounded-[2.5rem] border border-white/10 text-center min-w-[180px]">
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Volume Distribué (Brut)</p>
-                <p className="text-4xl font-black text-white">{totals.qty.toLocaleString()}</p>
+          <div className="grid grid-cols-2 gap-8">
+             <div className="bg-white/5 backdrop-blur-xl px-10 py-8 rounded-[3rem] border border-white/10 text-center min-w-[220px] group hover:bg-white/10 transition-colors">
+                <p className="text-[10px] font-display font-black text-blue-400 uppercase tracking-[0.3em] mb-3">Volume Distribué (Brut)</p>
+                <p className="text-5xl font-display font-black text-white tracking-tighter">{totals.qty.toLocaleString()}</p>
              </div>
-             <div className="bg-emerald-500/10 backdrop-blur-md px-8 py-6 rounded-[2.5rem] border border-emerald-500/20 text-center min-w-[180px]">
-                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Efficacité Nette</p>
-                <p className="text-4xl font-black text-emerald-400">{(((totals.qty - totals.rendu) / (totals.qty || 1)) * 100).toFixed(1)}%</p>
+             <div className="bg-emerald-500/10 backdrop-blur-xl px-10 py-8 rounded-[3rem] border border-emerald-500/20 text-center min-w-[220px] group hover:bg-emerald-500/20 transition-colors">
+                <p className="text-[10px] font-display font-black text-emerald-400 uppercase tracking-[0.3em] mb-3">Efficacité Nette</p>
+                <p className="text-5xl font-display font-black text-emerald-400 tracking-tighter">{(((totals.qty - totals.rendu) / (totals.qty || 1)) * 100).toFixed(1)}%</p>
              </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-8">
-         <div className="bg-white p-2 rounded-[2rem] shadow-xl border border-slate-100 flex gap-2">
+      <div className="flex flex-col items-center gap-10">
+         <div className="bg-white/80 backdrop-blur-xl p-2.5 rounded-[2.5rem] shadow-2xl border border-white/60 flex gap-2">
             {['day', 'month', 'year'].map(m => (
               <button 
                 key={m}
                 onClick={() => setSynthesisMode(m as any)}
-                className={`px-10 py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest transition-all ${
-                  synthesisMode === m ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'
+                className={`px-12 py-5 rounded-[1.5rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 ${
+                  synthesisMode === m ? 'bg-slate-950 text-white shadow-2xl scale-105' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
                 }`}
               >
                 {m === 'day' ? 'Registre Jour' : m === 'month' ? 'Registre Mois' : 'Année'}
@@ -166,31 +169,40 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
             ))}
          </div>
 
-         <div className="w-full bg-white p-6 rounded-[3rem] shadow-warm border border-slate-100 flex flex-col lg:flex-row gap-4 items-center">
-            <div className="flex-1 relative w-full">
-               <Search size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+         <div className="w-full bg-white/80 backdrop-blur-xl p-8 rounded-[3.5rem] shadow-2xl border border-white/60 flex flex-col lg:flex-row gap-6 items-center">
+            <div className="flex-1 relative w-full group">
+               <Search size={20} className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
                <input 
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
-                 placeholder="Filtrer les lignes..."
-                 className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] text-xs font-bold outline-none focus:ring-4 ring-indigo-50"
+                 placeholder="Rechercher un site, une structure ou une région..."
+                 className="w-full pl-20 pr-10 py-6 bg-slate-50/50 border border-slate-100 rounded-[2.5rem] text-sm font-display font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 transition-all"
                />
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-4">
                {synthesisMode === 'day' ? (
-                 <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="bg-indigo-600 text-white px-6 py-4 rounded-xl text-[12px] font-black uppercase outline-none cursor-pointer">
-                    {availableDates.slice(0, 31).map(d => <option key={d} value={d}>{d}</option>)}
-                 </select>
+                 <div className="relative group">
+                   <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="bg-slate-950 text-white pl-10 pr-14 py-6 rounded-3xl text-[11px] font-display font-black uppercase tracking-widest outline-none cursor-pointer appearance-none hover:bg-slate-800 transition-all shadow-xl">
+                      {availableDates.slice(0, 31).map(d => <option key={d} value={d}>{d}</option>)}
+                   </select>
+                   <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" size={18} />
+                 </div>
                ) : (
                  <>
-                   <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="bg-slate-900 text-white px-6 py-4 rounded-xl text-[12px] font-black uppercase cursor-pointer outline-none">
-                      {years.map(y => <option key={y} value={y}>{y}</option>)}
-                   </select>
-                   {synthesisMode === 'month' && (
-                     <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="bg-white border border-slate-200 px-6 py-4 rounded-xl text-[12px] font-black uppercase cursor-pointer outline-none">
-                        <option value="ALL">Tous les mois</option>
-                        {MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                   <div className="relative group">
+                     <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="bg-slate-950 text-white pl-10 pr-14 py-6 rounded-3xl text-[11px] font-display font-black uppercase tracking-widest cursor-pointer outline-none appearance-none hover:bg-slate-800 transition-all shadow-xl">
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
                      </select>
+                     <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" size={18} />
+                   </div>
+                   {synthesisMode === 'month' && (
+                     <div className="relative group">
+                       <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="bg-white border border-slate-200 pl-10 pr-14 py-6 rounded-3xl text-[11px] font-display font-black uppercase tracking-widest cursor-pointer outline-none appearance-none hover:border-blue-500 transition-all shadow-lg">
+                          <option value="ALL">Tous les mois</option>
+                          {MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                       </select>
+                       <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                     </div>
                    )}
                  </>
                )}
@@ -198,20 +210,20 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
          </div>
       </div>
 
-      <div className="bg-white rounded-[4rem] shadow-3xl border border-slate-100 overflow-hidden">
+      <div className="card-professional bg-white/90 backdrop-blur-xl border-white/60 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse table-fixed min-w-[1000px]">
+          <table className="w-full border-collapse table-fixed min-w-[1200px]">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="px-4 py-6 text-left sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]">Site Source</th>
-                <th className="px-4 py-6 text-left w-[150px]">Structure</th>
-                <th className="px-4 py-6 text-left w-[125px]">Produit</th>
-                {SANG_GROUPS.map(g => <th key={g} className="px-1 py-6 text-center w-[45px]">{g}</th>)}
-                <th className="px-4 py-6 text-right text-indigo-600 w-[65px]">Rendu</th>
-                <th className="px-4 py-6 text-right bg-slate-100/50 w-[70px]">Total</th>
+              <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em]">
+                <th className="px-8 py-8 text-left sticky left-0 bg-slate-50/80 backdrop-blur-md z-20 shadow-[4px_0_10px_rgba(0,0,0,0.03)] w-[180px]">Site Source</th>
+                <th className="px-6 py-8 text-left w-[200px]">Structure</th>
+                <th className="px-6 py-8 text-left w-[160px]">Produit</th>
+                {SANG_GROUPS.map(g => <th key={g} className="px-2 py-8 text-center w-[60px]">{g}</th>)}
+                <th className="px-6 py-8 text-right text-blue-600 w-[90px]">Rendu</th>
+                <th className="px-8 py-8 text-right bg-slate-100/30 w-[100px]">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-50">
               {Object.keys(registerData).length > 0 ? (
                 <>
                   {Object.entries(registerData).sort().map(([sitName, sitData]: [string, any]) => {
@@ -230,60 +242,59 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
                             {Object.entries(destData.products).sort().map(([prodName, prodMetrics]: [string, any], pIdx) => {
                               const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
                               return (
-                                <tr key={prodName} className="hover:bg-slate-50/50 transition-colors group">
+                                <tr key={prodName} className="hover:bg-blue-50/30 transition-colors group">
                                   {dIdx === 0 && pIdx === 0 && (
-                                    <td rowSpan={(Object.values(sitData.destinations).reduce((acc: number, d: any) => acc + Object.keys(d.products).length, 0) as number) + 1} className="px-4 py-4 align-top sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                                      <span className="text-[13px] font-black text-red-600 uppercase leading-tight">{sitName}</span>
+                                    <td rowSpan={(Object.values(sitData.destinations).reduce((acc: number, d: any) => acc + Object.keys(d.products).length, 0) as number) + 1} className="px-8 py-8 align-top sticky left-0 bg-white group-hover:bg-blue-50/30 z-10 border-r border-slate-50 shadow-[4px_0_10px_rgba(0,0,0,0.02)] transition-colors">
+                                      <span className="text-[14px] font-display font-black text-slate-950 uppercase leading-tight block">{sitName}</span>
                                     </td>
                                   )}
-                                  {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top"><span className="text-[12px] font-black text-slate-800 uppercase leading-tight">{destName}</span></td>}
-                                  <td className="px-4 py-3">
-                                    <span className="px-2 py-1 rounded text-[11px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
+                                  {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-6 py-8 align-top"><span className="text-[13px] font-display font-bold text-slate-700 uppercase leading-tight block">{destName}</span></td>}
+                                  <td className="px-6 py-6">
+                                    <span className="px-4 py-2 rounded-xl text-[10px] font-display font-black border uppercase block leading-tight text-center tracking-widest shadow-sm" style={{ color: PRODUCT_COLORS[prodName] || '#64748b', borderColor: `${PRODUCT_COLORS[prodName]}33`, backgroundColor: `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
                                   </td>
                                   {SANG_GROUPS.map(g => {
                                     const val = prodMetrics.groups[g];
-                                    return <td key={g} className={`px-1 py-3 text-center text-[12px] ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>{val}</td>;
+                                    return <td key={g} className={`px-2 py-6 text-center text-[14px] font-display ${val > 0 ? 'font-black text-slate-950' : 'text-slate-200'}`}>{val}</td>;
                                   })}
-                                  <td className={`px-4 py-3 text-right text-[12px] font-black ${prodMetrics.rendu > 0 ? 'text-indigo-600' : 'text-slate-200'}`}>{prodMetrics.rendu}</td>
-                                  <td className="px-4 py-3 text-right text-[12px] font-black text-slate-900 bg-slate-50/30">{rowGrossTotal}</td>
+                                  <td className={`px-6 py-6 text-right text-[14px] font-display font-black ${prodMetrics.rendu > 0 ? 'text-blue-600' : 'text-slate-200'}`}>{prodMetrics.rendu}</td>
+                                  <td className="px-8 py-6 text-right text-[14px] font-display font-black text-slate-950 bg-slate-50/30">{rowGrossTotal}</td>
                                 </tr>
                               );
                             })}
                           </React.Fragment>
                         ))}
-                        <tr className="bg-indigo-50/30 font-black border-b-2 border-indigo-100">
-                          {/* PREMIERE CELLULE OMISE CAR COUVERTE PAR ROWSPAN DU SITE SOURCE */}
-                          <td colSpan={2} className="px-4 py-4 text-right pr-6">
-                            <span className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mr-2">SOUS-TOTAL</span>
-                            <span className="text-[12px] text-indigo-700 font-black uppercase truncate inline-block max-w-[150px] align-middle">{sitName}</span>
+                        <tr className="bg-blue-50/50 font-display font-black border-b border-blue-100/50">
+                          <td colSpan={2} className="px-8 py-6 text-right pr-10">
+                            <span className="text-[10px] text-slate-400 uppercase tracking-[0.3em] mr-4">SOUS-TOTAL SITE</span>
+                            <span className="text-[13px] text-blue-700 font-black uppercase truncate inline-block max-w-[200px] align-middle tracking-tight">{sitName}</span>
                           </td>
-                          <td className="px-4 py-4">
-                            {/* Colonne Produit vide pour le sous-total */}
-                          </td>
-                          {SANG_GROUPS.map(g => <td key={g} className="px-1 py-4 text-center text-[13px] text-indigo-900">{siteTotals[g]}</td>)}
-                          <td className="px-4 py-4 text-right text-indigo-700 text-[13px]">{siteRendu}</td>
-                          <td className="px-4 py-4 text-right text-indigo-900 bg-indigo-100/20 text-[13px]">{siteGrossTotal}</td>
+                          <td className="px-6 py-6"></td>
+                          {SANG_GROUPS.map(g => <td key={g} className="px-2 py-6 text-center text-[15px] text-blue-900 tracking-tighter">{siteTotals[g]}</td>)}
+                          <td className="px-6 py-6 text-right text-blue-700 text-[15px] tracking-tighter">{siteRendu}</td>
+                          <td className="px-8 py-6 text-right text-blue-900 bg-blue-100/20 text-[16px] tracking-tighter">{siteGrossTotal}</td>
                         </tr>
                       </React.Fragment>
                     );
                   })}
-                  <tr className="bg-slate-900 text-white font-black">
-                    <td className="px-4 py-6 sticky left-0 bg-slate-900 z-20 border-r border-slate-800"></td>
-                    <td className="px-4 py-6 text-right pr-6" colSpan={2}>
-                      <span className="text-[12px] uppercase tracking-[0.3em]">TOTAL GÉNÉRAL FILTRÉ</span>
+                  <tr className="bg-slate-950 text-white font-display font-black shadow-2xl relative z-20">
+                    <td className="px-8 py-10 sticky left-0 bg-slate-950 z-30 border-r border-white/10"></td>
+                    <td className="px-8 py-10 text-right pr-10" colSpan={2}>
+                      <span className="text-[14px] uppercase tracking-[0.4em] text-blue-400">TOTAL GÉNÉRAL FILTRÉ</span>
                     </td>
                     {SANG_GROUPS.map(g => (
-                      <td key={g} className="px-1 py-6 text-center text-[14px]">{totals.groups[g]}</td>
+                      <td key={g} className="px-2 py-10 text-center text-[18px] tracking-tighter">{totals.groups[g]}</td>
                     ))}
-                    <td className="px-4 py-6 text-right text-indigo-400 text-[14px]">{totals.rendu}</td>
-                    <td className="px-4 py-6 text-right text-emerald-400 bg-white/10 text-[16px]">{totals.qty}</td>
+                    <td className="px-6 py-10 text-right text-blue-400 text-[18px] tracking-tighter">{totals.rendu}</td>
+                    <td className="px-8 py-10 text-right text-emerald-400 bg-white/5 text-[22px] tracking-tighter">{totals.qty}</td>
                   </tr>
                 </>
               ) : (
                 <tr>
-                  <td colSpan={14} className="py-40 text-center opacity-20">
-                    <Box size={64} className="mx-auto mb-4"/>
-                    <p className="text-xs font-black uppercase tracking-[0.4em]">Aucun enregistrement pour cette sélection</p>
+                  <td colSpan={14} className="py-60 text-center opacity-30">
+                    <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8">
+                      <Box size={48} className="text-slate-300"/>
+                    </div>
+                    <p className="text-sm font-display font-black uppercase tracking-[0.5em] text-slate-400">Aucun enregistrement pour cette sélection</p>
                   </td>
                 </tr>
               )}
@@ -292,5 +303,6 @@ export const DistributionView: React.FC<DistributionViewProps> = ({ data, user }
         </div>
       </div>
     </div>
+
   );
 };

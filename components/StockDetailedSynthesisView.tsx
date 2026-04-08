@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types';
-import { SITES_DATA } from '../constants';
+import { SITES_DATA, PRODUCT_COLORS, GROUP_COLORS } from '../constants.tsx';
 import { Database, MapPin, ChevronRight, Clock, Package, FileImage, FileText, Loader2, FileSpreadsheet } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
@@ -385,13 +385,13 @@ export const StockDetailedSynthesisView: React.FC<StockDetailedSynthesisViewProp
                           {site.name}
                         </div>
                       </td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrAdulte || '-'}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrPedia || '-'}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrNourri || '-'}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black text-blue-600">{site.oPlus || '-'}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black text-red-600">{site.oMoins || '-'}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black" style={{ backgroundColor: PRODUCT_COLORS['CGR ADULTE'], color: '#fff' }}>{site.cgrAdulte || '-'}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black" style={{ backgroundColor: PRODUCT_COLORS['CGR PEDIATRIQUE'], color: '#000' }}>{site.cgrPedia || '-'}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black" style={{ backgroundColor: PRODUCT_COLORS['CGR NOURRISSON'], color: '#fff' }}>{site.cgrNourri || '-'}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black" style={{ backgroundColor: GROUP_COLORS['O+'], color: '#000' }}>{site.oPlus || '-'}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black" style={{ backgroundColor: GROUP_COLORS['O-'], color: '#fff' }}>{site.oMoins || '-'}</td>
                       <td className="px-4 py-3 text-center font-black bg-emerald-50 text-emerald-700 border-r border-slate-100">{site.totalCgr.toLocaleString()}</td>
-                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plasma || '-'}</td>
+                      <td className="px-2 py-3 text-center border-r border-slate-100 font-black" style={{ backgroundColor: PRODUCT_COLORS['PLASMA A USAGE THERAPEUTIQUE'], color: '#000' }}>{site.plasma || '-'}</td>
                       <td className="px-2 py-3 text-center font-black">{site.plaquettes || '-'}</td>
                     </tr>
                   ))}

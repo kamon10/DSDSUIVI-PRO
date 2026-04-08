@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building2, Calendar as CalendarIcon, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle, CloudUpload, Loader2 } from 'lucide-react';
+import { Building2, Calendar as CalendarIcon, Save, CheckCircle2, AlertCircle, RefreshCw, Send, ChevronDown, Hash, Settings, Info, Calculator, Edit3, Plus, Smartphone, History, ArrowRight, XCircle, CloudUpload, Loader2, Zap, Truck } from 'lucide-react';
+import { motion } from 'motion/react';
 import { saveRecordToSheet } from '../services/googleSheetService';
 import { DashboardData, User } from '../types';
 import DatePicker, { registerLocale } from "react-datepicker";
@@ -180,19 +181,19 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
 
   if (status === 'success') {
     return (
-      <div className="max-w-xl mx-auto py-10 text-center animate-in zoom-in duration-300">
-        <div className="bg-white rounded-[3rem] p-10 shadow-2xl border border-green-100 flex flex-col items-center">
-          <div className="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-green-100">
-            <CheckCircle2 size={40} className="animate-in zoom-in duration-500" />
+      <div className="max-w-xl mx-auto py-16 text-center animate-in zoom-in duration-500">
+        <div className="card-professional p-16 bg-white/90 backdrop-blur-sm flex flex-col items-center border-emerald-100">
+          <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-emerald-200">
+            <CheckCircle2 size={48} className="animate-in zoom-in duration-700" />
           </div>
-          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2">
+          <h2 className="text-3xl font-display font-black text-slate-950 uppercase tracking-tighter mb-4">
             Mise à jour Réussie !
           </h2>
-          <p className="text-slate-500 text-sm mb-10 font-medium px-6 leading-relaxed">
+          <p className="text-slate-500 text-sm mb-12 font-medium px-8 leading-relaxed">
             Vos données ont été injectées localement. Tous les menus de l'application (Cockpit, Pulse, Résumé) affichent désormais les nouveaux totaux. La base de données distante est synchronisée en tâche de fond.
           </p>
-          <button onClick={handleReset} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 transition-all">
-            <RefreshCw size={18} /> Faire une autre saisie
+          <button onClick={handleReset} className="w-full bg-slate-950 text-white py-6 rounded-2xl font-display font-black text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-slate-800 transition-all shadow-2xl shadow-slate-900/20 active:scale-95">
+            <RefreshCw size={20} /> Faire une autre saisie
           </button>
         </div>
       </div>
@@ -200,51 +201,61 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10">
-      <div className={`bg-white rounded-[3rem] shadow-2xl border ${isEditing ? 'border-blue-200' : 'border-slate-100'} overflow-hidden transition-all duration-500`}>
-        <div className={`${isEditing ? 'bg-blue-50/80' : 'bg-slate-50/80'} p-8 lg:p-12 border-b border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-8 transition-colors duration-500`}>
-          <div className="flex items-center gap-6">
-            <div className={`w-14 h-14 ${isEditing ? 'bg-blue-600' : 'bg-red-600'} rounded-2xl flex items-center justify-center text-white shadow-xl transition-colors duration-500`}>
-              {isEditing ? <Edit3 size={28} /> : <Plus size={28} />}
+    <div className="max-w-5xl mx-auto space-y-16 pb-24">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className={`card-professional bg-white/90 backdrop-blur-sm border-2 ${isEditing ? 'border-blue-500/20 shadow-blue-500/10' : 'border-white/60'} overflow-hidden transition-all duration-700`}
+      >
+        <div className={`${isEditing ? 'bg-blue-50/50' : 'bg-slate-50/50'} p-10 lg:p-16 border-b border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-10 transition-colors duration-700`}>
+          <div className="flex items-center gap-8">
+            <div className={`w-16 h-16 ${isEditing ? 'bg-blue-600' : 'bg-slate-950'} rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl transition-all duration-700`}>
+              {isEditing ? <Edit3 size={32} /> : <Plus size={32} />}
             </div>
             <div>
-              <h2 className="text-2xl lg:text-3xl font-black uppercase tracking-tighter text-slate-900">
+              <h2 className="text-3xl lg:text-4xl font-display font-black uppercase tracking-tighter text-slate-950">
                 {isEditing ? "Modification de Saisie" : "Nouveau Relevé"}
               </h2>
-              <p className={`text-[9px] font-black uppercase tracking-[0.3em] mt-1 italic ${isEditing ? 'text-blue-600' : 'text-slate-400'}`}>
+              <p className={`text-[11px] font-display font-bold uppercase tracking-[0.3em] mt-2 italic ${isEditing ? 'text-blue-600' : 'text-slate-400'}`}>
                 Mise à jour instantanée des tableaux de bord
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
              {isEditing && (
-               <button onClick={handleReset} type="button" className="p-4 bg-white border border-blue-200 text-blue-600 rounded-2xl hover:bg-blue-100 transition-all" title="Annuler la modification">
-                 <XCircle size={24} />
+               <button onClick={handleReset} type="button" className="p-5 bg-white border border-blue-200 text-blue-600 rounded-2xl hover:bg-blue-50 transition-all shadow-sm active:scale-95" title="Annuler la modification">
+                 <XCircle size={28} />
                </button>
              )}
-             <div className="bg-slate-900 px-8 py-5 rounded-[2rem] text-center shadow-xl">
-                <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Poches détectées</p>
-                <p className="text-3xl font-black text-white leading-none">{totalPoches}</p>
+             <div className="bg-slate-950 px-10 py-6 rounded-[2.5rem] text-center shadow-2xl border border-white/10">
+                <p className="text-[10px] font-display font-black text-white/30 uppercase tracking-[0.3em] mb-2">Poches détectées</p>
+                <p className="text-4xl font-display font-black text-white leading-none tracking-tighter">{totalPoches}</p>
              </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 lg:p-12 space-y-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Structure de prélèvement</label>
-                <div className="relative">
-                  <select required disabled={isEditing && status === 'submitting'} value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none appearance-none transition-all focus:ring-4 ring-blue-50">
+        <form onSubmit={handleSubmit} className="p-10 lg:p-16 space-y-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="space-y-10">
+              <div className="space-y-4">
+                <label className="text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Structure de prélèvement</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                    <Building2 size={20} />
+                  </div>
+                  <select required disabled={isEditing && status === 'submitting'} value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-12 py-5 text-sm font-display font-black text-slate-950 outline-none appearance-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5">
                     <option value="">Sélectionner un site...</option>
                     {sites.map((s, idx) => <option key={idx} value={idx}>{s.name}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
+                  <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                 </div>
               </div>
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date de l'Activité</label>
-                <div className="relative">
+              <div className="space-y-4">
+                <label className="text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Date de l'Activité</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors z-10">
+                    <CalendarIcon size={20} />
+                  </div>
                   <DatePicker
                     selected={formData.date ? new Date(formData.date) : null}
                     onChange={(date: Date | null) => {
@@ -258,72 +269,90 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                     dateFormat="dd/MM/yyyy"
                     locale="fr"
                     required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black text-slate-800 outline-none focus:ring-4 ring-blue-50 transition-all"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-12 py-5 text-sm font-display font-black text-slate-950 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all"
                     wrapperClassName="w-full"
                   />
-                  <CalendarIcon className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                 </div>
               </div>
-              <div className={`p-8 rounded-[2.5rem] border space-y-4 transition-colors ${isEditing ? 'bg-blue-50 border-blue-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                <label className={`text-[10px] font-black uppercase tracking-widest ${isEditing ? 'text-blue-600' : 'text-emerald-600'}`}>Nombre de Poches (FIXE)</label>
-                <input type="number" inputMode="numeric" min="0" placeholder="0" value={formData.fixe} onChange={(e) => setFormData({...formData, fixe: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-6 text-4xl font-black text-slate-800 outline-none text-center shadow-inner focus:ring-4 ring-blue-100" />
+              <div className={`p-10 rounded-[3rem] border-2 space-y-6 transition-all duration-700 ${isEditing ? 'bg-blue-50/50 border-blue-500/10' : 'bg-emerald-50/50 border-emerald-500/10'}`}>
+                <div className="flex items-center gap-4 mb-2">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isEditing ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                    <Zap size={20} />
+                  </div>
+                  <label className={`text-[11px] font-display font-black uppercase tracking-[0.25em] ${isEditing ? 'text-blue-600' : 'text-emerald-600'}`}>Nombre de Poches (FIXE)</label>
+                </div>
+                <input type="number" inputMode="numeric" min="0" placeholder="0" value={formData.fixe} onChange={(e) => setFormData({...formData, fixe: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-8 text-6xl font-display font-black text-slate-950 outline-none text-center shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" />
               </div>
             </div>
-            <div className="space-y-6">
-              <div className={`p-8 rounded-[3rem] border space-y-6 transition-colors ${isEditing ? 'bg-blue-50 border-blue-100' : 'bg-orange-50 border-orange-100'}`}>
+            <div className="space-y-8">
+              <div className={`p-10 rounded-[3.5rem] border-2 space-y-8 transition-all duration-700 h-full flex flex-col ${isEditing ? 'bg-blue-50/50 border-blue-500/10' : 'bg-orange-50/50 border-orange-500/10'}`}>
                 <div className="flex justify-between items-center">
-                  <label className={`text-[10px] font-black uppercase tracking-widest ${isEditing ? 'text-blue-600' : 'text-orange-600'}`}>Nombre de Poches (MOBILE)</label>
-                  <div className={`${isEditing ? 'bg-blue-600' : 'bg-orange-600'} text-white px-3 py-1 rounded-full text-[10px] font-black`}>SOMME : {totalMobile}</div>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isEditing ? 'bg-blue-500' : 'bg-orange-500'}`}>
+                      <Truck size={20} />
+                    </div>
+                    <label className={`text-[11px] font-display font-black uppercase tracking-[0.25em] ${isEditing ? 'text-blue-600' : 'text-orange-600'}`}>Nombre de Poches (MOBILE)</label>
+                  </div>
+                  <div className={`${isEditing ? 'bg-blue-600' : 'bg-orange-600'} text-white px-4 py-1.5 rounded-xl text-[11px] font-display font-black uppercase tracking-widest shadow-lg`}>SOMME : {totalMobile}</div>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 1" value={formData.mobile1} onChange={(e) => setFormData({...formData, mobile1: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
-                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 2" value={formData.mobile2} onChange={(e) => setFormData({...formData, mobile2: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
-                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 3" value={formData.mobile3} onChange={(e) => setFormData({...formData, mobile3: e.target.value})} className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-2xl font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 ring-blue-100" />
+                <div className="grid grid-cols-1 gap-6 flex-1">
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 1" value={formData.mobile1} onChange={(e) => setFormData({...formData, mobile1: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-blue-500/5 transition-all" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 2" value={formData.mobile2} onChange={(e) => setFormData({...formData, mobile2: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-blue-500/5 transition-all" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 3" value={formData.mobile3} onChange={(e) => setFormData({...formData, mobile3: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-blue-500/5 transition-all" />
                 </div>
               </div>
             </div>
           </div>
 
-          {status === 'error' && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3"><AlertCircle size={20} /><p>{errorMessage}</p></div>}
+          {status === 'error' && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-rose-50 text-rose-600 rounded-2xl text-[11px] font-display font-black uppercase tracking-widest flex items-center gap-4 border border-rose-100 shadow-sm"><AlertCircle size={24} /><p>{errorMessage}</p></motion.div>}
           
-          <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-blue-600 shadow-blue-200' : 'bg-red-600 shadow-red-200'} text-white py-8 rounded-[2.5rem] font-black text-lg uppercase tracking-widest shadow-2xl transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-95`}>
-            {status === 'submitting' ? <Loader2 className="animate-spin" size={28} /> : (isEditing ? <Save size={28} /> : <Plus size={28} />)}
+          <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-blue-600 shadow-blue-500/20' : 'bg-slate-950 shadow-slate-900/20'} text-white py-8 rounded-[2.5rem] font-display font-black text-lg uppercase tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-6 disabled:opacity-30 active:scale-[0.98] group`}>
+            {status === 'submitting' ? <Loader2 className="animate-spin" size={32} /> : (isEditing ? <Save size={32} /> : <Plus size={32} />)}
             {status === 'submitting' ? "Synchronisation Locale..." : (isEditing ? "Valider la modification" : "Injecter dans DATABASE1")}
           </button>
         </form>
-      </div>
+      </motion.div>
 
-      <div className="bg-slate-50 rounded-[3rem] p-10 border border-slate-200">
-         <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm"><History size={24} /></div>
+      <div className="bg-slate-50/50 backdrop-blur-sm rounded-[4rem] p-12 lg:p-16 border border-slate-200/50 shadow-inner">
+         <div className="flex items-center gap-6 mb-12">
+            <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center text-slate-400 shadow-xl border border-slate-100"><History size={28} /></div>
             <div>
-               <h3 className="text-xl font-black uppercase tracking-tighter text-slate-800">Saisies Récentes</h3>
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Modifier rapidement les derniers enregistrements</p>
+               <h3 className="text-3xl font-display font-black uppercase tracking-tighter text-slate-950">Saisies Récentes</h3>
+               <p className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Modifier rapidement les derniers enregistrements</p>
             </div>
          </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {recentEntries.map((entry, idx) => (
-              <button 
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
                 key={idx} 
                 type="button"
                 onClick={() => handleEditFromHistory(entry)}
-                className="bg-white p-5 rounded-[2rem] border border-slate-200 hover:border-blue-400 hover:shadow-xl transition-all text-left group flex items-center justify-between"
+                className="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-blue-400 hover:shadow-2xl transition-all text-left group flex items-center justify-between relative overflow-hidden"
               >
-                <div>
-                   <p className="text-[8px] font-black text-slate-300 uppercase mb-1">{entry.date} • {entry.code}</p>
-                   <p className="text-xs font-black text-slate-800 uppercase truncate max-w-[150px]">{entry.site}</p>
-                   <p className="text-lg font-black text-blue-600">{entry.total} <span className="text-[8px] uppercase text-slate-300">Poches</span></p>
+                <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                   <p className="text-[10px] font-display font-black text-slate-300 uppercase tracking-widest mb-2 group-hover:text-blue-400 transition-colors">{entry.date} • {entry.code}</p>
+                   <p className="text-sm font-display font-black text-slate-950 uppercase tracking-tight truncate max-w-[180px] mb-4">{entry.site}</p>
+                   <div className="flex items-baseline gap-2">
+                     <p className="text-3xl font-display font-black text-blue-600">{entry.total}</p>
+                     <span className="text-[10px] uppercase font-display font-black text-slate-300 tracking-widest">Poches</span>
+                   </div>
                 </div>
-                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
-                   <ArrowRight size={18} />
+                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner relative z-10">
+                   <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                 </div>
-              </button>
+              </motion.button>
             ))}
             {recentEntries.length === 0 && (
-               <div className="col-span-full py-10 text-center text-slate-300 italic text-sm">Aucun historique local disponible pour le moment.</div>
+               <div className="col-span-full py-20 text-center text-slate-300 italic font-display font-medium text-lg">Aucun historique local disponible pour le moment.</div>
             )}
          </div>
       </div>
     </div>
   );
+
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
 
-const PUBLIC_VAPID_KEY = "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
+const PUBLIC_VAPID_KEY = "BPLjXKH2h_m6gC9ZBoGc0fOzPryzRCVg2qp1lcUoXv0AZHmkFsnvkuieqivubuzKaxkF8Hyk9-_sBQgmKTuPJHQ";
 
 export const NotificationManager: React.FC = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
