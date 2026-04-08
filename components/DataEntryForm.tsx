@@ -17,6 +17,7 @@ interface DataEntryFormProps {
   sites: any[];
   onSyncRequest?: () => void;
   onOptimisticUpdate?: (payload: any) => void;
+  onCloudSyncChange?: (syncing: boolean) => void;
 }
 
 const MONTHS_FR_UPPER = [
@@ -24,7 +25,7 @@ const MONTHS_FR_UPPER = [
   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "Novembre", "DECEMBRE"
 ];
 
-export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites, onSyncRequest, onOptimisticUpdate }) => {
+export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, user, sites, onSyncRequest, onOptimisticUpdate, onCloudSyncChange }) => {
   const [formData, setFormData] = useState({
     siteIndex: "",
     date: new Date().toISOString().split('T')[0],
@@ -140,6 +141,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
     }
 
     // 2. SAUVEGARDE RÉELLE EN ARRIÈRE-PLAN
+    if (onCloudSyncChange) onCloudSyncChange(true);
     (async () => {
        try {
          await saveRecordToSheet(scriptUrl, payload);
@@ -154,9 +156,11 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
          // On attend un peu que Google traite avant de rafraîchir silencieusement
          setTimeout(() => {
             if (onSyncRequest) onSyncRequest();
+            if (onCloudSyncChange) onCloudSyncChange(false);
          }, 5000);
        } catch (err) {
          console.error("Background save failed:", err);
+         if (onCloudSyncChange) onCloudSyncChange(false);
        }
     })();
 
