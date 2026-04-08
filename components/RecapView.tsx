@@ -243,6 +243,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
   const abidjanVilleDistributionSubtotal = useMemo(() => {
     const abidjanVilleSites = [
       "CRTS DE TREICHVILLE",
+      "CDTS DE BINGERVILLE",
       "SP HG PORT BOUET",
       "SP FSU ABOBO BAOULE",
       "SP HG ANYAMA",
@@ -357,6 +358,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
 
       const abidjanVilleSites = [
         "CRTS DE TREICHVILLE",
+        "CDTS DE BINGERVILLE",
         "SP HG PORT BOUET",
         "SP FSU ABOBO BAOULE",
         "SP HG ANYAMA",
@@ -971,6 +973,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   
                   const abidjanVilleSites = [
                     "CRTS DE TREICHVILLE",
+                    "CDTS DE BINGERVILLE",
                     "SP HG PORT BOUET",
                     "SP FSU ABOBO BAOULE",
                     "SP HG ANYAMA",
