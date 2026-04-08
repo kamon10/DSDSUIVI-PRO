@@ -135,6 +135,25 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
       g.totals.oPlus += stats.oPlus;
       g.totals.oMoins += stats.oMoins;
       g.totals.total += stats.total;
+
+      // Subtotal Abidjan Ville
+      const abidjanVilleSites = [
+        "CRTS DE TREICHVILLE",
+        "SP HG PORT BOUET",
+        "SP FSU ABOBO BAOULE",
+        "SP HG ANYAMA",
+        "SP CHU DE COCODY",
+        "SP CHU DE YOPOUGON"
+      ];
+      if (regName === "PRES ABIDJAN" && abidjanVilleSites.includes(siteBase.name)) {
+        if (!g.abidjanVille) g.abidjanVille = { cgrAdulte: 0, cgrPedia: 0, cgrNourri: 0, plasma: 0, plaquettes: 0, total: 0 };
+        g.abidjanVille.cgrAdulte += stats.cgrAdulte;
+        g.abidjanVille.cgrPedia += stats.cgrPedia;
+        g.abidjanVille.cgrNourri += stats.cgrNourri;
+        g.abidjanVille.plasma += stats.plasma;
+        g.abidjanVille.plaquettes += stats.plaquettes;
+        g.abidjanVille.total += stats.total;
+      }
     });
 
     return Array.from(grouped.values()).filter(g => g.sites.length > 0);
@@ -514,47 +533,81 @@ export const DistributionDetailedSynthesisView: React.FC<DistributionDetailedSyn
                 </tr>
               </thead>
               <tbody className="text-[15px] font-bold text-slate-700">
-                {synthesisData.map((region) => (
-                  <React.Fragment key={region.name}>
-                    {region.sites.map((site: any, idx: number) => (
-                      <tr key={site.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} border-b border-slate-100 hover:bg-blue-50/30 transition-colors`}>
-                        {idx === 0 && (
-                          <td 
-                            rowSpan={region.sites.length + 1} 
-                            className="px-6 py-4 font-black text-slate-900 bg-slate-50/50 border-r border-slate-200 align-middle text-center"
-                            style={{ width: '200px', minWidth: '200px' }}
-                          >
-                            <div className="flex flex-col items-center gap-3">
-                              <MapPin size={24} className="text-blue-600" />
-                              <span className="uppercase tracking-normal leading-tight text-[15px] break-words">{region.name}</span>
-                            </div>
-                          </td>
-                        )}
-                        <td className="px-4 py-3 border-r border-slate-100 uppercase tracking-tighter">
-                          <div className="flex items-center gap-2">
-                            <ChevronRight size={12} className="text-slate-300" />
-                            {site.name}
-                          </div>
-                        </td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrAdulte || '-'}</td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrPedia || '-'}</td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrNourri || '-'}</td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plasma || '-'}</td>
-                        <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plaquettes || '-'}</td>
-                        <td className="px-4 py-3 text-center font-black bg-slate-50/50">{site.total.toLocaleString()}</td>
+                {synthesisData.map((region) => {
+                  const abidjanVilleSites = [
+                    "CRTS DE TREICHVILLE",
+                    "SP HG PORT BOUET",
+                    "SP FSU ABOBO BAOULE",
+                    "SP HG ANYAMA",
+                    "SP CHU DE COCODY",
+                    "SP CHU DE YOPOUGON"
+                  ];
+                  
+                  const isAbidjan = region.name === "PRES ABIDJAN";
+                  const abidjanSites = isAbidjan ? region.sites.filter((s: any) => abidjanVilleSites.includes(s.name)) : region.sites;
+                  const otherSites = isAbidjan ? region.sites.filter((s: any) => !abidjanVilleSites.includes(s.name)) : [];
+                  
+                  const rows = [...abidjanSites, ...(isAbidjan ? [{ isSubtotal: true }] : []), ...otherSites];
+
+                  return (
+                    <React.Fragment key={region.name}>
+                      {rows.map((row: any, idx: number) => {
+                        if (row.isSubtotal) {
+                          return (
+                            <tr key="subtotal-abidjan" className="bg-blue-50/50 font-black text-blue-900 border-b border-blue-100">
+                              <td className="px-4 py-4 text-right uppercase tracking-widest text-[13px]">SOUS-TOTAL ABIDJAN VILLE</td>
+                              <td className="px-2 py-4 text-center border-r border-blue-100 text-[14px]">{region.abidjanVille.cgrAdulte.toLocaleString()}</td>
+                              <td className="px-2 py-4 text-center border-r border-blue-100 text-[14px]">{region.abidjanVille.cgrPedia.toLocaleString()}</td>
+                              <td className="px-2 py-4 text-center border-r border-blue-100 text-[14px]">{region.abidjanVille.cgrNourri.toLocaleString()}</td>
+                              <td className="px-2 py-4 text-center border-r border-blue-100 text-[14px]">{region.abidjanVille.plasma.toLocaleString()}</td>
+                              <td className="px-2 py-4 text-center border-r border-blue-100 text-[14px]">{region.abidjanVille.plaquettes.toLocaleString()}</td>
+                              <td className="px-4 py-4 text-center bg-blue-100/50 text-blue-900 text-[15px]">{region.abidjanVille.total.toLocaleString()}</td>
+                            </tr>
+                          );
+                        }
+
+                        const site = row;
+                        return (
+                          <tr key={site.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} border-b border-slate-100 hover:bg-blue-50/30 transition-colors`}>
+                            {idx === 0 && (
+                              <td 
+                                rowSpan={rows.length + 1} 
+                                className="px-6 py-4 font-black text-slate-900 bg-slate-50/50 border-r border-slate-200 align-middle text-center"
+                                style={{ width: '200px', minWidth: '200px' }}
+                              >
+                                <div className="flex flex-col items-center gap-3">
+                                  <MapPin size={24} className="text-blue-600" />
+                                  <span className="uppercase tracking-normal leading-tight text-[15px] break-words">{region.name}</span>
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-4 py-3 border-r border-slate-100 uppercase tracking-tighter">
+                              <div className="flex items-center gap-2">
+                                <ChevronRight size={12} className="text-slate-300" />
+                                {site.name}
+                              </div>
+                            </td>
+                            <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrAdulte || '-'}</td>
+                            <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrPedia || '-'}</td>
+                            <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.cgrNourri || '-'}</td>
+                            <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plasma || '-'}</td>
+                            <td className="px-2 py-3 text-center border-r border-slate-100 font-black">{site.plaquettes || '-'}</td>
+                            <td className="px-4 py-3 text-center font-black bg-slate-50/50">{site.total.toLocaleString()}</td>
+                          </tr>
+                        );
+                      })}
+                      <tr className="bg-slate-100/80 font-black text-slate-900 border-b border-slate-200">
+                        <td className="px-4 py-4 text-right uppercase tracking-widest text-[15px]">TOTAL {region.name}</td>
+                        <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrAdulte.toLocaleString()}</td>
+                        <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrPedia.toLocaleString()}</td>
+                        <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrNourri.toLocaleString()}</td>
+                        <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plasma.toLocaleString()}</td>
+                        <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plaquettes.toLocaleString()}</td>
+                        <td className="px-4 py-4 text-center bg-slate-200/50 text-[18px]">{region.totals.total.toLocaleString()}</td>
                       </tr>
-                    ))}
-                    <tr className="bg-slate-100/80 font-black text-slate-900 border-b border-slate-200">
-                      <td className="px-4 py-4 text-right uppercase tracking-widest text-[15px]">TOTAL {region.name}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrAdulte.toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrPedia.toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.cgrNourri.toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plasma.toLocaleString()}</td>
-                      <td className="px-2 py-4 text-center border-r border-slate-200 text-[16px]">{region.totals.plaquettes.toLocaleString()}</td>
-                      <td className="px-4 py-4 text-center bg-slate-200/50 text-[18px]">{region.totals.total.toLocaleString()}</td>
-                    </tr>
-                  </React.Fragment>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-slate-900 text-white font-black uppercase tracking-widest text-[18px]">

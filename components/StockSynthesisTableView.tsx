@@ -100,6 +100,21 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
       g.sites.push(siteStats);
       g.totalStock += siteStock;
       g.avgCons += avgTotal;
+
+      // Subtotal Abidjan Ville
+      const abidjanVilleSites = [
+        "CRTS DE TREICHVILLE",
+        "SP HG PORT BOUET",
+        "SP FSU ABOBO BAOULE",
+        "SP HG ANYAMA",
+        "SP CHU DE COCODY",
+        "SP CHU DE YOPOUGON"
+      ];
+      if (regName === "PRES ABIDJAN" && abidjanVilleSites.includes(siteBase.name)) {
+        if (!g.abidjanVille) g.abidjanVille = { stock: 0, cons: 0 };
+        g.abidjanVille.stock += siteStock;
+        g.abidjanVille.cons += avgTotal;
+      }
     });
 
     return Array.from(grouped.values()).filter(g => g.sites.length > 0);
@@ -244,6 +259,27 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
                         </tr>
                       );
                     })}
+                    {region.abidjanVille && (
+                      <tr className="bg-blue-50/50 font-black text-blue-900 border-t border-blue-100">
+                        <td className="px-10 py-4 text-right italic uppercase tracking-widest text-[12px]">SOUS-TOTAL ABIDJAN VILLE</td>
+                        <td className="px-6 py-4 text-center text-base">{region.abidjanVille.stock.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`text-base font-black ${region.abidjanVille.stock / (region.abidjanVille.cons || 1) < 3 ? 'text-rose-600' : region.abidjanVille.stock / (region.abidjanVille.cons || 1) < 7 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {(region.abidjanVille.stock / (region.abidjanVille.cons || 1)).toFixed(1)} J
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex flex-col items-center">
+                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-tight ${region.abidjanVille.stock / (region.abidjanVille.cons || 1) < 3 ? 'bg-rose-100 text-rose-700 border-rose-200' : region.abidjanVille.stock / (region.abidjanVille.cons || 1) < 7 ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+                              {region.abidjanVille.stock / (region.abidjanVille.cons || 1) < 3 ? 'CRITIQUE' : region.abidjanVille.stock / (region.abidjanVille.cons || 1) < 7 ? 'ALERTE' : 'OPTIMAL'}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-10 py-4 text-right">
+                          <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest">Calculé sur 6 sites</span>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

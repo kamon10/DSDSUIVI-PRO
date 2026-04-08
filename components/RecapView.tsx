@@ -240,6 +240,41 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
     };
   }, [filteredDistRecords]);
 
+  const abidjanVilleDistributionSubtotal = useMemo(() => {
+    const abidjanVilleSites = [
+      "CRTS DE TREICHVILLE",
+      "SP HG PORT BOUET",
+      "SP FSU ABOBO BAOULE",
+      "SP HG ANYAMA",
+      "SP CHU DE COCODY",
+      "SP CHU DE YOPOUGON"
+    ];
+    
+    const totals = {
+      groups: Object.fromEntries(SANG_GROUPS.map(g => [g, 0])),
+      rendu: 0,
+      gross: 0
+    };
+    
+    let hasData = false;
+    Object.entries(registerData).forEach(([sitName, sitData]: [string, any]) => {
+      if (abidjanVilleSites.includes(sitName)) {
+        hasData = true;
+        Object.values(sitData.destinations).forEach((dest: any) => {
+          Object.values(dest.products).forEach((prod: any) => {
+            SANG_GROUPS.forEach(g => {
+              totals.groups[g] += prod.groups[g];
+              totals.gross += prod.groups[g];
+            });
+            totals.rendu += prod.rendu;
+          });
+        });
+      }
+    });
+    
+    return hasData ? totals : null;
+  }, [registerData]);
+
   // LOGIQUE COLLECTE (Mise à jour pour gérer les périodes)
   const formattedCollecteData = useMemo(() => {
     if (viewMode !== 'collecte') return [];
@@ -320,6 +355,28 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         };
       });
 
+      const abidjanVilleSites = [
+        "CRTS DE TREICHVILLE",
+        "SP HG PORT BOUET",
+        "SP FSU ABOBO BAOULE",
+        "SP HG ANYAMA",
+        "SP CHU DE COCODY",
+        "SP CHU DE YOPOUGON"
+      ];
+      
+      const abidjanVilleData = region.name === "PRES ABIDJAN" ? sitesWithDayData.filter(s => abidjanVilleSites.includes(s.name)) : [];
+      const abidjanVilleTotals = abidjanVilleData.length > 0 ? {
+        fixe: abidjanVilleData.reduce((acc, s) => acc + s.fixe, 0),
+        mobile: abidjanVilleData.reduce((acc, s) => acc + s.mobile, 0),
+        jour: abidjanVilleData.reduce((acc, s) => acc + s.totalJour, 0),
+        gts: abidjanVilleData.reduce((acc, s) => acc + s.gts, 0),
+        mois: abidjanVilleData.reduce((acc, s) => acc + s.totalMois, 0),
+        obj: abidjanVilleData.reduce((acc, s) => acc + s.objMensuel, 0),
+        taux: abidjanVilleData.reduce((acc, s) => acc + s.objMensuel, 0) > 0 
+          ? (abidjanVilleData.reduce((acc, s) => acc + s.totalMois, 0) / abidjanVilleData.reduce((acc, s) => acc + s.objMensuel, 0)) * 100 
+          : 0
+      } : null;
+
       return {
         ...region,
         sites: sitesWithDayData,
@@ -328,7 +385,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         objMensPres: sitesWithDayData.reduce((acc, s) => acc + s.objMensuel, 0),
         fixePres: sitesWithDayData.reduce((acc, s) => acc + s.fixe, 0),
         mobilePres: sitesWithDayData.reduce((acc, s) => acc + s.mobile, 0),
-        gtsPres: sitesWithDayData.reduce((acc, s) => acc + (s.gts || 0), 0)
+        gtsPres: sitesWithDayData.reduce((acc, s) => acc + (s.gts || 0), 0),
+        abidjanVille: abidjanVilleTotals
       };
     }).filter(r => r !== null);
   }, [data, filterRegion, filterSite, selectedDate, startDate, endDate, isPeriodMode, viewMode]);
@@ -910,31 +968,65 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                 {formattedCollecteData.length > 0 ? formattedCollecteData.map((region: any, rIdx: number) => {
                   const regColor = REGION_COLORS[region.name.trim().toUpperCase()] || '#ffffff';
                   const regTaux = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
+                  
+                  const abidjanVilleSites = [
+                    "CRTS DE TREICHVILLE",
+                    "SP HG PORT BOUET",
+                    "SP FSU ABOBO BAOULE",
+                    "SP HG ANYAMA",
+                    "SP CHU DE COCODY",
+                    "SP CHU DE YOPOUGON"
+                  ];
+                  
+                  const isAbidjan = region.name === "PRES ABIDJAN";
+                  const abidjanSites = isAbidjan ? region.sites.filter((s: any) => abidjanVilleSites.includes(s.name)) : region.sites;
+                  const otherSites = isAbidjan ? region.sites.filter((s: any) => !abidjanVilleSites.includes(s.name)) : [];
+                  
+                  const rows = [...abidjanSites, ...(isAbidjan ? [{ isSubtotal: true }] : []), ...otherSites];
+
                   return (
                     <React.Fragment key={rIdx}>
-                      {region.sites.map((site: any, sIdx: number) => (
-                        <tr key={`${rIdx}-${sIdx}`} style={{ backgroundColor: regColor }} className="h-10 hover:brightness-95 transition-all">
-                          {sIdx === 0 && (
-                            <td rowSpan={region.sites.length + 1} className="border border-slate-400 p-4 align-top font-black uppercase text-[12px] text-[#0f172a]" style={{ backgroundColor: regColor }}>
-                              <span className="inline-block mt-1">{region.name}</span>
-                            </td>
-                          )}
-                          <td className="border border-slate-400 px-4 py-2 uppercase text-[11px] text-[#0f172a]">{site.name}</td>
-                          <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.fixe}</td>
-                          <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.mobile}</td>
-                          <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.totalJour === site.gts ? 'text-emerald-600' : 'text-rose-600'}`}>{site.totalJour}</td>
-                          <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.gts === site.totalJour ? 'text-emerald-600' : 'text-indigo-600'}`}>{site.gts}</td>
-                          <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.totalMois.toLocaleString()}</td>
-                          <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.objMensuel.toLocaleString()}</td>
-                          <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
-                        </tr>
-                      ))}
+                      {rows.map((row: any, idx: number) => {
+                        if (row.isSubtotal) {
+                          return (
+                            <tr key="subtotal-abidjan" className="font-black h-10 bg-blue-100/30">
+                              <td className="border border-slate-400 px-4 py-2 uppercase text-right pr-6 italic text-blue-900">SOUS-TOTAL ABIDJAN VILLE</td>
+                              <td className="border border-slate-400 px-4 py-2 text-center text-blue-900">{region.abidjanVille.fixe}</td>
+                              <td className="border border-slate-400 px-4 py-2 text-center text-blue-900">{region.abidjanVille.mobile}</td>
+                              <td className={`border border-slate-400 px-4 py-2 text-center text-[13px] font-black ${region.abidjanVille.jour === region.abidjanVille.gts ? 'text-green-600' : 'text-red-600'}`}>{region.abidjanVille.jour}</td>
+                              <td className={`border border-slate-400 px-4 py-2 text-center text-[13px] font-black ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-green-600' : 'text-red-600'}`}>{region.abidjanVille.gts}</td>
+                              <td className="border border-slate-400 px-4 py-2 text-center text-blue-900 text-[13px]">{region.abidjanVille.mois.toLocaleString()}</td>
+                              <td className="border border-slate-400 px-4 py-2 text-center text-blue-900 text-[13px]">{region.abidjanVille.obj.toLocaleString()}</td>
+                              <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
+                            </tr>
+                          );
+                        }
+
+                        const site = row;
+                        return (
+                          <tr key={`${rIdx}-${idx}`} style={{ backgroundColor: regColor }} className="h-10 hover:brightness-95 transition-all">
+                            {idx === 0 && (
+                              <td rowSpan={rows.length + 1} className="border border-slate-400 p-4 align-top font-black uppercase text-[12px] text-[#0f172a]" style={{ backgroundColor: regColor }}>
+                                <span className="inline-block mt-1">{region.name}</span>
+                              </td>
+                            )}
+                            <td className="border border-slate-400 px-4 py-2 uppercase text-[11px] text-[#0f172a]">{site.name}</td>
+                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.fixe}</td>
+                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.mobile}</td>
+                            <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.totalJour === site.gts ? 'text-green-600' : 'text-red-600'}`}>{site.totalJour}</td>
+                            <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.gts === site.totalJour ? 'text-green-600' : 'text-red-600'}`}>{site.gts}</td>
+                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.totalMois.toLocaleString()}</td>
+                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.objMensuel.toLocaleString()}</td>
+                            <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
+                          </tr>
+                        );
+                      })}
                       <tr className="font-black h-12 bg-slate-200/50" style={{ backgroundColor: `${regColor}dd` }}>
                         <td className="border border-slate-400 px-4 py-2 uppercase text-right pr-6 italic text-[#0f172a]">TOTAL {region.name}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.fixePres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.mobilePres}</td>
-                        <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalJourPres}</td>
-                        <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${region.gtsPres === region.totalJourPres ? 'text-emerald-700' : 'text-indigo-700'}`}>{region.gtsPres}</td>
+                        <td className={`border border-slate-400 px-4 py-2 text-center text-[14px] font-black ${region.totalJourPres === region.gtsPres ? 'text-green-700' : 'text-red-700'}`}>{region.totalJourPres}</td>
+                        <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${region.gtsPres === region.totalJourPres ? 'text-green-700' : 'text-red-700'}`}>{region.gtsPres}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalMoisPres.toLocaleString()}</td>
                         <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.objMensPres.toLocaleString()}</td>
                         <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[15px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
@@ -948,8 +1040,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   <td colSpan={2} className="border border-slate-800 p-6 text-2xl uppercase tracking-widest pl-12">TOTAL NATIONAL</td>
                   <td className="border border-slate-800 p-2 text-center text-xl">{nationalTotals.fixe.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-xl">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className="border border-slate-800 p-2 text-center text-4xl text-[#f87171]">{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`border border-slate-800 p-2 text-center text-4xl ${nationalTotals.gts === nationalTotals.jour ? 'text-emerald-400' : 'text-indigo-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className={`border border-slate-800 p-2 text-center text-4xl font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-green-400' : 'text-red-400'}`}>{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`border border-slate-800 p-2 text-center text-4xl font-black ${nationalTotals.gts === nationalTotals.jour ? 'text-green-400' : 'text-red-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-3xl">{nationalTotals.mois.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-3xl">{nationalTotals.objectif.toLocaleString()}</td>
                   <td className="border border-slate-800 p-2 text-center text-4xl text-[#f87171]">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
@@ -1052,6 +1144,14 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                       <td className="border-2 border-orange-900 p-4 text-right text-red-400 text-[15px]">{distTotals.rendu}</td>
                       <td className="border-2 border-orange-900 p-5 text-right text-orange-400 text-[24px] bg-white/5">{distTotals.qty}</td>
                     </tr>
+                    {abidjanVilleDistributionSubtotal && (
+                      <tr className="h-14 bg-blue-900/90 text-white">
+                        <td colSpan={3} className="border-2 border-blue-800 p-4 text-right uppercase tracking-widest text-[13px] italic pr-8">SOUS-TOTAL ABIDJAN VILLE</td>
+                        {SANG_GROUPS.map(g => <td key={g} className="border-2 border-blue-800 p-2 text-center text-[13px]">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
+                        <td className="border-2 border-blue-800 p-3 text-right text-blue-200 text-[13px]">{abidjanVilleDistributionSubtotal.rendu}</td>
+                        <td className="border-2 border-blue-800 p-4 text-right text-blue-100 text-[18px] bg-white/5">{abidjanVilleDistributionSubtotal.gross}</td>
+                      </tr>
+                    )}
                   </tfoot>
                </table>
             </div>
