@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#ef4444">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Hemo-Stats">
     <link rel="apple-touch-icon" sizes="180x180" href="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904">
     <link rel="icon" type="image/png" sizes="32x32" href="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904">
@@ -49,6 +49,7 @@
         .glass-nav {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.12);
             transition: var(--transition-smooth);
@@ -87,6 +88,7 @@
         @media (max-width: 1024px) {
             .glass-nav {
                 backdrop-filter: blur(16px) saturate(150%);
+                -webkit-backdrop-filter: blur(16px) saturate(150%);
             }
         }
 

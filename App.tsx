@@ -408,38 +408,43 @@ const App: React.FC = () => {
   }, [dynamicSites]);
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
+    <div className="flex min-h-screen bg-[#F1F5F9] bg-grid-slate-100">
       {/* SIDEBAR DESKTOP */}
-      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-slate-100 h-screen sticky top-0 z-[110] overflow-y-auto">
-        <div className="p-8 flex items-center gap-4 border-b border-slate-50">
-          <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200">
-            <Activity className="text-white" size={24} />
+      <aside className="hidden lg:flex flex-col w-80 bg-slate-950 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/5">
+        <div className="p-10 flex items-center gap-5 border-b border-white/5">
+          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/20 animate-float">
+            <Activity className="text-white" size={28} />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tighter uppercase text-slate-900 leading-none">HEMO</h1>
-            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-blue-500 mt-1 block">Cockpit Live</span>
+            <h1 className="text-2xl font-display font-black tracking-tighter uppercase text-white leading-none">HEMO</h1>
+            <span className="text-[9px] font-display font-black uppercase tracking-[0.4em] text-blue-400 mt-1.5 block">Cockpit Intelligence</span>
           </div>
         </div>
 
-        <nav className="flex-1 p-6 space-y-8">
+        <nav className="flex-1 p-8 space-y-10">
           {groupedNavItems.map((group) => (
-            <div key={group.id} className="space-y-3">
+            <div key={group.id} className="space-y-4">
               <div className="flex items-center justify-between px-4">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{group.label}</span>
-                <div className="w-8 h-[1px] bg-slate-100" />
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.25em] text-slate-500">{group.label}</span>
+                <div className="w-10 h-[1px] bg-white/10" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {group.navItems.map((item) => {
                   const isActive = activeTab === item.id;
                   return (
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id as AppTab)}
-                      className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${isActive ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white text-slate-950 shadow-2xl shadow-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                     >
-                      <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'}`}>{item.icon}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
-                      {isActive && <motion.div layoutId="sidebar-active" className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                      <span className={`${isActive ? 'text-slate-950' : 'text-slate-500 group-hover:text-white transition-colors'}`}>{item.icon}</span>
+                      <span className="text-[11px] font-display font-bold uppercase tracking-widest">{item.label}</span>
+                      {isActive && (
+                        <motion.div 
+                          layoutId="sidebar-active" 
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" 
+                        />
+                      )}
                     </button>
                   );
                 })}
@@ -448,33 +453,33 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        <div className="p-6 border-t border-slate-50">
-          <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400">
-                <Clock size={14} />
+        <div className="p-8 border-t border-white/5">
+          <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-blue-400">
+                <Clock size={16} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Dernière MàJ</span>
-                <span className="text-[9px] font-bold text-slate-900">{getFullSyncTime()}</span>
+                <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-500">Dernière Synchronisation</span>
+                <span className="text-[10px] font-mono font-bold text-white">{getFullSyncTime()}</span>
               </div>
             </div>
-            <p className="text-[8px] font-medium text-slate-400 leading-relaxed">
-              Les données sont synchronisées en temps réel avec les serveurs nationaux.
+            <p className="text-[9px] font-medium text-slate-500 leading-relaxed">
+              Système de monitoring en temps réel connecté aux flux nationaux.
             </p>
           </div>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-[100] px-4 py-3 lg:px-6 lg:py-4 bg-[#f8fafc]/80 backdrop-blur-md">
-          <div className="max-w-full mx-auto glass-nav rounded-[2.5rem] px-6 py-4 flex items-center justify-between shadow-2xl min-h-[5rem]">
-            <div className="flex items-center gap-4 cursor-pointer lg:hidden" onClick={() => setActiveTab('pulse')}>
-               <div className="w-10 h-10 bg-white rounded-xl overflow-hidden border border-slate-100 flex items-center justify-center shadow-sm">
+        <header className="sticky top-0 z-[100] px-4 py-4 lg:px-10 lg:py-6">
+          <div className="max-w-full mx-auto glass-nav rounded-[3rem] px-8 py-5 flex items-center justify-between shadow-3xl min-h-[5.5rem]">
+            <div className="flex items-center gap-5 cursor-pointer lg:hidden" onClick={() => setActiveTab('pulse')}>
+               <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center shadow-sm">
                   <img 
                     src={branding.logo} 
                     alt="Logo" 
-                    className="w-full h-full object-contain p-1.5" 
+                    className="w-full h-full object-contain p-2" 
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
@@ -482,67 +487,96 @@ const App: React.FC = () => {
                   />
                </div>
                <div className="flex flex-col">
-                  <span className="font-black text-lg tracking-tighter uppercase text-slate-900 leading-none">HS</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                     <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                     <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">Live</span>
+                  <span className="font-display font-black text-xl tracking-tighter uppercase text-slate-950 leading-none">HEMO</span>
+                  <div className="flex items-center gap-2 mt-1.5">
+                     <div className={`w-2 h-2 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                     <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-400">Live Status</span>
                   </div>
                </div>
             </div>
 
             <div className="hidden lg:flex flex-col">
-              <h2 className="text-xl font-black uppercase tracking-tighter text-slate-900">
+              <h2 className="text-2xl font-display font-black uppercase tracking-tighter text-slate-950">
                 {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.navItems.find(i => i.id === activeTab)?.label || 'Cockpit'}
               </h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                {getRelativeSyncTime()} <span className="opacity-60">({getFullSyncTime()})</span>
-              </p>
+              <div className="flex items-center gap-3 mt-1.5">
+                <p className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-widest">
+                  {getRelativeSyncTime()}
+                </p>
+                <div className="w-1 h-1 rounded-full bg-slate-300" />
+                <p className="text-[11px] font-mono font-medium text-blue-500">
+                  {getFullSyncTime()}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button 
                 onClick={() => handleSync(true, true)}
                 disabled={syncStatus === 'syncing'}
-                className={`p-2.5 rounded-2xl transition-all active:scale-95 ${syncStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'}`}
+                className={`p-3 rounded-2xl transition-all active:scale-95 shadow-sm border ${syncStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin border-slate-200' : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-950 border-slate-200'}`}
                 title="Actualiser les données"
               >
-                <RefreshCw size={18} />
+                <RefreshCw size={20} />
               </button>
+              
               <button 
                 onClick={() => setIsCommandPaletteOpen(true)}
-                className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl text-slate-500 transition-all group"
+                className="hidden md:flex items-center gap-4 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 transition-all group shadow-sm"
               >
-                <Search size={16} className="group-hover:text-slate-900" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Rechercher...</span>
-                <div className="flex items-center gap-1 ml-4">
-                  <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">⌘</span>
-                  <span className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[8px] font-black text-slate-400">K</span>
+                <Search size={18} className="group-hover:text-slate-950 transition-colors" />
+                <span className="text-[11px] font-display font-black uppercase tracking-widest">Recherche Intelligente</span>
+                <div className="flex items-center gap-1.5 ml-6">
+                  <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-mono font-black text-slate-500">⌘</span>
+                  <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-mono font-black text-slate-500">K</span>
                 </div>
               </button>
+
+              <div className="h-10 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
+
               {currentUser ? (
-                <div className="flex items-center gap-3">
-                  <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4">
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-slate-900 leading-none">
+                <div className="flex items-center gap-4">
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-[11px] font-display font-black uppercase tracking-tight text-slate-950 leading-none">
                       {currentUser.prenoms} {currentUser.nom}
                     </span>
-                    <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500 mt-1">
+                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-blue-600 mt-1.5">
                       {currentUser.fonction}
                     </span>
                   </div>
-                  <button onClick={handleLogout} className="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:text-rose-600 border border-slate-200 transition-colors shadow-sm">
-                    <LogOut size={16} />
-                  </button>
+                  <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-xl relative group">
+                    <UserIcon size={20} />
+                    <button 
+                      onClick={handleLogout}
+                      className="absolute -top-2 -right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
+                    >
+                      <LogOut size={12} />
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <button onClick={() => setShowLogin(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Connexion</button>
+                <button 
+                  onClick={() => setShowLogin(true)} 
+                  className="px-8 py-3 bg-slate-950 text-white rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-95"
+                >
+                  Connexion
+                </button>
               )}
-              <NotificationManager />
-              <button onClick={() => setShowSettings(true)} className="p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-600 shadow-sm"><Settings size={16} /></button>
+              
+              <div className="hidden sm:flex items-center gap-3">
+                <NotificationManager />
+                <button 
+                  onClick={() => setShowSettings(true)} 
+                  className="p-3 bg-white rounded-2xl border border-slate-200 text-slate-600 shadow-sm hover:bg-slate-50 transition-all"
+                >
+                  <Settings size={20} />
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 pb-32 pb-safe">
+        <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-12 py-10 pb-32 pb-safe">
           <StockAlert data={fullData} user={currentUser} className="mb-8" />
           {loading && !fullData.dailyHistory.length ? (
             <div className="flex flex-col items-center justify-center py-48 gap-6">
@@ -637,7 +671,7 @@ const App: React.FC = () => {
         syncTime={getFullSyncTime()}
       />
       <InstallPrompt />
-      <nav className="lg:hidden fixed bottom-6 bottom-safe left-4 right-4 z-[100] glass-nav rounded-[2.5rem] p-2 flex justify-between items-center shadow-2xl gap-1 mb-safe">
+      <nav className="lg:hidden fixed bottom-8 bottom-safe left-6 right-6 z-[100] glass-nav rounded-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 mb-safe">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
              const isOpen = openGroup === group.id;
@@ -646,13 +680,13 @@ const App: React.FC = () => {
                <div key={group.id} className="flex-1">
                  <button 
                    onClick={() => setOpenGroup(isOpen ? null : group.id)}
-                   className={`w-full flex flex-col items-center gap-1 py-3 rounded-3xl transition-all duration-300 active:scale-90 relative ${isActive ? 'text-slate-900' : 'text-slate-400'}`}
+                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-slate-950' : 'text-slate-400'}`}
                  >
-                   <div className={`p-2 rounded-2xl transition-all ${isActive ? 'bg-slate-900 text-white shadow-lg' : 'bg-transparent'}`}>
+                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-slate-950 text-white shadow-xl' : 'bg-transparent'}`}>
                     {group.icon}
                    </div>
-                   <span className={`text-[7px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-60'}`}>{group.label}</span>
-                   {isActive && !isOpen && <motion.div layoutId="nav-indicator" className="absolute -bottom-1 w-1 h-1 rounded-full bg-slate-900" />}
+                   <span className={`text-[8px] font-display font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-40'}`}>{group.label}</span>
+                   {isActive && !isOpen && <motion.div layoutId="nav-indicator" className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-slate-950" />}
                  </button>
 
                  <AnimatePresence>

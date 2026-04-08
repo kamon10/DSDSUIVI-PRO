@@ -143,24 +143,24 @@ export const COLORS = {
 
 export const PRODUCT_COLORS: Record<string, string> = {
   "CGR": "#ef4444", 
-  "CGR ADULTE": "#ef4444",
-  "CGR NOURRISSON": "#f97316",
-  "CGR NOURRISON": "#f97316",
-  "CGR PEDIATRIQUE": "#22c55e",
+  "CGR ADULTE": "#E65100",
+  "CGR NOURRISSON": "#FB8C00",
+  "CGR NOURRISON": "#FB8C00",
+  "CGR PEDIATRIQUE": "#FFB74D",
   "CONCENTRE DE PLAQUETTES": "#3b82f6", 
-  "PLASMA A USAGE THERAPEUTIQUE": "#eab308",
+  "PLASMA A USAGE THERAPEUTIQUE": "#FFFF00",
   "AUTRES": "#94a3b8"
 };
 
 export const GROUP_COLORS: Record<string, string> = {
-  "O+": "#ef4444", 
-  "B+": "#8b5cf6", 
-  "A+": "#3b82f6", 
-  "AB+": "#22c55e", 
-  "AB-": "#eab308", 
-  "O-": "#94a3b8", 
-  "A-": "#06b6d4", 
-  "B-": "#4f46e5"  
+  "A+": "#FFC0CB", 
+  "A-": "#008000", 
+  "B+": "#f8fafc", 
+  "B-": "#FF0000", 
+  "O+": "#FFFF00", 
+  "O-": "#0000FF", 
+  "AB+": "#000000", 
+  "AB-": "#800080"  
 };
 
 export const DEFAULT_LINK_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN/pub?gid=508129500&single=true&output=csv";
