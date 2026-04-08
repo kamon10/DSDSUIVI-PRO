@@ -38,7 +38,7 @@ import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
@@ -66,10 +66,6 @@ const App: React.FC = () => {
   };
 
   const [sheetInput, setSheetInput] = useState(localStorage.getItem('gsheet_input_1') || DEFAULT_LINK_1);
-  const [sheetInputDist, setSheetInputDist] = useState(localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION);
-  const [sheetInputStock, setSheetInputStock] = useState(localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK);
-  const [sheetInputGts, setSheetInputGts] = useState(localStorage.getItem('gsheet_input_gts') || DEFAULT_LINK_GTS);
-  const [sheetInputDonor, setSheetInputDonor] = useState(localStorage.getItem('gsheet_input_donor') || "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih/pub?output=csv");
   const [showSettings, setShowSettings] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -79,50 +75,6 @@ const App: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-
-  // Migration for old spreadsheet ID and fixing truncated links
-  useEffect(() => {
-    const oldId = "2PACX-1vSouyEoRMmp2bAoGgMOtPvN4UfjUetBXnvQBVjPdfcvLfVl2dUNe185DbR2usGyK4UO38p2sb8lBkKN";
-    const newId = "2PACX-1vS9CBR20IhIgLrI4kKRDV9IDkdB5DzzntJlBFSVhdN7gA_6WOfC-f5xZ7IhCr4rQIdu5Bho3fgHGvih";
-    const fullDefault = `https://docs.google.com/spreadsheets/d/e/${newId}/pub?output=csv`;
-    
-    const checkAndUpdate = (key: string, current: string, setter: (v: string) => void) => {
-      let updated = current;
-      let needsUpdate = false;
-
-      // 1. Migration from old ID
-      if (current.includes(oldId)) {
-        // Strip GID because it's from the old sheet and won't work on the new one
-        updated = fullDefault;
-        needsUpdate = true;
-      }
-
-      // 2. Fix truncated links (if they start with the new ID but are too short)
-      if (updated.includes("2PACX-1vS9CBR20IhIg") && updated.length < 100) {
-        updated = fullDefault;
-        needsUpdate = true;
-      }
-
-      if (needsUpdate) {
-        setter(updated);
-        localStorage.setItem(key, updated);
-        return true;
-      }
-      return false;
-    };
-    
-    let changed = false;
-    changed = checkAndUpdate('gsheet_input_1', sheetInput, setSheetInput) || changed;
-    changed = checkAndUpdate('gsheet_input_dist', sheetInputDist, setSheetInputDist) || changed;
-    changed = checkAndUpdate('gsheet_input_stock', sheetInputStock, setSheetInputStock) || changed;
-    changed = checkAndUpdate('gsheet_input_gts', sheetInputGts, setSheetInputGts) || changed;
-    changed = checkAndUpdate('gsheet_input_donor', sheetInputDonor, setSheetInputDonor) || changed;
-    
-    if (changed) {
-      console.log("[Migration] Google Sheets links updated/fixed.");
-      handleSync(true, true);
-    }
-  }, []);
 
   const scriptUrl = DEFAULT_SCRIPT_URL;
   const isSyncingRef = useRef(false);
@@ -156,10 +108,6 @@ const App: React.FC = () => {
     }
 
     const currentInput = sheetInputRef.current;
-    const currentDist = localStorage.getItem('gsheet_input_dist') || DEFAULT_LINK_DISTRIBUTION;
-    const currentStock = localStorage.getItem('gsheet_input_stock') || DEFAULT_LINK_STOCK;
-    const currentGts = localStorage.getItem('gsheet_input_gts') || DEFAULT_LINK_GTS;
-    
     isSyncingRef.current = true;
     
     if (!isSilent) setLoading(true);
@@ -173,14 +121,7 @@ const App: React.FC = () => {
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
-      const dataResult = await fetchSheetData(
-        currentInput.trim(), 
-        force, 
-        currentDist.trim(), 
-        dynSitesResult || [], 
-        currentStock.trim(), 
-        currentGts.trim()
-      );
+      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS);
       
       if (dataResult) {
         setFullData(dataResult);
@@ -606,6 +547,29 @@ const App: React.FC = () => {
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 pb-32 pb-safe">
           <StockAlert data={fullData} user={currentUser} className="mb-8" />
+          
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-center gap-4 text-rose-600 shadow-sm"
+            >
+              <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center shrink-0">
+                <AlertCircle size={24} />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-black uppercase tracking-tight mb-1">Erreur de Synchronisation</h4>
+                <p className="text-xs font-bold opacity-80 leading-relaxed">{error}</p>
+              </div>
+              <button 
+                onClick={() => handleSync(false, true)}
+                className="px-6 py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-rose-200 active:scale-95 transition-all"
+              >
+                Réessayer
+              </button>
+            </motion.div>
+          )}
+
           {loading && !fullData.dailyHistory.length ? (
             <div className="flex flex-col items-center justify-center py-48 gap-6">
                <Activity size={60} className="text-blue-600 animate-pulse" />
@@ -650,7 +614,7 @@ const App: React.FC = () => {
                     {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                     {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                     {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'donor' && <DonorManagement csvUrl={sheetInputDonor} />}
+                    {activeTab === 'donor' && <DonorManagement />}
                     {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                     {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                     {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
@@ -798,29 +762,28 @@ const App: React.FC = () => {
              </div>
              
              <div className="space-y-4 mb-8">
-               <div>
+               <div className="relative">
                  <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source Collecte (CSV)</label>
-                 <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
+                 <div className="flex gap-2">
+                   <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} className="flex-1 bg-slate-50 border rounded-2xl px-6 py-4 text-xs font-bold outline-none" />
+                   <button 
+                     onClick={() => setSheetInput(DEFAULT_LINK_1)}
+                     className="px-4 bg-slate-100 text-slate-400 rounded-2xl hover:bg-slate-200 transition-colors"
+                     title="Réinitialiser"
+                   >
+                     <RotateCcw size={18} />
+                   </button>
+                 </div>
                </div>
                
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source BASE (Distribution)</label>
-                 <input value={sheetInputDist} onChange={(e) => setSheetInputDist(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source BASE (Distribution) - Lecture seule</label>
+                 <input value={DEFAULT_LINK_DISTRIBUTION} readOnly className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none opacity-60 cursor-not-allowed" />
                </div>
 
                <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source STOCK (Stock)</label>
-                 <input value={sheetInputStock} onChange={(e) => setSheetInputStock(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
-               </div>
-
-               <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source GTS (GTS)</label>
-                 <input value={sheetInputGts} onChange={(e) => setSheetInputGts(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
-               </div>
-
-               <div>
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source DONNEURS (Gestion Donneur)</label>
-                 <input value={sheetInputDonor} onChange={(e) => setSheetInputDonor(e.target.value)} className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none" />
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2 mb-1 block">Source STOCK (Stock) - Lecture seule</label>
+                 <input value={DEFAULT_LINK_STOCK} readOnly className="w-full bg-slate-50 border rounded-2xl px-6 py-4 text-[10px] font-bold outline-none opacity-60 cursor-not-allowed" />
                </div>
              </div>
 
@@ -829,10 +792,6 @@ const App: React.FC = () => {
                  <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-slate-100 rounded-xl font-black text-[10px] uppercase">Annuler</button>
                  <button onClick={() => { 
                    localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
-                   localStorage.setItem('gsheet_input_dist', sheetInputDist.trim());
-                   localStorage.setItem('gsheet_input_stock', sheetInputStock.trim());
-                   localStorage.setItem('gsheet_input_gts', sheetInputGts.trim());
-                   localStorage.setItem('gsheet_input_donor', sheetInputDonor.trim());
                    setShowSettings(false); 
                    handleSync(false, true); 
                  }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
@@ -842,8 +801,6 @@ const App: React.FC = () => {
                    localStorage.removeItem('gsheet_input_1');
                    localStorage.removeItem('gsheet_input_dist');
                    localStorage.removeItem('gsheet_input_stock');
-                   localStorage.removeItem('gsheet_input_gts');
-                   localStorage.removeItem('gsheet_input_donor');
                    window.location.reload();
                  }}
                  className="w-full py-3 border-2 border-dashed border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 rounded-xl font-black text-[9px] uppercase transition-all"

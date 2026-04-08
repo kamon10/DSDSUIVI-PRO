@@ -48,8 +48,8 @@ const app = express();
 const PORT = 3000;
 
 // VAPID keys should be generated and stored securely
-let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
-let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
+let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BPLjXKH2h_m6gC9ZBoGc0fOzPryzRCVg2qp1lcUoXv0AZHmkFsnvkuieqivubuzKaxkF8Hyk9-_sBQgmKTuPJHQ";
+let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "oC3XvXYuTRaWpNXaF3i3Mu-RLCaKRKgwICOS3URD_o0";
 
 const vapidEmail = process.env.VAPID_EMAIL || "mailto:kadioamon@gmail.com";
 const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('http')) 
@@ -96,8 +96,8 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.get("/api/proxy", async (req, res) => {
-  const rawUrl = req.query.url;
+app.all("/api/proxy", async (req, res) => {
+  const rawUrl = req.method === 'POST' ? req.body.url : req.query.url;
   const targetUrl = Array.isArray(rawUrl) ? (rawUrl[0] as string) : (rawUrl as string);
   
   if (!targetUrl) {
@@ -108,7 +108,7 @@ app.get("/api/proxy", async (req, res) => {
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
-    let currentTargetUrl = targetUrl;
+    let currentTargetUrl = targetUrl.trim();
     let headers: Record<string, string> = { 
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       'Accept': '*/*',
@@ -119,17 +119,22 @@ app.get("/api/proxy", async (req, res) => {
     // Strategy adjustment based on attempt
     if (i === 1) {
       // Attempt 2: Strip cache-busting
-      currentTargetUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
-      console.log(`[Proxy] Attempt 2: Stripping cache-busting -> ${currentTargetUrl.substring(0, 100)}...`);
+      currentTargetUrl = currentTargetUrl.split('&_t=')[0].split('?_t=')[0];
+      console.log(`[Proxy] Attempt 2: Stripping cache-busting -> ${currentTargetUrl}`);
     } else if (i === 2) {
-      // Attempt 3: Minimal headers + No cache-busting
-      currentTargetUrl = targetUrl.split('&_t=')[0].split('?_t=')[0];
-      headers = { 'User-Agent': 'Mozilla/5.0' };
-      console.log(`[Proxy] Attempt 3: Minimal headers + No cache-busting`);
+      // Attempt 3: Strip GID if it's a Google Sheets URL
+      if (currentTargetUrl.includes('docs.google.com') && currentTargetUrl.includes('gid=')) {
+        currentTargetUrl = currentTargetUrl.replace(/gid=\d+&?/, '').replace(/\?&/, '?').replace(/&$/, '');
+        console.log(`[Proxy] Attempt 3: Stripping GID -> ${currentTargetUrl}`);
+      } else {
+        // Fallback for non-google URLs: Minimal headers
+        headers = { 'User-Agent': 'Mozilla/5.0' };
+        console.log(`[Proxy] Attempt 3: Minimal headers`);
+      }
     }
 
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${currentTargetUrl.substring(0, 100)}...`);
+      console.log(`[Proxy] Attempt ${i + 1} for ${currentTargetUrl}`);
       
       const response = await fetch(currentTargetUrl, {
         headers,
@@ -138,19 +143,28 @@ app.get("/api/proxy", async (req, res) => {
       
       if (response.ok) {
         const text = await response.text();
-        if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-          console.warn(`[Proxy] Received HTML instead of CSV from ${currentTargetUrl.substring(0, 60)}...`);
-          lastError = new Error("Received HTML instead of CSV (Google might be asking for login or blocking)");
+        const trimmedText = text.trim();
+        if (trimmedText.startsWith("<!DOCTYPE") || trimmedText.startsWith("<html")) {
+          console.warn(`[Proxy] Received HTML instead of CSV from ${currentTargetUrl}`);
+          lastError = new Error("Le lien Google Sheets renvoie une page HTML au lieu d'un CSV. Vérifiez que le document est bien 'Publié sur le Web' au format CSV et que le GID est correct.");
           continue;
         }
         
         const sizeMB = (text.length / (1024 * 1024)).toFixed(2);
-        console.log(`[Proxy] Success fetching ${currentTargetUrl.substring(0, 60)}... (${sizeMB} MB)`);
+        console.log(`[Proxy] Success fetching ${currentTargetUrl} (${sizeMB} MB)`);
         res.set('Content-Type', 'text/plain; charset=utf-8');
         return res.send(text);
       } else {
-        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${currentTargetUrl.substring(0, 100)}`);
-        lastError = new Error(`Status ${response.status}: ${response.statusText}`);
+        const errorBody = await response.text().catch(() => "No error body");
+        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${currentTargetUrl}. Body: ${errorBody.substring(0, 200)}`);
+        
+        if (response.status === 400) {
+          lastError = new Error(`Erreur 400 (Bad Request). Cela indique souvent un GID invalide ou un lien mal formé. Vérifiez votre URL.`);
+        } else if (response.status === 401 || response.status === 403) {
+          lastError = new Error(`Erreur ${response.status} (Accès refusé). Vérifiez que le document est publié sur le web.`);
+        } else {
+          lastError = new Error(`Status ${response.status}: ${response.statusText}. Body: ${errorBody.substring(0, 100)}`);
+        }
       }
     } catch (err: any) {
       lastError = err;
