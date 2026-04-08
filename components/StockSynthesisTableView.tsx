@@ -104,6 +104,7 @@ export const StockSynthesisTableView: React.FC<StockSynthesisTableViewProps> = (
       // Subtotal Abidjan Ville
       const abidjanVilleSites = [
         "CRTS DE TREICHVILLE",
+        "CDTS DE BINGERVILLE",
         "SP HG PORT BOUET",
         "SP FSU ABOBO BAOULE",
         "SP HG ANYAMA",
