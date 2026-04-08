@@ -111,15 +111,16 @@ app.get("/api/proxy", async (req, res) => {
 
   for (let i = 0; i <= maxRetries; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout pour Vercel
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout (un peu moins que le proxy Antigravity)
 
     try {
-      console.log(`[Proxy] Attempt ${i + 1} for ${targetUrl.substring(0, 60)}...`);
-      const response = await fetch(targetUrl, {
+      const decodedUrl = decodeURIComponent(targetUrl);
+      console.log(`[Proxy] Attempt ${i + 1} for ${decodedUrl.substring(0, 80)}...`);
+      
+      const response = await fetch(decodedUrl, {
         headers: { 
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': 'text/csv,text/plain,application/json,*/*',
-          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept': '*/*',
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         },
@@ -130,23 +131,27 @@ app.get("/api/proxy", async (req, res) => {
       if (response.ok) {
         const text = await response.text();
         if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-          console.warn(`[Proxy] Received HTML instead of CSV from ${targetUrl.substring(0, 60)}...`);
-          // On continue le retry si c'est du HTML (peut-être un blocage temporaire)
-          lastError = new Error("Received HTML instead of CSV");
+          console.warn(`[Proxy] Received HTML instead of CSV from ${decodedUrl.substring(0, 60)}...`);
+          lastError = new Error("Received HTML instead of CSV (possible redirect or block)");
           continue;
         }
         
-        console.log(`[Proxy] Success fetching ${targetUrl.substring(0, 60)}... (${text.length} bytes)`);
-        res.set('Content-Type', 'text/plain');
+        console.log(`[Proxy] Success fetching ${decodedUrl.substring(0, 60)}... (${text.length} bytes)`);
+        res.set('Content-Type', 'text/plain; charset=utf-8');
         return res.send(text);
       } else {
-        console.error(`[Proxy] Error status ${response.status} for ${targetUrl.substring(0, 60)}`);
+        const errorText = await response.text().catch(() => "");
+        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${decodedUrl.substring(0, 60)}. Body: ${errorText.substring(0, 100)}`);
         lastError = new Error(`Status ${response.status}: ${response.statusText}`);
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
       lastError = err;
-      console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
+      if (err.name === 'AbortError') {
+        console.error(`[Proxy] Timeout on attempt ${i + 1} for ${targetUrl.substring(0, 60)}`);
+      } else {
+        console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
+      }
     }
 
     if (i < maxRetries) {
