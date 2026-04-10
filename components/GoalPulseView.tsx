@@ -29,22 +29,24 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
 
     const monthlyRealized = data.gts
       .filter(r => {
+        if (!r || !r.date) return false;
         const parts = r.date.split('/');
         if (parts.length !== 3) return false;
         const m = parseInt(parts[1]);
         const y = parseInt(parts[2]);
         return m === targetMonth + 1 && y === targetYear;
       })
-      .reduce((acc, r) => acc + (r.total || 0), 0);
+      .reduce((acc, r) => acc + (Number(r.total) || 0), 0);
 
     const annualRealized = data.gts
       .filter(r => {
+        if (!r || !r.date) return false;
         const parts = r.date.split('/');
         if (parts.length !== 3) return false;
         const y = parseInt(parts[2]);
         return y === targetYear;
       })
-      .reduce((acc, r) => acc + (r.total || 0), 0);
+      .reduce((acc, r) => acc + (Number(r.total) || 0), 0);
 
     return {
       monthly: {
@@ -126,8 +128,13 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
   };
 
   const renderPulseCard = (title: string, stats: any, type: 'prel' | 'gts' | 'ratio', mode: 'monthly' | 'annual') => {
+    if (!stats) return null;
+    const realized = Number(stats.realized) || 0;
+    const objective = Number(stats.objective) || 0;
+    const percentage = Number(stats.percentage) || 0;
+
     const cardId = `pulse-card-${type}-${mode}`;
-    const isSuccess = stats.percentage >= 100;
+    const isSuccess = percentage >= 100;
     const accentColor = type === 'prel' 
       ? (mode === 'monthly' ? 'rgba(249, 115, 22, 0.85)' : 'rgba(16, 185, 129, 0.85)')
       : type === 'gts'
@@ -196,7 +203,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
               className="text-[64px] font-black leading-none tracking-tighter" 
               style={{ WebkitTextStroke: '1px white', color: 'transparent' }}
             >
-              {stats.realized.toLocaleString()}
+              {realized.toLocaleString()}
             </motion.div>
             
             <p className="text-[11px] font-black uppercase tracking-widest my-1">SUR</p>
@@ -207,7 +214,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
               transition={{ delay: 0.3 }}
               className="text-[44px] font-black leading-none tracking-tighter"
             >
-              {stats.objective.toLocaleString()}
+              {objective.toLocaleString()}
             </motion.div>
 
             <motion.div 
@@ -216,7 +223,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
               transition={{ delay: 0.5 }}
               className="text-2xl font-black mt-1"
             >
-              {Math.round(stats.percentage)}%
+              {Math.round(percentage)}%
             </motion.div>
           </div>
 
@@ -281,7 +288,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Prélèvements Mensuels */}
           {renderPulseCard(
-            `PRÉLÈVEMENTS (DECLARATIONS) ${data.month.toUpperCase()}`,
+            `PRÉLÈVEMENTS (DECLARATIONS) ${(data.month || '').toUpperCase()}`,
             data.monthly,
             'prel',
             'monthly'
@@ -289,7 +296,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
           
           {/* GTS Mensuels */}
           {renderPulseCard(
-            `ENCODAGE GTS ${data.month.toUpperCase()}`,
+            `ENCODAGE GTS ${(data.month || '').toUpperCase()}`,
             gtsStats.monthly,
             'gts',
             'monthly'
@@ -297,7 +304,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
 
           {/* Taux Encodage Mensuel */}
           {renderPulseCard(
-            `TAUX ENCODAGE ${data.month.toUpperCase()}`,
+            `TAUX ENCODAGE ${(data.month || '').toUpperCase()}`,
             ratioStats.monthly,
             'ratio',
             'monthly'
@@ -305,7 +312,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
 
           {/* Prélèvements Annuels */}
           {renderPulseCard(
-            `PRÉLÈVEMENTS (DECLARATIONS) ANNUELS ${data.year}`,
+            `PRÉLÈVEMENTS (DECLARATIONS) ANNUELS ${data.year || ''}`,
             data.annual,
             'prel',
             'annual'
@@ -313,7 +320,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
 
           {/* GTS Annuels */}
           {renderPulseCard(
-            `ENCODAGE GTS ANNUELS ${data.year}`,
+            `ENCODAGE GTS ANNUELS ${data.year || ''}`,
             gtsStats.annual,
             'gts',
             'annual'
@@ -321,7 +328,7 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
 
           {/* Taux Encodage Annuel */}
           {renderPulseCard(
-            `TAUX ENCODAGE ANNUEL ${data.year}`,
+            `TAUX ENCODAGE ANNUEL ${data.year || ''}`,
             ratioStats.annual,
             'ratio',
             'annual'
