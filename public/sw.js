@@ -31,9 +31,26 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Stratégie Stale-While-Revalidate pour les assets
-  if (event.request.mode === 'navigate' || 
-      event.request.destination === 'style' || 
+  // Stratégie Network-First pour le document principal (index.html)
+  // Cela évite de servir un HTML obsolète qui pointe vers des assets (JS/CSS) supprimés
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Stratégie Stale-While-Revalidate pour les autres assets
+  if (event.request.destination === 'style' || 
       event.request.destination === 'script' || 
       event.request.destination === 'image' || 
       event.request.destination === 'font') {
@@ -43,6 +60,9 @@ self.addEventListener('fetch', (event) => {
           const fetchedResponse = fetch(event.request).then((networkResponse) => {
             cache.put(event.request, networkResponse.clone());
             return networkResponse;
+          }).catch(() => {
+            // En cas d'échec réseau, on ne fait rien de spécial, 
+            // le cachedResponse sera retourné s'il existe
           });
           return cachedResponse || fetchedResponse;
         });
