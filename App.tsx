@@ -1,49 +1,63 @@
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS, DEFAULT_SCRIPT_URL, SITES_DATA, WORKING_DAYS_YEAR, getSiteByInput } from './constants.tsx';
-import { VisualDashboard } from './components/VisualDashboard.tsx';
-import { GoalPulseView } from './components/GoalPulseView.tsx';
-import { PerformanceView } from './components/PerformanceView.tsx';
-import { RecapView } from './components/RecapView.tsx';
-import { PulsePerformance } from './components/PulsePerformance.tsx';
-import { EvolutionView } from './components/EvolutionView.tsx';
-import { SummaryView } from './components/SummaryView.tsx';
-import { WeeklyView } from './components/WeeklyView.tsx';
-import { SiteSynthesisView } from './components/SiteSynthesisView.tsx';
-import { DataEntryForm } from './components/DataEntryForm.tsx';
-import { ContactsView } from './components/ContactsView.tsx';
-import { DistributionMapView } from './components/DistributionMapView.tsx';
+
+// Lazy load components for better performance
+const VisualDashboard = lazy(() => import('./components/VisualDashboard.tsx').then(m => ({ default: m.VisualDashboard })));
+const GoalPulseView = lazy(() => import('./components/GoalPulseView.tsx').then(m => ({ default: m.GoalPulseView })));
+const PerformanceView = lazy(() => import('./components/PerformanceView.tsx').then(m => ({ default: m.PerformanceView })));
+const RecapView = lazy(() => import('./components/RecapView.tsx').then(m => ({ default: m.RecapView })));
+const PulsePerformance = lazy(() => import('./components/PulsePerformance.tsx').then(m => ({ default: m.PulsePerformance })));
+const EvolutionView = lazy(() => import('./components/EvolutionView.tsx').then(m => ({ default: m.EvolutionView })));
+const SummaryView = lazy(() => import('./components/SummaryView.tsx').then(m => ({ default: m.SummaryView })));
+const WeeklyView = lazy(() => import('./components/WeeklyView.tsx').then(m => ({ default: m.WeeklyView })));
+const SiteSynthesisView = lazy(() => import('./components/SiteSynthesisView.tsx').then(m => ({ default: m.SiteSynthesisView })));
+const DataEntryForm = lazy(() => import('./components/DataEntryForm.tsx').then(m => ({ default: m.DataEntryForm })));
+const ContactsView = lazy(() => import('./components/ContactsView.tsx').then(m => ({ default: m.ContactsView })));
+const DistributionMapView = lazy(() => import('./components/DistributionMapView.tsx').then(m => ({ default: m.DistributionMapView })));
+const AdminUserManagement = lazy(() => import('./components/AdminUserManagement.tsx').then(m => ({ default: m.AdminUserManagement })));
+const DetailedHistoryView = lazy(() => import('./components/DetailedHistoryView.tsx').then(m => ({ default: m.DetailedHistoryView })));
+const StockView = lazy(() => import('./components/StockView.tsx').then(m => ({ default: m.StockView })));
+const StockSynthesisView = lazy(() => import('./components/StockSynthesisView.tsx').then(m => ({ default: m.StockSynthesisView })));
+const StockSummaryView = lazy(() => import('./components/StockSummaryView.tsx').then(m => ({ default: m.StockSummaryView })));
+const StockDetailedSynthesisView = lazy(() => import('./components/StockDetailedSynthesisView.tsx').then(m => ({ default: m.StockDetailedSynthesisView })));
+const StockAnalysisFocusView = lazy(() => import('./components/StockAnalysisFocusView.tsx').then(m => ({ default: m.StockAnalysisFocusView })));
+const DistributionDetailedSynthesisView = lazy(() => import('./components/DistributionDetailedSynthesisView.tsx').then(m => ({ default: m.DistributionDetailedSynthesisView })));
+const StockPlanningView = lazy(() => import('./components/StockPlanningView.tsx').then(m => ({ default: m.StockPlanningView })));
+const GlobalSynthesisReportView = lazy(() => import('./components/GlobalSynthesisReportView.tsx').then(m => ({ default: m.GlobalSynthesisReportView })));
+const DistributionStockView = lazy(() => import('./components/DistributionStockView.tsx').then(m => ({ default: m.DistributionStockView })));
+const CapacityPlanningView = lazy(() => import('./components/CapacityPlanningView.tsx').then(m => ({ default: m.CapacityPlanningView })));
+const GtsView = lazy(() => import('./components/GtsView.tsx').then(m => ({ default: m.GtsView })));
+const GtsSynthesis = lazy(() => import('./components/GtsSynthesis.tsx').then(m => ({ default: m.GtsSynthesis })));
+const GtsComparisonView = lazy(() => import('./components/GtsComparisonView.tsx').then(m => ({ default: m.GtsComparisonView })));
+const CollectionPlanningView = lazy(() => import('./components/CollectionPlanningView.tsx').then(m => ({ default: m.CollectionPlanningView })));
+const EbookView = lazy(() => import('./components/EbookView.tsx').then(m => ({ default: m.EbookView })));
+const PersonnelManagement = lazy(() => import('./components/PersonnelManagement.tsx').then(m => ({ default: m.PersonnelManagement })));
+
 import { LoginView } from './components/LoginView.tsx';
-import { AdminUserManagement } from './components/AdminUserManagement.tsx';
-import { DetailedHistoryView } from './components/DetailedHistoryView.tsx';
-import { StockView } from './components/StockView.tsx';
-import { StockSynthesisView } from './components/StockSynthesisView.tsx';
-import { StockSummaryView } from './components/StockSummaryView.tsx';
-import { StockDetailedSynthesisView } from './components/StockDetailedSynthesisView.tsx';
-import { StockAnalysisFocusView } from './components/StockAnalysisFocusView.tsx';
-import { DistributionDetailedSynthesisView } from './components/DistributionDetailedSynthesisView.tsx';
-import { StockPlanningView } from './components/StockPlanningView.tsx';
-import { GlobalSynthesisReportView } from './components/GlobalSynthesisReportView.tsx';
-import { DistributionStockView } from './components/DistributionStockView.tsx';
-import { CapacityPlanningView } from './components/CapacityPlanningView.tsx';
-import { GtsView } from './components/GtsView.tsx';
-import { GtsSynthesis } from './components/GtsSynthesis.tsx';
-import { GtsComparisonView } from './components/GtsComparisonView.tsx';
-import { CollectionPlanningView } from './components/CollectionPlanningView.tsx';
-import { EbookView } from './components/EbookView.tsx';
-import { PersonnelManagement } from './components/PersonnelManagement.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
 import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { SyncStatus } from './components/SyncStatus.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
 const App: React.FC = () => {
-  const [fullData, setFullData] = useState<DashboardData>(INITIAL_DATA);
+  const [fullData, setFullData] = useState<DashboardData>(() => {
+    const saved = localStorage.getItem('hemo_full_data');
+    if (!saved) return INITIAL_DATA;
+    try {
+      const parsed = JSON.parse(saved);
+      // On s'assure que les dates sont bien des objets Date si nécessaire, 
+      // mais ici DashboardData semble n'avoir que des strings/numbers
+      return parsed;
+    } catch (e) {
+      return INITIAL_DATA;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('pulse'); 
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -120,10 +134,8 @@ const App: React.FC = () => {
     setSyncStatus('syncing');
 
     try {
-      const [dynSitesResult, brandingResult] = await Promise.all([
-        fetchDynamicSites(DEFAULT_SCRIPT_URL),
-        fetchBrandingConfig(DEFAULT_SCRIPT_URL)
-      ]);
+      const dynSitesResult = await fetchDynamicSites(DEFAULT_SCRIPT_URL);
+      const brandingResult = await fetchBrandingConfig(DEFAULT_SCRIPT_URL);
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
       
@@ -132,6 +144,7 @@ const App: React.FC = () => {
       if (dataResult) {
         setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
+        localStorage.setItem('hemo_full_data', JSON.stringify(dataResult));
       }
       
       if (brandingResult) {
@@ -361,11 +374,12 @@ const App: React.FC = () => {
 
   const groupedNavItems = useMemo(() => {
     const groups = [
-      { id: 'prelevement', label: 'Prélèvement', icon: <Activity size={18} />, items: ['pulse', 'goal-pulse', 'summary', 'cockpit', 'map', 'entry', 'recap', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
+      { id: 'pilotage', label: 'Pilotage & Monitoring', icon: <LayoutDashboard size={18} />, items: ['pulse', 'goal-pulse', 'summary', 'cockpit', 'map'] },
+      { id: 'prelevement', label: 'Collecte & Prélèvement', icon: <Activity size={18} />, items: ['entry', 'recap', 'collection-planning', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
-      { id: 'gts', label: 'GTS & Planning', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison', 'collection-planning'] },
-      { id: 'stock', label: 'Stock', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'administration', label: 'Administration', icon: <ShieldCheck size={18} />, items: ['administration', 'personnel', 'ebook', 'global-report', 'contact'] }
+      { id: 'gts', label: 'GTS', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison'] },
+      { id: 'stock', label: 'Gestion des Stocks', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
+      { id: 'administration', label: 'Rapports & Admin', icon: <ShieldCheck size={18} />, items: ['ebook', 'global-report', 'contact', 'personnel', 'administration'] }
     ];
 
     return groups.map(group => ({
@@ -420,12 +434,11 @@ const App: React.FC = () => {
       {/* SIDEBAR DESKTOP */}
       <aside className="hidden lg:flex flex-col w-80 bg-slate-950 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/5">
         <div className="p-10 flex items-center gap-5 border-b border-white/5">
-          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/20 animate-float">
+          <div className="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-float">
             <Activity className="text-white" size={28} />
           </div>
           <div>
-            <h1 className="text-2xl font-display font-black tracking-tighter uppercase text-white leading-none">HEMO</h1>
-            <span className="text-[9px] font-display font-black uppercase tracking-[0.4em] text-blue-400 mt-1.5 block">Cockpit Intelligence</span>
+            <h1 className="text-2xl font-display font-black tracking-tighter uppercase text-white leading-none">HEMO-STATS</h1>
           </div>
         </div>
 
@@ -450,7 +463,7 @@ const App: React.FC = () => {
                       {isActive && (
                         <motion.div 
                           layoutId="sidebar-active" 
-                          className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" 
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
                         />
                       )}
                     </button>
@@ -464,7 +477,7 @@ const App: React.FC = () => {
         <div className="p-8 border-t border-white/5">
           <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 backdrop-blur-sm">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-blue-400">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-orange-400">
                 <Clock size={16} />
               </div>
               <div className="flex flex-col">
@@ -495,9 +508,9 @@ const App: React.FC = () => {
                   />
                </div>
                <div className="flex flex-col">
-                  <span className="font-display font-black text-xl tracking-tighter uppercase text-slate-950 leading-none">HEMO</span>
+                  <span className="font-display font-black text-xl tracking-tighter uppercase text-slate-950 leading-none">HEMO-STATS</span>
                   <div className="flex items-center gap-2 mt-1.5">
-                     <div className={`w-2 h-2 rounded-full ${syncStatus === 'syncing' ? 'bg-blue-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                     <div className={`w-2 h-2 rounded-full ${syncStatus === 'syncing' ? 'bg-orange-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
                      <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-400">Live Status</span>
                   </div>
                </div>
@@ -512,7 +525,7 @@ const App: React.FC = () => {
                   {getRelativeSyncTime()}
                 </p>
                 <div className="w-1 h-1 rounded-full bg-slate-300" />
-                <p className="text-[11px] font-mono font-medium text-blue-500">
+                <p className="text-[11px] font-mono font-medium text-orange-500">
                   {getFullSyncTime()}
                 </p>
               </div>
@@ -548,7 +561,7 @@ const App: React.FC = () => {
                     <span className="text-[11px] font-display font-black uppercase tracking-tight text-slate-950 leading-none">
                       {currentUser.prenoms} {currentUser.nom}
                     </span>
-                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-blue-600 mt-1.5">
+                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-orange-600 mt-1.5">
                       {currentUser.fonction}
                     </span>
                   </div>
@@ -584,60 +597,67 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-12 py-10 pb-32 pb-safe">
+        <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-12 py-6 lg:py-10 pb-32 pb-safe">
           <StockAlert data={fullData} user={currentUser} className="mb-8" />
           {loading && !fullData.dailyHistory.length ? (
             <div className="flex flex-col items-center justify-center py-48 gap-6">
-               <Activity size={60} className="text-blue-600 animate-pulse" />
+               <Activity size={60} className="text-orange-600 animate-pulse" />
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
             </div>
           ) : (
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="page-transition"
-              >
-                {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} setActiveTab={setActiveTab} />}
-                {activeTab === 'goal-pulse' && <GoalPulseView data={filteredData} branding={branding} />}
-                {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
-                {currentUser && (
-                  <>
-                    {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
-                    {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} onCloudSyncChange={setIsCloudSyncing} />}
-                    {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
-                    {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
-                    {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
-                    {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
-                    {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
-                    {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
-                    {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
-                    {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
-                    {activeTab === 'gts-synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
-                    {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
-                    {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
-                    {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
-                    {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
-                    {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                    {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
-                    {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
-                    {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
-                    {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} user={currentUser} />}
-                  </>
-                )}
-              </motion.div>
-            </AnimatePresence>
+            <Suspense fallback={
+              <div className="flex flex-col items-center justify-center py-48 gap-6">
+                <Loader2 size={48} className="text-orange-600 animate-spin" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement du module...</p>
+              </div>
+            }>
+              <AnimatePresence mode="wait">
+                <motion.div 
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="page-transition"
+                >
+                  {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} setActiveTab={setActiveTab} />}
+                  {activeTab === 'goal-pulse' && <GoalPulseView data={filteredData} branding={branding} />}
+                  {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
+                  {currentUser && (
+                    <>
+                      {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
+                      {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} onCloudSyncChange={setIsCloudSyncing} />}
+                      {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
+                      {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
+                      {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
+                      {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
+                      {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
+                      {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
+                      {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
+                      {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
+                      {activeTab === 'gts-synthesis' && <GtsSynthesis data={filteredData} branding={branding} />}
+                      {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
+                      {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
+                      {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
+                      {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
+                      {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                      {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
+                      {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
+                      {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
+                      {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
+                      {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
+                      {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
+                      {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} user={currentUser} />}
+                    </>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </Suspense>
           )}
         </main>
 
@@ -649,7 +669,7 @@ const App: React.FC = () => {
             onClick={() => setIsCommandPaletteOpen(true)}
             className="w-14 h-14 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
           >
-            <Search size={24} className="group-hover:text-blue-600 transition-colors" />
+            <Search size={24} className="group-hover:text-orange-600 transition-colors" />
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -679,7 +699,7 @@ const App: React.FC = () => {
         syncTime={getFullSyncTime()}
       />
       <InstallPrompt />
-      <nav className="lg:hidden fixed bottom-8 bottom-safe left-6 right-6 z-[100] glass-nav rounded-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 mb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] glass-nav rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
              const isOpen = openGroup === group.id;
@@ -725,7 +745,7 @@ const App: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.navItems.length} Options</p>
                                    <div className="w-1 h-1 rounded-full bg-slate-200" />
-                                   <p className="text-[8px] font-bold text-blue-500 uppercase tracking-widest">MàJ: {getFullSyncTime()}</p>
+                                   <p className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">MàJ: {getFullSyncTime()}</p>
                                  </div>
                               </div>
                             </div>
@@ -748,7 +768,7 @@ const App: React.FC = () => {
                                  <span className="text-xs font-black uppercase tracking-widest">{item.label}</span>
                                </div>
                                {activeTab === item.id ? (
-                                 <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.5)]" />
+                                 <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.5)]" />
                                ) : (
                                  <ArrowRight size={16} className="text-slate-300" />
                                )}
@@ -772,7 +792,7 @@ const App: React.FC = () => {
                 <h3 className="text-xl font-black uppercase">Paramètres</h3>
                 <div className="flex flex-col items-end">
                   <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Dernière Synchronisation</span>
-                  <span className="text-[10px] font-bold text-blue-600">{getFullSyncTime()}</span>
+                  <span className="text-[10px] font-bold text-orange-600">{getFullSyncTime()}</span>
                 </div>
              </div>
              

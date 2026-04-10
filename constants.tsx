@@ -129,15 +129,15 @@ export const INITIAL_DATA: DashboardData = {
 
 export const COLORS = {
   blue: '#3b82f6', 
-  green: '#10b981', 
+  green: '#f59e0b', 
   orange: '#f59e0b', 
   red: '#ef4444',
   yellow: '#facc15',
   slate: '#1e293b',
   warmBg: '#fff7ed',
-  fixed: '#10b981', 
+  fixed: '#f59e0b', 
   mobile: '#f59e0b', 
-  total: '#10b981', 
+  total: '#f59e0b', 
   distribution: '#f59e0b'
 };
 

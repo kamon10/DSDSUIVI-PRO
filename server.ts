@@ -96,62 +96,65 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/proxy", async (req, res) => {
-  const targetUrl = req.query.url as string;
+  let targetUrl = req.query.url as string;
+  
+  // Si l'URL est encodée plusieurs fois ou contient des paramètres complexes
+  if (!targetUrl && req.originalUrl.includes('url=')) {
+    const parts = req.originalUrl.split('url=');
+    if (parts.length > 1) {
+      targetUrl = decodeURIComponent(parts[1]);
+    }
+  }
+
   if (!targetUrl) {
     return res.status(400).send("URL parameter is required");
   }
   
-  // Désactiver le cache pour Vercel
+  console.log(`[Proxy] Request for: ${targetUrl.substring(0, 100)}...`);
+
+  // Désactiver le cache
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   
-  const maxRetries = 2;
+  const maxRetries = 1;
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout (un peu moins que le proxy Antigravity)
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
     try {
-      const decodedUrl = decodeURIComponent(targetUrl);
-      console.log(`[Proxy] Attempt ${i + 1} for ${decodedUrl.substring(0, 80)}...`);
-      
-      const response = await fetch(decodedUrl, {
+      const response = await fetch(targetUrl, {
         headers: { 
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': '*/*',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Accept': 'text/csv, text/plain, */*',
+          'Cache-Control': 'no-cache'
         },
         signal: controller.signal
       });
-      clearTimeout(timeoutId);
       
       if (response.ok) {
         const text = await response.text();
+        clearTimeout(timeoutId);
+        
         if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-          console.warn(`[Proxy] Received HTML instead of CSV from ${decodedUrl.substring(0, 60)}...`);
           lastError = new Error("Received HTML instead of CSV (possible redirect or block)");
           continue;
         }
         
-        console.log(`[Proxy] Success fetching ${decodedUrl.substring(0, 60)}... (${text.length} bytes)`);
         res.set('Content-Type', 'text/plain; charset=utf-8');
         return res.send(text);
       } else {
         const errorText = await response.text().catch(() => "");
-        console.error(`[Proxy] Error status ${response.status} (${response.statusText}) for ${decodedUrl.substring(0, 60)}. Body: ${errorText.substring(0, 100)}`);
-        lastError = new Error(`Status ${response.status}: ${response.statusText}`);
+        clearTimeout(timeoutId);
+        console.warn(`[Proxy] Status ${response.status} for ${targetUrl.substring(0, 50)}`);
+        lastError = new Error(`Status ${response.status}`);
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
       lastError = err;
-      if (err.name === 'AbortError') {
-        console.error(`[Proxy] Timeout on attempt ${i + 1} for ${targetUrl.substring(0, 60)}`);
-      } else {
-        console.error(`[Proxy] Exception on attempt ${i + 1}: ${err.message}`);
-      }
+      console.warn(`[Proxy] Attempt ${i+1} failed: ${err.message || err}`);
     }
 
     if (i < maxRetries) {
@@ -159,7 +162,7 @@ app.get("/api/proxy", async (req, res) => {
     }
   }
   
-  res.status(500).send(`Proxy failed after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`);
+  res.status(500).send(`Proxy failed: ${lastError?.message}`);
 });
 
 app.post("/api/notifications/subscribe", (req, res) => {
