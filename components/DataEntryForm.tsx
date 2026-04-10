@@ -186,8 +186,8 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
   if (status === 'success') {
     return (
       <div className="max-w-xl mx-auto py-16 text-center animate-in zoom-in duration-500">
-        <div className="card-professional p-16 bg-white/90 backdrop-blur-sm flex flex-col items-center border-emerald-100">
-          <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-emerald-200">
+        <div className="card-professional p-16 bg-white/90 backdrop-blur-sm flex flex-col items-center border-orange-100">
+          <div className="w-24 h-24 bg-orange-500 text-white rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-orange-200">
             <CheckCircle2 size={48} className="animate-in zoom-in duration-700" />
           </div>
           <h2 className="text-3xl font-display font-black text-slate-950 uppercase tracking-tighter mb-4">
@@ -209,25 +209,25 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className={`card-professional bg-white/90 backdrop-blur-sm border-2 ${isEditing ? 'border-blue-500/20 shadow-blue-500/10' : 'border-white/60'} overflow-hidden transition-all duration-700`}
+        className={`card-professional bg-white/90 backdrop-blur-sm border-2 ${isEditing ? 'border-orange-500/20 shadow-orange-500/10' : 'border-white/60'} overflow-hidden transition-all duration-700`}
       >
-        <div className={`${isEditing ? 'bg-blue-50/50' : 'bg-slate-50/50'} p-10 lg:p-16 border-b border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-10 transition-colors duration-700`}>
+        <div className={`${isEditing ? 'bg-orange-50/50' : 'bg-slate-50/50'} p-10 lg:p-16 border-b border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-10 transition-colors duration-700`}>
           <div className="flex items-center gap-8">
-            <div className={`w-16 h-16 ${isEditing ? 'bg-blue-600' : 'bg-slate-950'} rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl transition-all duration-700`}>
+            <div className={`w-16 h-16 ${isEditing ? 'bg-orange-600' : 'bg-slate-950'} rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl transition-all duration-700`}>
               {isEditing ? <Edit3 size={32} /> : <Plus size={32} />}
             </div>
             <div>
               <h2 className="text-3xl lg:text-4xl font-display font-black uppercase tracking-tighter text-slate-950">
                 {isEditing ? "Modification de Saisie" : "Nouveau Relevé"}
               </h2>
-              <p className={`text-[11px] font-display font-bold uppercase tracking-[0.3em] mt-2 italic ${isEditing ? 'text-blue-600' : 'text-slate-400'}`}>
+              <p className={`text-[11px] font-display font-bold uppercase tracking-[0.3em] mt-2 italic ${isEditing ? 'text-orange-600' : 'text-slate-400'}`}>
                 Mise à jour instantanée des tableaux de bord
               </p>
             </div>
           </div>
           <div className="flex items-center gap-6">
              {isEditing && (
-               <button onClick={handleReset} type="button" className="p-5 bg-white border border-blue-200 text-blue-600 rounded-2xl hover:bg-blue-50 transition-all shadow-sm active:scale-95" title="Annuler la modification">
+               <button onClick={handleReset} type="button" className="p-5 bg-white border border-orange-200 text-orange-600 rounded-2xl hover:bg-orange-50 transition-all shadow-sm active:scale-95" title="Annuler la modification">
                  <XCircle size={28} />
                </button>
              )}
@@ -244,10 +244,10 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
               <div className="space-y-4">
                 <label className="text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Structure de prélèvement</label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-orange-500 transition-colors">
                     <Building2 size={20} />
                   </div>
-                  <select required disabled={isEditing && status === 'submitting'} value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-12 py-5 text-sm font-display font-black text-slate-950 outline-none appearance-none transition-all focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5">
+                  <select required disabled={isEditing && status === 'submitting'} value={formData.siteIndex} onChange={(e) => setFormData({...formData, siteIndex: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-12 py-5 text-sm font-display font-black text-slate-950 outline-none appearance-none transition-all focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/5">
                     <option value="">Sélectionner un site...</option>
                     {sites.map((s, idx) => <option key={idx} value={idx}>{s.name}</option>)}
                   </select>
@@ -257,7 +257,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
               <div className="space-y-4">
                 <label className="text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Date de l'Activité</label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors z-10">
+                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
                     <CalendarIcon size={20} />
                   </div>
                   <DatePicker
@@ -273,36 +273,36 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                     dateFormat="dd/MM/yyyy"
                     locale="fr"
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-12 py-5 text-sm font-display font-black text-slate-950 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-16 pr-12 py-5 text-sm font-display font-black text-slate-950 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/5 transition-all"
                     wrapperClassName="w-full"
                   />
                 </div>
               </div>
-              <div className={`p-10 rounded-[3rem] border-2 space-y-6 transition-all duration-700 ${isEditing ? 'bg-blue-50/50 border-blue-500/10' : 'bg-emerald-50/50 border-emerald-500/10'}`}>
+              <div className={`p-10 rounded-[3rem] border-2 space-y-6 transition-all duration-700 ${isEditing ? 'bg-orange-50/50 border-orange-500/10' : 'bg-orange-50/50 border-orange-500/10'}`}>
                 <div className="flex items-center gap-4 mb-2">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isEditing ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isEditing ? 'bg-orange-500' : 'bg-orange-500'}`}>
                     <Zap size={20} />
                   </div>
-                  <label className={`text-[11px] font-display font-black uppercase tracking-[0.25em] ${isEditing ? 'text-blue-600' : 'text-emerald-600'}`}>Nombre de Poches (FIXE)</label>
+                  <label className={`text-[11px] font-display font-black uppercase tracking-[0.25em] ${isEditing ? 'text-orange-600' : 'text-orange-600'}`}>Nombre de Poches (FIXE)</label>
                 </div>
-                <input type="number" inputMode="numeric" min="0" placeholder="0" value={formData.fixe} onChange={(e) => setFormData({...formData, fixe: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-8 text-6xl font-display font-black text-slate-950 outline-none text-center shadow-inner focus:ring-4 focus:ring-blue-500/5 transition-all" />
+                <input type="number" inputMode="numeric" min="0" placeholder="0" value={formData.fixe} onChange={(e) => setFormData({...formData, fixe: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-8 text-6xl font-display font-black text-slate-950 outline-none text-center shadow-inner focus:ring-4 focus:ring-orange-500/5 transition-all" />
               </div>
             </div>
             <div className="space-y-8">
-              <div className={`p-10 rounded-[3.5rem] border-2 space-y-8 transition-all duration-700 h-full flex flex-col ${isEditing ? 'bg-blue-50/50 border-blue-500/10' : 'bg-orange-50/50 border-orange-500/10'}`}>
+              <div className={`p-10 rounded-[3.5rem] border-2 space-y-8 transition-all duration-700 h-full flex flex-col ${isEditing ? 'bg-orange-50/50 border-orange-500/10' : 'bg-orange-50/50 border-orange-500/10'}`}>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isEditing ? 'bg-blue-500' : 'bg-orange-500'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isEditing ? 'bg-orange-500' : 'bg-orange-500'}`}>
                       <Truck size={20} />
                     </div>
-                    <label className={`text-[11px] font-display font-black uppercase tracking-[0.25em] ${isEditing ? 'text-blue-600' : 'text-orange-600'}`}>Nombre de Poches (MOBILE)</label>
+                    <label className={`text-[11px] font-display font-black uppercase tracking-[0.25em] ${isEditing ? 'text-orange-600' : 'text-orange-600'}`}>Nombre de Poches (MOBILE)</label>
                   </div>
-                  <div className={`${isEditing ? 'bg-blue-600' : 'bg-orange-600'} text-white px-4 py-1.5 rounded-xl text-[11px] font-display font-black uppercase tracking-widest shadow-lg`}>SOMME : {totalMobile}</div>
+                  <div className={`${isEditing ? 'bg-orange-600' : 'bg-orange-600'} text-white px-4 py-1.5 rounded-xl text-[11px] font-display font-black uppercase tracking-widest shadow-lg`}>SOMME : {totalMobile}</div>
                 </div>
                 <div className="grid grid-cols-1 gap-6 flex-1">
-                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 1" value={formData.mobile1} onChange={(e) => setFormData({...formData, mobile1: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-blue-500/5 transition-all" />
-                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 2" value={formData.mobile2} onChange={(e) => setFormData({...formData, mobile2: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-blue-500/5 transition-all" />
-                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 3" value={formData.mobile3} onChange={(e) => setFormData({...formData, mobile3: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-blue-500/5 transition-all" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 1" value={formData.mobile1} onChange={(e) => setFormData({...formData, mobile1: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-orange-500/5 transition-all" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 2" value={formData.mobile2} onChange={(e) => setFormData({...formData, mobile2: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-orange-500/5 transition-all" />
+                  <input type="number" inputMode="numeric" min="0" placeholder="Saisie 3" value={formData.mobile3} onChange={(e) => setFormData({...formData, mobile3: e.target.value})} className="w-full bg-white border border-slate-100 rounded-2xl px-8 py-6 text-3xl font-display font-black text-slate-700 outline-none text-center shadow-sm focus:ring-4 focus:ring-orange-500/5 transition-all" />
                 </div>
               </div>
             </div>
@@ -310,7 +310,7 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
 
           {status === 'error' && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-rose-50 text-rose-600 rounded-2xl text-[11px] font-display font-black uppercase tracking-widest flex items-center gap-4 border border-rose-100 shadow-sm"><AlertCircle size={24} /><p>{errorMessage}</p></motion.div>}
           
-          <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-blue-600 shadow-blue-500/20' : 'bg-slate-950 shadow-slate-900/20'} text-white py-8 rounded-[2.5rem] font-display font-black text-lg uppercase tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-6 disabled:opacity-30 active:scale-[0.98] group`}>
+          <button type="submit" disabled={!selectedSite || status === 'submitting'} className={`w-full ${isEditing ? 'bg-orange-600 shadow-orange-500/20' : 'bg-slate-950 shadow-slate-900/20'} text-white py-8 rounded-[2.5rem] font-display font-black text-lg uppercase tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-6 disabled:opacity-30 active:scale-[0.98] group`}>
             {status === 'submitting' ? <Loader2 className="animate-spin" size={32} /> : (isEditing ? <Save size={32} /> : <Plus size={32} />)}
             {status === 'submitting' ? "Synchronisation Locale..." : (isEditing ? "Valider la modification" : "Injecter dans DATABASE1")}
           </button>
@@ -335,18 +335,18 @@ export const DataEntryForm: React.FC<DataEntryFormProps> = ({ scriptUrl, data, u
                 key={idx} 
                 type="button"
                 onClick={() => handleEditFromHistory(entry)}
-                className="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-blue-400 hover:shadow-2xl transition-all text-left group flex items-center justify-between relative overflow-hidden"
+                className="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-orange-400 hover:shadow-2xl transition-all text-left group flex items-center justify-between relative overflow-hidden"
               >
-                <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10">
-                   <p className="text-[10px] font-display font-black text-slate-300 uppercase tracking-widest mb-2 group-hover:text-blue-400 transition-colors">{entry.date} • {entry.code}</p>
+                   <p className="text-[10px] font-display font-black text-slate-300 uppercase tracking-widest mb-2 group-hover:text-orange-400 transition-colors">{entry.date} • {entry.code}</p>
                    <p className="text-sm font-display font-black text-slate-950 uppercase tracking-tight truncate max-w-[180px] mb-4">{entry.site}</p>
                    <div className="flex items-baseline gap-2">
-                     <p className="text-3xl font-display font-black text-blue-600">{entry.total}</p>
+                     <p className="text-3xl font-display font-black text-orange-600">{entry.total}</p>
                      <span className="text-[10px] uppercase font-display font-black text-slate-300 tracking-widest">Poches</span>
                    </div>
                 </div>
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner relative z-10">
+                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-inner relative z-10">
                    <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </motion.button>

@@ -145,13 +145,13 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Truck className="text-indigo-600" size={28} />
+            <Truck className="text-orange-600" size={28} />
             SUIVI GTS
           </h2>
           <p className="text-slate-500 font-medium">Récapitulatif par PRES et par Site</p>
         </div>
-        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
-          <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+        <div className="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-2xl border border-orange-100">
+          <span className="text-orange-700 font-bold text-sm">{branding.hashtag}</span>
         </div>
       </div>
 
@@ -170,11 +170,11 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Auto Transfusion</p>
-          <p className="text-2xl font-black text-blue-600">{stats.totalAuto}</p>
+          <p className="text-2xl font-black text-orange-600">{stats.totalAuto}</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Total Poches</p>
-          <p className="text-2xl font-black text-indigo-600">{stats.totalQty}</p>
+          <p className="text-2xl font-black text-orange-600">{stats.totalQty}</p>
         </div>
       </div>
 
@@ -186,7 +186,7 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
               <input 
                 type="text"
                 placeholder="Rechercher un site..."
-                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-sm"
+                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-medium text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -216,7 +216,7 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
               {(startDate !== firstDayOfYear || endDate !== todayStr) && (
                 <button 
                   onClick={() => { setStartDate(firstDayOfYear); setEndDate(todayStr); }}
-                  className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest"
+                  className="text-[10px] font-black text-orange-600 hover:text-orange-700 uppercase tracking-widest"
                 >
                   Réinitialiser
                 </button>
@@ -226,25 +226,25 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
             <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">PRES / Site</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Collectes Réalisées</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">POCHES COL. FIXE</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">POCHES COL. MOB</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Auto Transf.</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Total Poches</th>
+              <tr className="bg-orange-600 text-white h-12">
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-left">PRES / Site</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Collectes Réalisées</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">POCHES COL. FIXE</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">POCHES COL. MOB</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Auto Transf.</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Total Poches</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody>
               {Object.keys(groupedData).length > 0 ? (
                 <>
                   {Object.entries(groupedData).map(([region, regionData], regIdx) => (
                     <React.Fragment key={region}>
-                      <tr className="bg-indigo-50/30">
-                        <td colSpan={6} className="px-6 py-3">
-                          <div className="flex items-center gap-2 text-indigo-700 font-black text-xs uppercase tracking-widest">
+                      <tr className="bg-orange-50/30">
+                        <td colSpan={6} className="border border-slate-300 px-6 py-3">
+                          <div className="flex items-center gap-2 text-orange-700 font-black text-xs uppercase tracking-widest">
                             <Package size={14} />
                             {region}
                           </div>
@@ -256,50 +256,50 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: (regIdx * 5 + siteIdx) * 0.01 }}
-                          className="hover:bg-slate-50/80 transition-colors group"
+                          className="h-10 hover:brightness-95 transition-all bg-white"
                         >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 text-slate-900 font-black text-sm pl-4">
-                              <MapPin size={14} className="text-indigo-500" />
+                          <td className="border border-slate-300 px-6 py-2">
+                            <div className="flex items-center gap-2 text-slate-900 font-black text-[11px] pl-4 uppercase">
+                              <MapPin size={14} className="text-orange-500" />
                               {siteName}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-slate-700">
+                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-slate-700">
                             {siteStats.collectes}
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-emerald-600">
+                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-emerald-600">
                             {siteStats.fixe}
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-orange-600">
+                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-orange-600">
                             {siteStats.mobile}
                           </td>
-                          <td className="px-6 py-4 text-center font-bold text-blue-600">
+                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-orange-600">
                             {siteStats.auto}
                           </td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="text-lg font-black text-indigo-600">{siteStats.total}</span>
+                          <td className="border border-slate-300 px-6 py-2 text-center">
+                            <span className="text-[13px] font-black text-orange-600">{siteStats.total}</span>
                           </td>
                         </motion.tr>
                       ))}
                       {/* Sous-total PRES */}
-                      <tr className="bg-slate-50 font-black text-slate-900">
-                        <td className="px-6 py-4 text-xs uppercase tracking-widest">Sous-total {region}</td>
-                        <td className="px-6 py-4 text-center">{regionData.subtotal.collectes}</td>
-                        <td className="px-6 py-4 text-center text-emerald-700">{regionData.subtotal.fixe}</td>
-                        <td className="px-6 py-4 text-center text-orange-700">{regionData.subtotal.mobile}</td>
-                        <td className="px-6 py-4 text-center text-blue-700">{regionData.subtotal.auto}</td>
-                        <td className="px-6 py-4 text-center text-indigo-700">{regionData.subtotal.total}</td>
+                      <tr className="bg-orange-100/30 font-black text-slate-900 h-10">
+                        <td className="border border-slate-300 px-6 py-2 text-[11px] uppercase tracking-widest text-right pr-6 italic text-orange-900">Sous-total {region}</td>
+                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-900">{regionData.subtotal.collectes}</td>
+                        <td className="border border-slate-300 px-6 py-2 text-center text-emerald-700">{regionData.subtotal.fixe}</td>
+                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-700">{regionData.subtotal.mobile}</td>
+                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-700">{regionData.subtotal.auto}</td>
+                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-900 text-[13px]">{regionData.subtotal.total}</td>
                       </tr>
                     </React.Fragment>
                   ))}
                   {/* TOTAL GENERAL */}
-                  <tr className="bg-slate-900 text-white font-black">
-                    <td className="px-6 py-6 text-sm uppercase tracking-[0.2em]">TOTAL GENERAL</td>
-                    <td className="px-6 py-6 text-center text-xl">{stats.totalRecords}</td>
-                    <td className="px-6 py-6 text-center text-xl text-emerald-400">{stats.totalFixe}</td>
-                    <td className="px-6 py-6 text-center text-xl text-orange-400">{stats.totalMobile}</td>
-                    <td className="px-6 py-6 text-center text-xl text-blue-400">{stats.totalAuto}</td>
-                    <td className="px-6 py-6 text-center text-2xl text-indigo-400">{stats.totalQty}</td>
+                  <tr className="bg-orange-950 text-white font-black h-16">
+                    <td className="border border-orange-900 px-6 py-2 text-[13px] uppercase tracking-[0.2em] pl-12">TOTAL GENERAL</td>
+                    <td className="border border-orange-900 px-6 py-2 text-center text-xl">{stats.totalRecords}</td>
+                    <td className="border border-orange-900 px-6 py-2 text-center text-xl text-emerald-400">{stats.totalFixe}</td>
+                    <td className="border border-orange-900 px-6 py-2 text-center text-xl text-orange-400">{stats.totalMobile}</td>
+                    <td className="border border-orange-900 px-6 py-2 text-center text-xl text-orange-400">{stats.totalAuto}</td>
+                    <td className="border border-orange-900 px-6 py-2 text-center text-2xl text-orange-400">{stats.totalQty}</td>
                   </tr>
                 </>
               ) : (

@@ -204,7 +204,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             <div className="flex items-center gap-4">
               <Command size={12} className="text-slate-300" />
               <div className="flex flex-col items-end">
-                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">HEMO-COCKPIT v2.5</span>
+                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">HEMO-STATS v2.5</span>
                 <span className="text-[7px] font-bold text-blue-400/60 uppercase tracking-tighter">MàJ: {syncTime}</span>
               </div>
             </div>

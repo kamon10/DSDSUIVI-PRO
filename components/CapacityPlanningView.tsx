@@ -84,7 +84,7 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
         <div>
           <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-900">Capacité & Prévisions</h2>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-2 flex items-center gap-2">
-            <Info size={14} className="text-blue-500" />
+            <Info size={14} className="text-orange-500" />
             Analyse de la capacité de prélèvement basée sur les objectifs et les pics historiques
           </p>
         </div>
@@ -112,7 +112,7 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
               placeholder="Rechercher un site..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-2 ring-blue-500/20 transition-all w-64"
+              className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-2 ring-orange-500/20 transition-all w-64"
             />
           </div>
         </div>
@@ -123,7 +123,7 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between min-h-[160px]">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Objectif Quotidien Global</span>
-            <Target className="text-blue-500" size={20} />
+            <Target className="text-orange-500" size={20} />
           </div>
           <div>
             <div className="text-5xl font-black text-slate-900 tracking-tighter">{totals.objective}</div>
@@ -134,7 +134,7 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between min-h-[160px]">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Moyenne Réalisée (30j)</span>
-            <TrendingUp className="text-emerald-500" size={20} />
+            <TrendingUp className="text-orange-500" size={20} />
           </div>
           <div>
             <div className="text-5xl font-black text-slate-900 tracking-tighter">{totals.average}</div>
@@ -161,41 +161,41 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
       {/* Main Table */}
       <div className="bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
             <thead>
-              <tr className="bg-slate-50/50 border-bottom border-slate-100">
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Site de Prélèvement</th>
-                <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Objectif (J)</th>
-                <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Moyenne (30j)</th>
-                <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Pic Historique</th>
-                <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Utilisation Capacité</th>
-                <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
+              <tr className="bg-orange-600 text-white h-14">
+                <th className="border border-orange-700 px-8 py-2 text-[10px] font-black uppercase tracking-widest text-left">Site de Prélèvement</th>
+                <th className="border border-orange-700 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-center">Objectif (J)</th>
+                <th className="border border-orange-700 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-center">Moyenne (30j)</th>
+                <th className="border border-orange-700 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-center">Pic Historique</th>
+                <th className="border border-orange-700 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-left">Utilisation Capacité</th>
+                <th className="border border-orange-700 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-center">Statut</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody>
               {siteStats.map((site, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-8 py-5">
+                <tr key={idx} className="h-14 hover:brightness-95 transition-all bg-white">
+                  <td className="border border-slate-200 px-8 py-2">
                     <div className="flex flex-col">
-                      <span className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{site.name}</span>
+                      <span className="text-sm font-black text-slate-900 group-hover:text-orange-600 transition-colors">{site.name}</span>
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{site.region}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-center">
+                  <td className="border border-slate-200 px-6 py-2 text-center">
                     <span className="text-sm font-black text-slate-900">{site.objective}</span>
                   </td>
-                  <td className="px-6 py-5 text-center">
-                    <span className={`text-sm font-black ${site.average >= site.objective ? 'text-emerald-600' : 'text-slate-600'}`}>
+                  <td className="border border-slate-200 px-6 py-2 text-center">
+                    <span className={`text-sm font-black ${site.average >= site.objective ? 'text-orange-600' : 'text-slate-600'}`}>
                       {site.average}
                     </span>
                   </td>
-                  <td className="px-6 py-5 text-center">
+                  <td className="border border-slate-200 px-6 py-2 text-center">
                     <div className="flex flex-col items-center">
                       <span className="text-sm font-black text-amber-600">{site.peak}</span>
                       <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest">Potentiel {Math.round(site.potential)}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5">
+                  <td className="border border-slate-200 px-6 py-2">
                     <div className="w-full max-w-[160px]">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[9px] font-black text-slate-400 uppercase">{Math.round(site.utilization)}%</span>
@@ -205,23 +205,23 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(site.utilization, 100)}%` }}
                           className={`h-full rounded-full ${
-                            site.utilization >= 90 ? 'bg-emerald-500' : 
-                            site.utilization >= 50 ? 'bg-blue-500' : 
+                            site.utilization >= 90 ? 'bg-orange-600' : 
+                            site.utilization >= 50 ? 'bg-orange-500' : 
                             'bg-amber-500'
                           }`}
                         />
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-5">
+                  <td className="border border-slate-200 px-6 py-2">
                     <div className="flex justify-center">
                       {site.average >= site.objective ? (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl border border-orange-100">
                           <CheckCircle2 size={14} />
                           <span className="text-[9px] font-black uppercase">Optimal</span>
                         </div>
                       ) : site.potential >= 100 ? (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl border border-orange-100">
                           <Zap size={14} />
                           <span className="text-[9px] font-black uppercase">Sous-Exploité</span>
                         </div>
@@ -286,7 +286,7 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
                 />
                 <Bar dataKey="average" radius={[0, 4, 4, 0]} barSize={20}>
                   {siteStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.average >= entry.objective ? '#10b981' : '#3b82f6'} />
+                    <Cell key={`cell-${index}`} fill={entry.average >= entry.objective ? '#f97316' : '#ea580c'} />
                   ))}
                 </Bar>
                 <Bar dataKey="objective" fill="#e2e8f0" radius={[0, 4, 4, 0]} barSize={8} />
@@ -299,7 +299,7 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
           <h3 className="text-xl font-black uppercase tracking-tighter mb-8">Analyse Prévisionnelle</h3>
           <div className="space-y-6">
             <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
-              <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-4">Recommandation Stratégique</h4>
+              <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-4">Recommandation Stratégique</h4>
               <p className="text-sm text-slate-300 leading-relaxed">
                 {viewMode === 'ABIDJAN' 
                   ? "Pour Abidjan Urbain, la capacité de pointe montre que les sites peuvent absorber jusqu'à 150% de l'objectif quotidien. Le levier principal est l'optimisation des collectes mobiles sur les sites à fort potentiel comme Treichville et Cocody."
@@ -309,9 +309,9 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20">
-                <div className="text-2xl font-black text-emerald-400">{Math.round(totals.average)}</div>
-                <div className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/60 mt-1">Capacité Stable</div>
+              <div className="p-6 bg-orange-500/10 rounded-3xl border border-orange-500/20">
+                <div className="text-2xl font-black text-orange-400">{Math.round(totals.average)}</div>
+                <div className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 mt-1">Capacité Stable</div>
               </div>
               <div className="p-6 bg-amber-500/10 rounded-3xl border border-amber-500/20">
                 <div className="text-2xl font-black text-amber-400">{Math.round(totals.peak)}</div>
@@ -319,17 +319,17 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
               </div>
             </div>
 
-            <div className="p-8 bg-blue-600 rounded-[2rem] shadow-lg shadow-blue-600/20">
+            <div className="p-8 bg-orange-600 rounded-[2rem] shadow-lg shadow-orange-600/20">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                   <Zap size={20} className="text-white" />
                 </div>
                 <div className="text-lg font-black uppercase tracking-tighter">Indice de Prévision</div>
               </div>
-              <p className="text-xs text-blue-100 font-medium leading-relaxed mb-6">
+              <p className="text-xs text-orange-100 font-medium leading-relaxed mb-6">
                 Basé sur les tendances actuelles, le stock national peut être maintenu à un niveau de sécurité de 10 jours si au moins 85% de la capacité de pointe est mobilisée 2 fois par semaine.
               </p>
-              <button className="w-full py-4 bg-white text-blue-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 transition-colors">
+              <button className="w-full py-4 bg-white text-orange-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-50 transition-colors">
                 Générer Plan de Collecte
               </button>
             </div>

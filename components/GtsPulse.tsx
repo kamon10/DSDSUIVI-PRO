@@ -125,39 +125,39 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Zap className="text-indigo-600" size={28} />
+            <Zap className="text-orange-600" size={28} />
             PULSE GTS
           </h2>
           <p className="text-slate-500 font-medium">Performance et Qualité de l'Encodage</p>
         </div>
-        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
-          <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+        <div className="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-2xl border border-orange-100">
+          <span className="text-orange-700 font-bold text-sm">{branding.hashtag}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl flex items-center gap-6">
-          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner">
+          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shadow-inner">
             <Database size={24} />
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Encodé</p>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900">{stats.total}</span>
-              <span className="text-[10px] font-bold text-indigo-500 uppercase">Global</span>
+              <span className="text-[10px] font-bold text-orange-500 uppercase">Global</span>
             </div>
           </div>
         </motion.div>
 
         <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl flex items-center gap-6">
-          <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
+          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shadow-inner">
             <Activity size={24} />
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Encodage au {stats.latestDate}</p>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900">{stats.todayVolume}</span>
-              <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-0.5">Poches</span>
+              <span className="text-[10px] font-bold text-orange-500 flex items-center gap-0.5">Poches</span>
             </div>
           </div>
         </motion.div>
@@ -189,14 +189,14 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
         </motion.div>
 
         <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl flex items-center gap-6">
-          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner">
+          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shadow-inner">
             <CheckCircle2 size={24} />
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Qualité</p>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900">{stats.qualityScore}%</span>
-              <span className="text-[10px] font-bold text-blue-500 uppercase">Précision</span>
+              <span className="text-[10px] font-bold text-orange-500 uppercase">Précision</span>
             </div>
           </div>
         </motion.div>
@@ -226,7 +226,7 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
                 className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black text-xs shadow-sm group-hover:text-indigo-600 transition-colors">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black text-xs shadow-sm group-hover:text-orange-600 transition-colors">
                     {entry.date.substring(0, 5)}
                   </div>
                   <div>
@@ -239,11 +239,11 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-4 border-r border-slate-200 pr-4">
                     <div className="text-center">
-                      <p className="text-[10px] font-black text-indigo-600">{entry.fixe}</p>
+                      <p className="text-[10px] font-black text-orange-600">{entry.fixe}</p>
                       <p className="text-[8px] font-bold text-slate-400 uppercase">Fixe</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] font-black text-emerald-600">{entry.mobile}</p>
+                      <p className="text-[10px] font-black text-orange-600">{entry.mobile}</p>
                       <p className="text-[8px] font-bold text-slate-400 uppercase">Mob.</p>
                     </div>
                     <div className="text-center">
@@ -257,7 +257,7 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
                   </div>
                   <div className="flex items-center gap-1">
                     {entry.caCode && entry.pvCode !== undefined ? (
-                      <CheckCircle2 size={16} className="text-emerald-500" />
+                      <CheckCircle2 size={16} className="text-orange-500" />
                     ) : (
                       <AlertCircle size={16} className="text-orange-500" />
                     )}
@@ -271,7 +271,7 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
         <div className="space-y-6">
           <div className="bg-slate-900 rounded-[3rem] p-8 text-white shadow-2xl">
             <h3 className="text-lg font-black uppercase tracking-tighter mb-6 flex items-center gap-2">
-              <TrendingUp size={20} className="text-indigo-400" />
+              <TrendingUp size={20} className="text-orange-400" />
               Top Sites Encodeurs
             </h3>
             <div className="space-y-6">
@@ -279,13 +279,13 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
                 <div key={site} className="space-y-2">
                   <div className="flex justify-between items-end">
                     <p className="text-xs font-black uppercase tracking-tight text-white/80">{site}</p>
-                    <p className="text-sm font-black text-indigo-400">{count} <span className="text-[10px] text-white/40">Rec.</span></p>
+                    <p className="text-sm font-black text-orange-400">{count} <span className="text-[10px] text-white/40">Rec.</span></p>
                   </div>
                   <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${(count / stats.topSites[0][1]) * 100}%` }}
-                      className="h-full bg-indigo-500"
+                      className="h-full bg-orange-500"
                     />
                   </div>
                 </div>
@@ -296,12 +296,12 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
           <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-xl">
             <h3 className="text-lg font-black uppercase tracking-tighter mb-4 text-slate-900">Qualité de Saisie</h3>
             <div className="space-y-4">
-              <div className="p-6 bg-indigo-50 rounded-3xl border border-indigo-100">
+              <div className="p-6 bg-orange-50 rounded-3xl border border-orange-100">
                 <div className="flex items-center gap-3 mb-3">
-                  <AlertCircle className="text-indigo-600" size={16} />
-                  <p className="text-[11px] font-black uppercase tracking-widest text-indigo-900">Analyse</p>
+                  <AlertCircle className="text-orange-600" size={16} />
+                  <p className="text-[11px] font-black uppercase tracking-widest text-orange-900">Analyse</p>
                 </div>
-                <p className="text-xs text-indigo-700 leading-relaxed font-medium">
+                <p className="text-xs text-orange-700 leading-relaxed font-medium">
                   {stats.qualityScore > 90 
                     ? "L'encodage est excellent. La majorité des enregistrements comportent les codes CA et PV requis."
                     : "Attention : certains enregistrements manquent de codes de prélèvement ou d'activité. Une vérification est conseillée."}
@@ -314,7 +314,7 @@ export const GtsPulse: React.FC<GtsPulseProps> = ({ data, branding }) => {
                   <div className="flex flex-wrap gap-2">
                     {stats.topCaCodes.map(([code, count]) => (
                       <div key={code} className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm">
-                        <span className="text-[10px] font-black text-indigo-600">{code}</span>
+                        <span className="text-[10px] font-black text-orange-600">{code}</span>
                         <span className="text-[10px] font-bold text-slate-400">{count}</span>
                       </div>
                     ))}

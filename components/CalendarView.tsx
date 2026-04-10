@@ -66,7 +66,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
     <div className="bg-white rounded-2xl border border-slate-100 shadow-lg overflow-hidden">
       <div className="p-2.5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
         <h3 className="text-[11px] font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-tight">
-          <CalendarIcon size={14} className="text-indigo-600" />
+          <CalendarIcon size={14} className="text-orange-600" />
           Calendrier
         </h3>
         <div className="flex items-center gap-1.5">
@@ -113,7 +113,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
                 onClick={() => setSelectedDay(date.toLocaleDateString('fr-FR'))}
                 className={`aspect-square rounded-lg border flex flex-col items-center justify-center relative transition-all group ${
                   isSelected 
-                    ? 'ring-1 ring-indigo-500 ring-offset-1' 
+                    ? 'ring-1 ring-orange-500 ring-offset-1' 
                     : ''
                 } ${
                   dayPlanning.length > 0
@@ -121,7 +121,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
                       ? 'bg-rose-50 border-rose-100 text-rose-700' 
                       : hasMediumPriority
                         ? 'bg-orange-50 border-orange-100 text-orange-700'
-                        : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                        : 'bg-orange-50 border-orange-100 text-orange-700'
                     : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
                 }`}
               >
@@ -130,7 +130,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
                 </span>
                 {dayPlanning.length > 0 && (
                   <div className={`absolute bottom-0.5 w-0.5 h-0.5 rounded-full ${
-                    hasHighPriority ? 'bg-rose-500' : hasMediumPriority ? 'bg-orange-500' : 'bg-indigo-500'
+                    hasHighPriority ? 'bg-rose-500' : hasMediumPriority ? 'bg-orange-500' : 'bg-orange-500'
                   }`} />
                 )}
                 {dayPlanning.length > 1 && (
@@ -171,7 +171,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
                         <div className={`w-6 h-6 rounded-md flex items-center justify-center font-black text-[7px] ${
                           p.priority === 'HAUTE' ? 'bg-rose-50 text-rose-600' : 
                           p.priority === 'MOYENNE' ? 'bg-orange-50 text-orange-600' : 
-                          'bg-indigo-50 text-indigo-600'
+                          'bg-orange-50 text-orange-600'
                         }`}>
                           {p.site.substring(0, 2)}
                         </div>
@@ -186,7 +186,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
                         <div className={`text-[6px] font-black px-1 py-0.5 rounded-full inline-block ${
                           p.priority === 'HAUTE' ? 'bg-rose-100 text-rose-600' : 
                           p.priority === 'MOYENNE' ? 'bg-orange-100 text-orange-600' : 
-                          'bg-indigo-100 text-indigo-600'
+                          'bg-orange-100 text-orange-600'
                         }`}>
                           {p.priority}
                         </div>

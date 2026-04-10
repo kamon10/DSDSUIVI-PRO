@@ -238,7 +238,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Calendar className="text-indigo-600" size={28} />
+            <Calendar className="text-orange-600" size={28} />
             TABLEAU DE BORD PLANNING
           </h2>
           <p className="text-slate-500 font-medium">Optimisation des collectes mobiles & Cycle de 2 mois</p>
@@ -253,8 +253,8 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />}
             EXPORTER PDF
           </button>
-          <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
-            <span className="text-indigo-700 font-bold text-sm">{branding.hashtag}</span>
+          <div className="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-2xl border border-orange-100">
+            <span className="text-orange-700 font-bold text-sm">{branding.hashtag}</span>
           </div>
         </div>
       </div>
@@ -263,7 +263,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
               <MapPin size={20} />
             </div>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Sites Suivis</p>
@@ -281,21 +281,21 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
               <Clock size={20} />
             </div>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">7 Prochains Jours</p>
           </div>
-          <p className="text-3xl font-black text-blue-600">{stats.upcomingWeek}</p>
+          <p className="text-3xl font-black text-orange-600">{stats.upcomingWeek}</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
               <TrendingUp size={20} />
             </div>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">POCHES COL. MOB</p>
           </div>
-          <p className="text-3xl font-black text-emerald-600">{stats.totalPoches}</p>
+          <p className="text-3xl font-black text-orange-600">{stats.totalPoches}</p>
         </div>
       </div>
 
@@ -303,21 +303,21 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
       <div className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-            <Calendar size={20} className="text-indigo-600" />
+            <Calendar size={20} className="text-orange-600" />
             {viewMode === 'timeline' ? 'Aperçu des 30 Prochains Jours' : 'Calendrier des Collectes'}
           </h3>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => setViewMode('timeline')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'timeline' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'timeline' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                 title="Vue Timeline"
               >
                 <List size={16} />
               </button>
               <button 
                 onClick={() => setViewMode('calendar')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                 title="Vue Calendrier"
               >
                 <LayoutGrid size={16} />
@@ -325,7 +325,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             </div>
             <div className="hidden sm:flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                <div className="w-2 h-2 rounded-full bg-orange-500" />
                 Collecte Prévue
               </div>
             </div>
@@ -346,7 +346,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                   key={day.dateStr}
                   className={`flex-shrink-0 w-16 h-24 rounded-2xl border flex flex-col items-center justify-center transition-all ${
                     day.planned.length > 0 
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                      ? 'bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-200' 
                       : 'bg-slate-50 border-slate-100 text-slate-400'
                   }`}
                 >
@@ -380,7 +380,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             <div className="p-8 border-b border-slate-50 bg-slate-50/50">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-                  <CheckCircle2 size={20} className="text-emerald-500" />
+                  <CheckCircle2 size={20} className="text-orange-500" />
                   Historique des Collectes Mobiles
                 </h3>
                 <div className="flex items-center gap-3">
@@ -389,7 +389,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                     <input 
                       type="text"
                       placeholder="Rechercher..."
-                      className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                      className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -407,22 +407,22 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
                 <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Site / Lieu</th>
-                    <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Dernière Date</th>
-                    <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Total Poches</th>
-                    <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Fréquence</th>
+                  <tr className="bg-orange-600 text-white h-12">
+                    <th className="border border-orange-700 px-8 py-2 text-[10px] font-black uppercase tracking-widest text-left">Site / Lieu</th>
+                    <th className="border border-orange-700 px-8 py-2 text-[10px] font-black uppercase tracking-widest text-center">Dernière Date</th>
+                    <th className="border border-orange-700 px-8 py-2 text-[10px] font-black uppercase tracking-widest text-center">Total Poches</th>
+                    <th className="border border-orange-700 px-8 py-2 text-[10px] font-black uppercase tracking-widest text-center">Fréquence</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody>
                   {Object.entries(groupedHistory).map(([region, sites]) => (
                     <React.Fragment key={region}>
                       {/* Region Header */}
-                      <tr className="bg-indigo-50/30">
-                        <td colSpan={4} className="px-8 py-3">
-                          <span className="text-[11px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                      <tr className="bg-orange-50/30">
+                        <td colSpan={4} className="border border-slate-300 px-8 py-3">
+                          <span className="text-[11px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
                             <Filter size={12} /> PRES: {region}
                           </span>
                         </td>
@@ -431,7 +431,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                         <React.Fragment key={`${region}_${site}`}>
                           {/* Site Sub-header */}
                           <tr className="bg-slate-50/30">
-                            <td colSpan={4} className="px-10 py-2">
+                            <td colSpan={4} className="border border-slate-300 px-10 py-2">
                               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                                 CENTRE: {site}
@@ -444,11 +444,11 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: idx * 0.05 }}
-                              className="hover:bg-slate-50/80 transition-colors group"
+                              className="h-12 hover:brightness-95 transition-all bg-white"
                             >
-                              <td className="px-12 py-4">
+                              <td className="border border-slate-300 px-12 py-2">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 font-black text-[10px]">
+                                  <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600 font-black text-[10px]">
                                     {h.lieu.substring(0, 2)}
                                   </div>
                                   <div className="flex flex-col">
@@ -459,13 +459,13 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-8 py-4 text-center">
+                              <td className="border border-slate-300 px-8 py-2 text-center">
                                 <span className="text-xs font-bold text-slate-600">{h.lastDate}</span>
                               </td>
-                              <td className="px-8 py-4 text-center">
-                                <span className="text-sm font-black text-indigo-600">{h.totalMobile}</span>
+                              <td className="border border-slate-300 px-8 py-2 text-center">
+                                <span className="text-sm font-black text-orange-600">{h.totalMobile}</span>
                               </td>
-                              <td className="px-8 py-4 text-center">
+                              <td className="border border-slate-300 px-8 py-2 text-center">
                                 <div className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500">
                                   {h.count} collectes
                                 </div>
@@ -487,7 +487,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
           <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
             <h3 className="text-lg font-black flex items-center gap-2 mb-6 uppercase tracking-tight relative z-10">
-              <Clock size={20} className="text-blue-400" />
+              <Clock size={20} className="text-orange-400" />
               Planning Proposé
             </h3>
             
@@ -506,11 +506,11 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                     className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl hover:bg-white/15 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{p.date}</span>
+                      <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">{p.date}</span>
                       <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${
                         p.priority === 'HAUTE' ? 'bg-rose-500/20 text-rose-400' : 
                         p.priority === 'MOYENNE' ? 'bg-orange-500/20 text-orange-400' : 
-                        'bg-emerald-500/20 text-emerald-400'
+                        'bg-orange-500/20 text-orange-400'
                       }`}>
                         {p.priority}
                       </span>
@@ -547,12 +547,12 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             {/* Success Toast */}
             <AnimatePresence>
               {showEventSuccess && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="absolute bottom-8 left-8 right-8 bg-emerald-500 text-white p-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3"
-                >
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="absolute bottom-8 left-8 right-8 bg-orange-500 text-white p-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3"
+                  >
                   <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                     <CheckCircle2 size={16} />
                   </div>
@@ -565,12 +565,12 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
             </AnimatePresence>
           </div>
 
-          <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl">
+                  <div className="bg-orange-600 rounded-[2.5rem] p-8 text-white shadow-xl">
             <h3 className="text-sm font-black uppercase tracking-widest mb-4">Aide au Planning</h3>
-            <p className="text-xs font-medium text-indigo-100 leading-relaxed">
+            <p className="text-xs font-medium text-orange-100 leading-relaxed">
               Les propositions sont basées sur un cycle de 2 mois (60 jours) par lieu, correspondant à la fréquence recommandée pour le don de sang.
             </p>
-            <button className="mt-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white text-indigo-600 px-4 py-2 rounded-xl shadow-lg hover:bg-indigo-50 transition-colors">
+            <button className="mt-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white text-orange-600 px-4 py-2 rounded-xl shadow-lg hover:bg-orange-50 transition-colors">
               <PlusCircle size={14} /> Créer un événement
             </button>
           </div>

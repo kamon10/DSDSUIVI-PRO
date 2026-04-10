@@ -907,7 +907,7 @@ export const EbookView: React.FC<EbookViewProps> = ({ data, user, branding, site
                   <img src={branding.logo} alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">HEMO Cockpit</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">HEMO-STATS</p>
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Rapport Automatisé</p>
                 </div>
               </div>

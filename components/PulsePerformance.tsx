@@ -14,8 +14,8 @@ const MONTHS_FR = [
 ];
 
 const getDynamicColor = (perf: number) => {
-  if (perf >= 100) return '#10b981'; // Vert Excellence
-  if (perf >= 75) return '#f59e0b';  // Orange Vigilance
+  if (perf >= 100) return '#f97316'; // Orange Excellence
+  if (perf >= 75) return '#fbbf24';  // Amber Vigilance
   return '#ef4444';               // Rouge Alerte
 };
 
@@ -221,7 +221,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
           className="bg-white/80 backdrop-blur-xl p-2 rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-2"
         >
            <button onClick={() => setViewMode('donations')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={18} className={viewMode === 'donations' ? 'text-blue-400' : ''}/> Prélèvements
+             <Activity size={18} className={viewMode === 'donations' ? 'text-orange-400' : ''}/> Prélèvements
            </button>
            <button onClick={() => setViewMode('distribution')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
              <Truck size={18} className={viewMode === 'distribution' ? 'text-orange-400' : ''}/> Distribution
@@ -230,22 +230,22 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
           <motion.div whileHover={{ y: -8 }} className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm">
-            <div className="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 shadow-inner relative overflow-hidden group">
-              <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-10 transition-opacity" />
+            <div className="w-16 h-16 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group">
+              <div className="absolute inset-0 bg-orange-600 opacity-0 group-hover:opacity-10 transition-opacity" />
               <Zap size={28} className="relative z-10" />
             </div>
             <div>
               <p className="text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Health Score National</p>
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-display font-black text-slate-950 tracking-tighter">{healthScore}%</span>
-                <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg"><ArrowUpRight size={14} /> +2.4%</span>
+                <span className="text-[11px] font-bold text-orange-500 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg"><ArrowUpRight size={14} /> +2.4%</span>
               </div>
             </div>
           </motion.div>
 
           <motion.div whileHover={{ y: -8 }} className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm">
-            <div className="w-16 h-16 bg-indigo-50 rounded-3xl flex items-center justify-center text-indigo-600 shadow-inner relative overflow-hidden group">
-              <div className="absolute inset-0 bg-indigo-600 opacity-0 group-hover:opacity-10 transition-opacity" />
+            <div className="w-16 h-16 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group">
+              <div className="absolute inset-0 bg-orange-600 opacity-0 group-hover:opacity-10 transition-opacity" />
               <TrendingUp size={28} className="relative z-10" />
             </div>
             <div>
@@ -283,7 +283,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
         )}
         
         <div className="flex items-center gap-6 px-6">
-           <div className={`w-14 h-14 text-white rounded-[1.5rem] flex items-center justify-center shadow-2xl ${viewMode === 'donations' ? 'bg-blue-600 shadow-blue-500/20' : 'bg-orange-600 shadow-orange-500/20'}`}>
+           <div className={`w-14 h-14 text-white rounded-[1.5rem] flex items-center justify-center shadow-2xl ${viewMode === 'donations' ? 'bg-orange-600 shadow-orange-500/20' : 'bg-orange-600 shadow-orange-500/20'}`}>
              <Filter size={24} />
            </div>
            <div>
@@ -293,19 +293,19 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
         </div>
         <div className="flex flex-wrap items-center gap-4 px-4">
            <div className="bg-slate-100/50 border border-slate-200 rounded-2xl px-6 py-4 flex items-center gap-4 group hover:bg-white transition-colors">
-             <Calendar size={16} className="text-blue-500" />
+             <Calendar size={16} className="text-orange-500" />
              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[12px] font-display font-black uppercase tracking-widest cursor-pointer text-slate-950">
                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
              </select>
            </div>
            <div className="bg-slate-100/50 border border-slate-200 rounded-2xl px-6 py-4 flex items-center gap-4 group hover:bg-white transition-colors">
-             <Waves size={16} className="text-indigo-500" />
+             <Waves size={16} className="text-orange-500" />
              <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[12px] font-display font-black uppercase tracking-widest cursor-pointer text-slate-950">
                {availableMonths.map(m => <option key={m} value={m}>{MONTHS_FR[m]}</option>)}
              </select>
            </div>
            <div className="bg-slate-950 border border-white/10 rounded-2xl px-8 py-4 flex items-center gap-4 shadow-2xl transition-all hover:bg-slate-800 group">
-             <Activity size={16} className={viewMode === 'donations' ? "text-blue-400" : "text-orange-400"} />
+             <Activity size={16} className={viewMode === 'donations' ? "text-orange-400" : "text-orange-400"} />
              <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)} className="bg-transparent outline-none text-[12px] font-display font-black uppercase tracking-widest cursor-pointer text-white">
                {availableDays.map(d => <option key={d} value={d}>{d}</option>)}
              </select>
@@ -344,7 +344,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
 
         <motion.div 
           layout
-          className={`relative overflow-hidden rounded-[5rem] p-16 lg:p-24 text-white shadow-3xl border border-white/5 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-indigo-950'}`}
+          className={`relative overflow-hidden rounded-[5rem] p-16 lg:p-24 text-white shadow-3xl border border-white/5 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-orange-950'}`}
         >
           <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden">
             <svg width="100%" height="100%" viewBox="0 0 800 400" preserveAspectRatio="none">
@@ -390,24 +390,24 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
                 {viewMode === 'donations' ? (
                   <>
                     <motion.div whileHover={{ scale: 1.05, y: -5 }} className="bg-white/5 backdrop-blur-2xl p-10 rounded-[3.5rem] border border-white/10 text-center group transition-all">
-                      <p className="text-[11px] font-display font-black text-blue-400 uppercase mb-6 tracking-[0.2em]">SITES FIXES</p>
+                      <p className="text-[11px] font-display font-black text-orange-400 uppercase mb-6 tracking-[0.2em]">SITES FIXES</p>
                       <div className="flex flex-col items-center">
-                        <p className="text-6xl font-display font-black group-hover:text-blue-400 transition-colors">{dayRecord?.stats.fixed || 0}</p>
+                        <p className="text-6xl font-display font-black group-hover:text-orange-400 transition-colors">{dayRecord?.stats.fixed || 0}</p>
                         <div className="mt-4 px-4 py-1.5 bg-white/5 rounded-full border border-white/5">
                           <p className="text-[10px] font-display font-bold text-white/30 uppercase tracking-widest">Cible : {dayObjectives.fixed}</p>
                         </div>
                       </div>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.05, y: -5 }} className="bg-white/5 backdrop-blur-2xl p-10 rounded-[3.5rem] border border-white/10 text-center group transition-all">
-                      <p className="text-[11px] font-display font-black text-indigo-400 uppercase mb-6 tracking-[0.2em]">UNITÉS MOBILES</p>
+                      <p className="text-[11px] font-display font-black text-orange-400 uppercase mb-6 tracking-[0.2em]">UNITÉS MOBILES</p>
                       <div className="flex flex-col items-center">
-                        <p className="text-6xl font-display font-black group-hover:text-indigo-400 transition-colors">{dayRecord?.stats.mobile || 0}</p>
+                        <p className="text-6xl font-display font-black group-hover:text-orange-400 transition-colors">{dayRecord?.stats.mobile || 0}</p>
                         <div className="mt-4 px-4 py-1.5 bg-white/5 rounded-full border border-white/5">
                           <p className="text-[10px] font-display font-bold text-white/30 uppercase tracking-widest">Cible : {dayObjectives.mobile}</p>
                         </div>
                       </div>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.05, y: -5 }} className="bg-gradient-to-br from-blue-600 to-indigo-700 p-10 rounded-[3.5rem] border border-white/20 text-center shadow-2xl shadow-blue-500/20">
+                    <motion.div whileHover={{ scale: 1.05, y: -5 }} className="bg-gradient-to-br from-orange-600 to-orange-700 p-10 rounded-[3.5rem] border border-white/20 text-center shadow-2xl shadow-orange-500/20">
                       <p className="text-[11px] font-display font-black text-white/60 uppercase mb-6 tracking-[0.2em]">TOTAL NATIONAL</p>
                       <div className="flex flex-col items-center">
                         <p className="text-6xl font-display font-black text-white">{(dayRecord?.stats.realized || 0).toLocaleString()}</p>
@@ -442,8 +442,8 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
                   <p className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Top 5 des contributions journalières</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 px-5 py-2.5 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100">
-                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <div className="flex items-center gap-3 px-5 py-2.5 bg-orange-50 text-orange-600 rounded-2xl border border-orange-100">
+                <div className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
                 <span className="text-[11px] font-display font-black uppercase tracking-widest">Live Feed</span>
               </div>
             </div>
@@ -481,7 +481,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
                         whileInView={{ width: `${Math.min(100, (site.total / (site.objective || 1)) * 100)}%` }}
                         viewport={{ once: true }}
                         transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="h-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                        className="h-full bg-orange-600 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
                       />
                     </div>
                   </div>
@@ -496,7 +496,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
             </div>
             <div className="relative z-10 flex-1">
               <h3 className="text-2xl font-display font-black uppercase tracking-tighter mb-3">Intelligence Stratégique</h3>
-              <p className="text-[11px] font-display font-bold text-blue-400 uppercase tracking-[0.3em] mb-12">Analyse Prédictive IA v4.2</p>
+              <p className="text-[11px] font-display font-bold text-orange-400 uppercase tracking-[0.3em] mb-12">Analyse Prédictive IA v4.2</p>
               
               <div className="space-y-8">
                 <motion.div 
@@ -506,13 +506,13 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
                   className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 hover:bg-white/10 transition-colors group"
                 >
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                    <div className="w-10 h-10 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
                       <Star size={20} />
                     </div>
                     <p className="text-[12px] font-display font-black uppercase tracking-widest">Optimisation Flux</p>
                   </div>
                   <p className="text-sm text-white/60 leading-relaxed font-medium">
-                    Le site de <span className="text-white font-bold">TREICHVILLE</span> surperforme de <span className="text-blue-400">15%</span>. Réaffectation conseillée d'une unité mobile vers <span className="text-white font-bold">ABOBO</span>.
+                    Le site de <span className="text-white font-bold">TREICHVILLE</span> surperforme de <span className="text-orange-400">15%</span>. Réaffectation conseillée d'une unité mobile vers <span className="text-white font-bold">ABOBO</span>.
                   </p>
                 </motion.div>
 
@@ -536,7 +536,7 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
               </div>
             </div>
 
-            <button className="relative z-10 mt-12 w-full py-5 bg-blue-600 hover:bg-blue-500 rounded-2xl text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-blue-900/40 active:scale-95">
+            <button className="relative z-10 mt-12 w-full py-5 bg-orange-600 hover:bg-orange-500 rounded-2xl text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-orange-900/40 active:scale-95">
               Générer Rapport Analytique
             </button>
           </div>

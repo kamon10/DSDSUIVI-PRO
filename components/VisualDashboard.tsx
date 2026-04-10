@@ -5,8 +5,8 @@ import { motion } from 'motion/react';
 import { COLORS } from '../constants.tsx';
 
 const getPerfColor = (perc: number) => {
-  if (perc >= 100) return 'text-emerald-500';
-  if (perc >= 75) return 'text-blue-500';
+  if (perc >= 100) return 'text-orange-500';
+  if (perc >= 75) return 'text-orange-500';
   return 'text-rose-500';
 };
 
@@ -117,7 +117,7 @@ export const VisualDashboard: React.FC<{
       <div className="flex justify-center mb-8">
         <div className="bg-white/80 backdrop-blur-xl p-2 rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-2">
            <button onClick={() => setViewMode('donations')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={18} className={viewMode === 'donations' ? 'text-blue-400' : ''}/> Prélèvements
+             <Activity size={18} className={viewMode === 'donations' ? 'text-orange-400' : ''}/> Prélèvements
            </button>
            <button onClick={() => setViewMode('distribution')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
              <Truck size={18} className={viewMode === 'distribution' ? 'text-orange-400' : ''}/> Distribution
@@ -126,18 +126,18 @@ export const VisualDashboard: React.FC<{
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className={`lg:col-span-2 rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl relative overflow-hidden transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-indigo-950'}`}>
-          <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full -mr-48 -mt-48 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-blue-600/20' : 'bg-orange-600/30'}`}></div>
+        <div className={`lg:col-span-2 rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl relative overflow-hidden transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-orange-950'}`}>
+          <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full -mr-48 -mt-48 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-orange-600/20' : 'bg-orange-600/30'}`}></div>
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-12">
               <div className="flex items-center gap-6">
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl ${viewMode === 'donations' ? 'bg-blue-600 shadow-blue-500/40' : 'bg-orange-600 shadow-orange-500/40'}`}>
+                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl ${viewMode === 'donations' ? 'bg-orange-600 shadow-orange-500/40' : 'bg-orange-600 shadow-orange-500/40'}`}>
                   {viewMode === 'donations' ? <Calendar size={28} /> : <Package size={28} />}
                 </div>
                 <div>
                   <h2 className="text-3xl font-display font-black uppercase tracking-tighter leading-none">{viewMode === 'donations' ? 'Cockpit du Jour' : 'Sorties du Jour'}</h2>
                   <div className="flex items-center gap-3 mt-3">
-                    <Filter size={16} className={viewMode === 'donations' ? "text-blue-400" : "text-orange-400"} />
+                    <Filter size={16} className={viewMode === 'donations' ? "text-orange-400" : "text-orange-400"} />
                     <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[11px] font-display font-black uppercase tracking-[0.2em] cursor-pointer text-white/60 hover:text-white transition-colors">
                       {data.dailyHistory.map((h: any) => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
                     </select>
@@ -152,7 +152,7 @@ export const VisualDashboard: React.FC<{
                     </React.Fragment>
                  ) : (
                     <React.Fragment>
-                      <p className="text-5xl font-display font-black text-emerald-400 leading-none tracking-tighter">{dailyDistStats?.efficiency.toFixed(1)}%</p>
+                      <p className="text-5xl font-display font-black text-orange-400 leading-none tracking-tighter">{dailyDistStats?.efficiency.toFixed(1)}%</p>
                       <p className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-white/30 mt-3">Utilisation Nette</p>
                     </React.Fragment>
                  )}
@@ -161,9 +161,9 @@ export const VisualDashboard: React.FC<{
 
             {viewMode === 'donations' ? (
               <div className="grid grid-cols-3 gap-6 mb-12">
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Fixe</p><p className="text-3xl font-display font-black text-blue-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.fixed || 0}</p></div>
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Mobile</p><p className="text-3xl font-display font-black text-indigo-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.mobile || 0}</p></div>
-                <div className="bg-blue-600/20 backdrop-blur-xl p-6 rounded-[2.5rem] border border-blue-600/20 text-center group transition-all hover:bg-blue-600/30"><p className="text-[10px] font-display font-black text-blue-400 uppercase mb-3 tracking-[0.2em]">Total</p><p className="text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{(currentDailyRecord?.stats.realized || 0).toLocaleString()}</p></div>
+                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Fixe</p><p className="text-3xl font-display font-black text-orange-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.fixed || 0}</p></div>
+                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Mobile</p><p className="text-3xl font-display font-black text-orange-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.mobile || 0}</p></div>
+                <div className="bg-orange-600/20 backdrop-blur-xl p-6 rounded-[2.5rem] border border-orange-600/20 text-center group transition-all hover:bg-orange-600/30"><p className="text-[10px] font-display font-black text-orange-400 uppercase mb-3 tracking-[0.2em]">Total</p><p className="text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{(currentDailyRecord?.stats.realized || 0).toLocaleString()}</p></div>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-6 mb-12">
@@ -177,7 +177,7 @@ export const VisualDashboard: React.FC<{
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(viewMode === 'donations' ? dayAchievement : (dailyDistStats?.efficiency || 0), 100)}%` }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
-                className={`h-full transition-all duration-1000 shadow-[0_0_20px_rgba(255,255,255,0.1)] ${viewMode === 'donations' ? 'bg-blue-500' : 'bg-orange-500'}`} 
+                className={`h-full transition-all duration-1000 shadow-[0_0_20px_rgba(255,255,255,0.1)] ${viewMode === 'donations' ? 'bg-orange-500' : 'bg-orange-500'}`} 
                />
             </div>
           </div>
@@ -185,7 +185,7 @@ export const VisualDashboard: React.FC<{
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
            <div className="card-professional p-10 bg-white/90 backdrop-blur-sm flex flex-col justify-between group">
               <div className="flex items-center gap-5 mb-8">
-                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${viewMode === 'donations' ? 'bg-blue-50 text-blue-600 shadow-blue-100' : 'bg-orange-50 text-orange-600 shadow-orange-100'}`}><PieChart size={28} /></div>
+                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${viewMode === 'donations' ? 'bg-orange-50 text-orange-600 shadow-orange-100' : 'bg-orange-50 text-orange-600 shadow-orange-100'}`}><PieChart size={28} /></div>
                  <div>
                    <h3 className="text-xl font-display font-black uppercase tracking-tighter text-slate-950">{viewMode === 'donations' ? 'Répartition Jour' : 'Top Produits Jour'}</h3>
                    <p className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-widest mt-1">Analyse segmentée</p>
@@ -196,7 +196,7 @@ export const VisualDashboard: React.FC<{
                    {currentDailyRecord?.sites.filter((s: any) => s.total > 0).slice(0, 4).map((s: any, idx: number) => (
                      <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all">
                         <span className="text-[11px] font-display font-black text-slate-600 uppercase tracking-tight truncate max-w-[160px]">{s.name}</span>
-                        <span className="text-sm font-display font-black text-blue-600">{s.total} poches</span>
+                        <span className="text-sm font-display font-black text-orange-600">{s.total} poches</span>
                      </div>
                    ))}
                 </div>
@@ -216,12 +216,12 @@ export const VisualDashboard: React.FC<{
                 <Award size={200} />
               </div>
               <p className="text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-6 flex items-center gap-3 relative z-10">
-                <Award size={18} className={viewMode === 'donations' ? "text-blue-500" : "text-orange-500"} /> 
+                <Award size={18} className={viewMode === 'donations' ? "text-orange-500" : "text-orange-500"} /> 
                 National {data.month}
               </p>
               <div className="relative z-10">
                  <h4 className="text-5xl font-display font-black text-slate-950 uppercase tracking-tighter leading-none mb-3 group-hover:translate-x-1 transition-transform duration-500">{viewMode === 'donations' ? data.monthly.realized.toLocaleString() : dailyDistStats?.qty.toLocaleString()}</h4>
-                 <p className={`text-2xl font-display font-black ${viewMode === 'donations' ? 'text-blue-600' : 'text-orange-600'}`}>Poches <span className="text-[10px] font-display font-bold text-slate-300 uppercase tracking-widest ml-3">Cumul Mensuel</span></p>
+                 <p className={`text-2xl font-display font-black ${viewMode === 'donations' ? 'text-orange-600' : 'text-orange-600'}`}>Poches <span className="text-[10px] font-display font-bold text-slate-300 uppercase tracking-widest ml-3">Cumul Mensuel</span></p>
                  <div className="mt-8 flex items-center gap-2 text-[10px] font-display font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-950 transition-colors">Explorer le rapport global <ArrowRight size={12} className="group-hover:translate-x-2 transition-transform" /></div>
               </div>
            </div>
@@ -229,8 +229,8 @@ export const VisualDashboard: React.FC<{
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="card-professional bg-white/90 backdrop-blur-sm flex flex-col overflow-hidden h-[600px]">
-          <div className={`p-10 border-b border-slate-100 flex justify-between items-center ${viewMode === 'donations' ? 'bg-blue-50/30' : 'bg-orange-50/30'}`}>
+        <div onClick={() => setActiveTab?.('recap')} className={`card-professional bg-white/90 backdrop-blur-sm flex flex-col overflow-hidden h-[600px] cursor-pointer transition-all duration-700 ${viewMode === 'donations' ? 'hover:border-orange-200' : 'hover:border-orange-200'}`}>
+          <div className={`p-10 border-b border-slate-100 flex justify-between items-center ${viewMode === 'donations' ? 'bg-orange-50/30' : 'bg-orange-50/30'}`}>
             <div className="flex items-center gap-6">
               <div className={`w-14 h-14 text-white rounded-[1.25rem] flex items-center justify-center shadow-2xl transition-all duration-500 ${viewMode === 'donations' ? 'bg-slate-950 shadow-slate-900/20' : 'bg-orange-600 shadow-orange-500/20'}`}><Clock size={28} /></div>
               <div>
@@ -251,7 +251,7 @@ export const VisualDashboard: React.FC<{
                   className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group hover:bg-white hover:shadow-xl transition-all duration-500"
                 >
                    <div className="flex items-center gap-6 min-w-0">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-500 shadow-sm border border-slate-100"><Building2 size={22} /></div>
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-orange-500 group-hover:scale-110 transition-all duration-500 shadow-sm border border-slate-100"><Building2 size={22} /></div>
                       <div className="truncate">
                         <p className="text-sm font-display font-black text-slate-950 uppercase tracking-tight truncate">{site.name}</p>
                         <p className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{site.manager || "Responsable non assigné"}</p>
@@ -261,7 +261,7 @@ export const VisualDashboard: React.FC<{
                       {site.phone ? (
                         <button 
                           onClick={() => handleMissingSiteWhatsApp(site)}
-                          className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:rotate-6 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
+                          className="w-12 h-12 bg-orange-600 text-white rounded-2xl flex items-center justify-center hover:bg-orange-700 hover:rotate-6 transition-all shadow-xl shadow-orange-500/20 active:scale-95"
                           title="Envoyer Rappel WhatsApp"
                         >
                           <MessageSquare size={20} />
@@ -269,7 +269,7 @@ export const VisualDashboard: React.FC<{
                       ) : <div className="w-12 h-12 bg-slate-100 text-slate-300 rounded-2xl flex items-center justify-center border border-slate-200"><Truck size={18} /></div>}
                    </div>
                 </motion.div>
-              )) : <div className="h-full flex flex-col items-center justify-center text-center py-24 gap-6 opacity-40"><CheckCircle2 size={64} className="text-emerald-500 animate-bounce" /><p className="text-sm font-display font-black uppercase tracking-[0.3em] text-slate-950">Toutes les saisies sont à jour</p></div>
+              )) : <div className="h-full flex flex-col items-center justify-center text-center py-24 gap-6 opacity-40"><CheckCircle2 size={64} className="text-orange-500 animate-bounce" /><p className="text-sm font-display font-black uppercase tracking-[0.3em] text-slate-950">Toutes les saisies sont à jour</p></div>
             ) : (
                data.distributions?.records.filter((r: any) => r.date === selectedDate).slice(0, 20).map((r: any, idx: number) => (
                 <motion.div 
@@ -296,13 +296,13 @@ export const VisualDashboard: React.FC<{
             )}
           </div>
         </div>
-        <div onClick={() => setActiveTab?.('recap')} className={`card-professional bg-white/90 backdrop-blur-sm flex flex-col overflow-hidden h-[600px] cursor-pointer transition-all duration-700 ${viewMode === 'donations' ? 'hover:border-blue-200' : 'hover:border-orange-200'}`}>
-          <div className={`p-10 border-b border-slate-100 flex justify-between items-center ${viewMode === 'donations' ? 'bg-blue-50/30' : 'bg-orange-50/30'}`}>
+        <div onClick={() => setActiveTab?.('recap')} className={`card-professional bg-white/90 backdrop-blur-sm flex flex-col overflow-hidden h-[600px] cursor-pointer transition-all duration-700 ${viewMode === 'donations' ? 'hover:border-orange-200' : 'hover:border-orange-200'}`}>
+          <div className={`p-10 border-b border-slate-100 flex justify-between items-center ${viewMode === 'donations' ? 'bg-orange-50/30' : 'bg-orange-50/30'}`}>
             <div className="flex items-center gap-6">
-              <div className={`w-14 h-14 text-white rounded-[1.25rem] flex items-center justify-center shadow-2xl transition-all duration-500 ${viewMode === 'donations' ? 'bg-blue-600 shadow-blue-500/20' : 'bg-orange-600 shadow-orange-500/20'}`}><CheckCircle2 size={28} /></div>
+              <div className={`w-14 h-14 text-white rounded-[1.25rem] flex items-center justify-center shadow-2xl transition-all duration-500 ${viewMode === 'donations' ? 'bg-orange-600 shadow-orange-500/20' : 'bg-orange-600 shadow-orange-500/20'}`}><CheckCircle2 size={28} /></div>
               <div>
                 <h3 className="font-display font-black text-2xl uppercase tracking-tighter text-slate-950">{viewMode === 'donations' ? 'Saisies Validées' : 'Top Distribution CGR'}</h3>
-                <p className={`text-[11px] font-display font-bold uppercase tracking-[0.2em] mt-1 ${viewMode === 'donations' ? 'text-blue-500' : 'text-orange-500'}`}>{viewMode === 'donations' ? 'Consulter le rapport global →' : 'Classement par volume CGR'}</p>
+                <p className={`text-[11px] font-display font-bold uppercase tracking-[0.2em] mt-1 ${viewMode === 'donations' ? 'text-orange-500' : 'text-orange-500'}`}>{viewMode === 'donations' ? 'Consulter le rapport global →' : 'Classement par volume CGR'}</p>
               </div>
             </div>
           </div>
@@ -317,7 +317,7 @@ export const VisualDashboard: React.FC<{
                 className="p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 hover:bg-white hover:shadow-2xl transition-all duration-500 flex items-center justify-between group"
               >
                  <div className="flex items-center gap-6 min-w-0">
-                    <div className={`w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-500 ${item.type === 'donation' ? 'text-blue-500' : 'text-orange-500'}`}><Zap size={22} /></div>
+                    <div className={`w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-500 ${item.type === 'donation' ? 'text-orange-500' : 'text-orange-500'}`}><Zap size={22} /></div>
                     <div className="truncate">
                       <p className="text-sm font-display font-black text-slate-950 uppercase tracking-tight truncate">{item.name}</p>
                       <div className="flex items-center gap-3 mt-1.5">

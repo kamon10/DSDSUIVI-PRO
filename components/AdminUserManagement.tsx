@@ -224,17 +224,17 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
-      case 'SUPERADMIN': return 'bg-red-600 text-white';
+      case 'SUPERADMIN': return 'bg-orange-800 text-white';
       case 'ADMIN': return 'bg-slate-900 text-white';
-      case 'PRES': return 'bg-blue-600 text-white';
-      case 'AGENT': return 'bg-emerald-500 text-white';
+      case 'PRES': return 'bg-orange-600 text-white';
+      case 'AGENT': return 'bg-orange-500 text-white';
       default: return 'bg-slate-100 text-slate-500';
     }
   };
 
   const getLogIcon = (action: string) => {
-    if (action === 'CONNEXION') return <LogIn size={16} className="text-blue-500" />;
-    if (action === 'SAISIE') return <Database size={16} className="text-emerald-500" />;
+    if (action === 'CONNEXION') return <LogIn size={16} className="text-orange-500" />;
+    if (action === 'SAISIE') return <Database size={16} className="text-orange-500" />;
     if (action === 'MISE_A_JOUR') return <Edit3 size={16} className="text-orange-500" />;
     return <Clock size={16} className="text-slate-400" />;
   };
@@ -242,10 +242,10 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-12">
       <div className="bg-[#0f172a] rounded-[3.5rem] p-10 lg:p-14 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 blur-[120px] rounded-full -mr-32 -mt-32"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600/10 blur-[120px] rounded-full -mr-32 -mt-32"></div>
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-10">
           <div className="flex items-center gap-8">
-            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-red-600 rounded-3xl flex items-center justify-center shadow-xl shadow-red-900/40">
+            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-900/40">
               <ShieldCheck size={36} />
             </div>
             <div>
@@ -280,15 +280,22 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
              </div>
           </div>
           <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden overflow-x-auto">
-            <table className="w-full">
-              <thead><tr className="bg-slate-50 border-b"><th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Identité</th><th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Rôle</th><th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Rattachement</th><th className="px-8 py-6 text-right text-[10px] font-black text-slate-400 uppercase">Actions</th></tr></thead>
-              <tbody className="divide-y">
+            <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
+              <thead>
+                <tr className="bg-orange-600 text-white h-14">
+                  <th className="border border-orange-700 px-8 py-2 text-left text-[10px] font-black uppercase tracking-widest">Identité</th>
+                  <th className="border border-orange-700 px-8 py-2 text-center text-[10px] font-black uppercase tracking-widest">Rôle</th>
+                  <th className="border border-orange-700 px-8 py-2 text-center text-[10px] font-black uppercase tracking-widest">Rattachement</th>
+                  <th className="border border-orange-700 px-8 py-2 text-right text-[10px] font-black uppercase tracking-widest">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
                 {loading ? <tr><td colSpan={4} className="py-20 text-center opacity-30">Chargement...</td></tr> : filteredUsers.map((u, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-6"><p className="text-[12px] font-black uppercase">{u.nom} {u.prenoms}</p><p className="text-[10px] text-slate-400">{u.email}</p></td>
-                    <td className="px-8 py-6 text-center"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${getRoleBadge(u.role)}`}>{u.role}</span></td>
-                    <td className="px-8 py-6 text-center text-[10px] font-black uppercase">{u.site || u.region || 'NATIONAL'}</td>
-                    <td className="px-8 py-6 text-right"><button onClick={() => setEditingUser(u)} className="p-2 border rounded-lg text-slate-400 hover:text-slate-900"><UserCog size={18} /></button></td>
+                  <tr key={idx} className="h-14 hover:brightness-95 transition-all bg-white">
+                    <td className="border border-slate-200 px-8 py-2"><p className="text-[12px] font-black uppercase">{u.nom} {u.prenoms}</p><p className="text-[10px] text-slate-400">{u.email}</p></td>
+                    <td className="border border-slate-200 px-8 py-2 text-center"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${getRoleBadge(u.role)}`}>{u.role}</span></td>
+                    <td className="border border-slate-200 px-8 py-2 text-center text-[10px] font-black uppercase">{u.site || u.region || 'NATIONAL'}</td>
+                    <td className="border border-slate-200 px-8 py-2 text-right"><button onClick={() => setEditingUser(u)} className="p-2 border rounded-lg text-slate-400 hover:text-slate-900"><UserCog size={18} /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -310,28 +317,28 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
              </button>
           </div>
           <div className="bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 overflow-hidden overflow-x-auto">
-             <table className="w-full">
+             <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
                 <thead>
-                   <tr className="bg-slate-50 border-b">
-                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Date & Heure</th>
-                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Utilisateur</th>
-                      <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase">Action</th>
-                      <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase">Détails de l'activité</th>
+                   <tr className="bg-orange-600 text-white h-14">
+                      <th className="border border-orange-700 px-8 py-2 text-left text-[10px] font-black uppercase tracking-widest">Date & Heure</th>
+                      <th className="border border-orange-700 px-8 py-2 text-left text-[10px] font-black uppercase tracking-widest">Utilisateur</th>
+                      <th className="border border-orange-700 px-8 py-2 text-center text-[10px] font-black uppercase tracking-widest">Action</th>
+                      <th className="border border-orange-700 px-8 py-2 text-left text-[10px] font-black uppercase tracking-widest">Détails de l'activité</th>
                    </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody>
                    {loading ? (
                      <tr><td colSpan={4} className="py-20 text-center opacity-30">Chargement des journaux...</td></tr>
                    ) : filteredLogs.length > 0 ? filteredLogs.map((log, i) => (
-                     <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-8 py-6">
+                     <tr key={i} className="h-14 hover:brightness-95 transition-all bg-white">
+                        <td className="border border-slate-200 px-8 py-2">
                            <p className="text-[11px] font-black text-slate-900">{log.timestamp}</p>
                         </td>
-                        <td className="px-8 py-6">
+                        <td className="border border-slate-200 px-8 py-2">
                            <p className="text-[11px] font-black uppercase text-slate-800">{log.user}</p>
                            <p className="text-[9px] text-slate-400">{log.email}</p>
                         </td>
-                        <td className="px-8 py-6 text-center">
+                        <td className="border border-slate-200 px-8 py-2 text-center">
                            <div className="flex flex-col items-center gap-1">
                               <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mb-1">
                                  {getLogIcon(log.action)}
@@ -339,7 +346,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                               <span className="text-[8px] font-black uppercase text-slate-500 tracking-tighter">{log.action.replace(/_/g, ' ')}</span>
                            </div>
                         </td>
-                        <td className="px-8 py-6">
+                        <td className="border border-slate-200 px-8 py-2">
                            <p className="text-[11px] text-slate-600 font-medium italic">{log.details}</p>
                         </td>
                      </tr>
@@ -387,7 +394,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       {activeTab === 'branding' && (
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in slide-in-from-bottom-4">
            <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100 flex flex-col items-center">
-              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8"><ImageIcon size={32}/></div>
+              <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-8"><ImageIcon size={32}/></div>
               <h3 className="text-xl font-black uppercase mb-10">Logo App</h3>
               <div className="w-48 h-48 rounded-[2.5rem] border-2 border-dashed border-slate-200 overflow-hidden mb-8 relative bg-slate-50">
                  <img src={tempLogo} alt="Logo" className="w-full h-full object-contain p-6 relative z-10" />
@@ -412,7 +419,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
         <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-bottom-4">
            <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner">
+                <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner">
                   <Phone size={24} />
                 </div>
                 <div>
@@ -429,7 +436,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                       type="number" 
                       value={whatsappConfig.alertThreshold} 
                       onChange={e => setWhatsappConfig({...whatsappConfig, alertThreshold: parseInt(e.target.value)})} 
-                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-black outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-black outline-none focus:ring-4 ring-orange-50 transition-all" 
                     />
                   </div>
                   <div className="space-y-4">
@@ -439,9 +446,9 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                         value={newNumber} 
                         onChange={e => setNewNumber(e.target.value)} 
                         placeholder="Numéro avec indicatif"
-                        className="flex-1 px-6 py-4 bg-slate-50 border rounded-2xl font-black outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                        className="flex-1 px-6 py-4 bg-slate-50 border rounded-2xl font-black outline-none focus:ring-4 ring-orange-50 transition-all" 
                       />
-                      <button onClick={addWhatsAppNumber} className="px-6 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Ajouter</button>
+                      <button onClick={addWhatsAppNumber} className="px-6 bg-orange-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Ajouter</button>
                     </div>
                   </div>
                 </div>
@@ -471,7 +478,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                         value={whatsappConfig.apiUrl} 
                         onChange={e => setWhatsappConfig({...whatsappConfig, apiUrl: e.target.value})} 
                         placeholder="https://api.example.com/send?to=[NUMBER]&msg=[MESSAGE]"
-                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-orange-50 transition-all" 
                       />
                     </div>
                     <div className="space-y-4">
@@ -480,7 +487,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                         value={whatsappConfig.groupApiUrl} 
                         onChange={e => setWhatsappConfig({...whatsappConfig, groupApiUrl: e.target.value})} 
                         placeholder="https://api.example.com/group?id=[GROUP]&msg=[MESSAGE]"
-                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                        className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-orange-50 transition-all" 
                       />
                     </div>
                   </div>
@@ -491,7 +498,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                       value={whatsappConfig.groupId} 
                       onChange={e => setWhatsappConfig({...whatsappConfig, groupId: e.target.value})} 
                       placeholder="Ex: 12036302456789@g.us"
-                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-orange-50 transition-all" 
                     />
                     <p className="text-[9px] text-slate-400 mt-1 italic">Pour TextMeBot, ajoutez le bot au groupe et envoyez /groupid pour obtenir cet identifiant.</p>
                   </div>
@@ -502,13 +509,13 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                       type="password"
                       value={whatsappConfig.apiKey} 
                       onChange={e => setWhatsappConfig({...whatsappConfig, apiKey: e.target.value})} 
-                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-emerald-50 transition-all" 
+                      className="w-full px-6 py-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none focus:ring-4 ring-orange-50 transition-all" 
                     />
                   </div>
                 </div>
 
                 <div className="pt-6 flex gap-4">
-                  <button onClick={handleSaveWhatsApp} disabled={submitting} className="flex-[2] py-5 bg-emerald-600 text-white rounded-[2rem] font-black text-[10px] uppercase shadow-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-3">
+                  <button onClick={handleSaveWhatsApp} disabled={submitting} className="flex-[2] py-5 bg-orange-600 text-white rounded-[2rem] font-black text-[10px] uppercase shadow-xl hover:bg-orange-700 active:scale-95 transition-all flex items-center justify-center gap-3">
                     {submitting ? <RefreshCw className="animate-spin" /> : <Save size={18} />} Enregistrer la configuration
                   </button>
                   <button onClick={handleTestWhatsApp} disabled={submitting} className="flex-1 py-5 bg-slate-100 text-slate-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-3">
@@ -531,7 +538,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                       }
                     }} 
                     disabled={submitting} 
-                    className="flex-1 py-5 bg-blue-50 text-blue-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3"
+                    className="flex-1 py-5 bg-orange-50 text-orange-600 rounded-[2rem] font-black text-[10px] uppercase hover:bg-orange-100 active:scale-95 transition-all flex items-center justify-center gap-3"
                   >
                     <RefreshCw size={18} className={submitting ? 'animate-spin' : ''} /> Vérifier Stock
                   </button>
@@ -562,7 +569,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       {editingSite && (
         <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
            <div className="bg-white rounded-[3.5rem] max-w-lg w-full shadow-3xl overflow-hidden animate-in zoom-in-95 duration-300">
-              <div className="bg-red-600 p-8 text-white flex justify-between items-center">
+              <div className="bg-orange-600 p-8 text-white flex justify-between items-center">
                  <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><Building2 size={24}/></div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter">Édition Structure</h3>
@@ -580,7 +587,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                        <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Responsable du Site</label>
                        <div className="relative">
                           <User size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
-                          <input required value={editingSite.manager} onChange={e => setEditingSite({...editingSite, manager: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-red-50 transition-all"/>
+                          <input required value={editingSite.manager} onChange={e => setEditingSite({...editingSite, manager: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-orange-50 transition-all"/>
                        </div>
                     </div>
                     
@@ -589,14 +596,14 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
                           <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Téléphone</label>
                           <div className="relative">
                              <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
-                             <input required value={editingSite.phone} onChange={e => setEditingSite({...editingSite, phone: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-red-50 transition-all"/>
+                             <input required value={editingSite.phone} onChange={e => setEditingSite({...editingSite, phone: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-orange-50 transition-all"/>
                           </div>
                        </div>
                        <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase ml-1 tracking-widest">Email</label>
                           <div className="relative">
                              <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"/>
-                             <input required type="email" value={editingSite.email} onChange={e => setEditingSite({...editingSite, email: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-red-50 transition-all"/>
+                             <input required type="email" value={editingSite.email} onChange={e => setEditingSite({...editingSite, email: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border rounded-xl text-xs font-bold outline-none focus:ring-4 ring-orange-50 transition-all"/>
                           </div>
                        </div>
                     </div>
@@ -611,7 +618,7 @@ export const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ script
       )}
 
       {status && (
-        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[400] px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 ${status.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white'}`}>
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[400] px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 ${status.type === 'success' ? 'bg-orange-500 text-white' : 'bg-red-600 text-white'}`}>
            {status.type === 'success' ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
            <p className="text-[11px] font-black uppercase">{status.msg}</p>
            <button onClick={() => setStatus(null)} className="ml-4 opacity-50">×</button>

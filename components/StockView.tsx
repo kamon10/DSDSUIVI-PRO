@@ -297,11 +297,11 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
         {/* KPI Autonomie */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Clock size={80} className="text-blue-500" />
+            <Clock size={80} className="text-orange-500" />
           </div>
-          <span className="text-[12px] font-black uppercase tracking-widest text-blue-500 block mb-2">Autonomie Moyenne</span>
+          <span className="text-[12px] font-black uppercase tracking-widest text-orange-500 block mb-2">Autonomie Moyenne</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-6xl font-black text-blue-600 tracking-tighter">
+            <span className="text-6xl font-black text-orange-600 tracking-tighter">
               {(() => {
                 const normalize = (str: string) => 
                   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
@@ -323,9 +323,9 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                 return cgrDaily > 0 ? Math.round(stockForAutonomy / cgrDaily) : '∞';
               })()}
             </span>
-            <span className="text-sm font-bold text-blue-400 uppercase">Jours</span>
+            <span className="text-sm font-bold text-orange-400 uppercase">Jours</span>
           </div>
-          <p className="mt-4 text-[12px] font-bold uppercase tracking-wide text-blue-400">
+          <p className="mt-4 text-[12px] font-bold uppercase tracking-wide text-orange-400">
             {filterPres === 'PRES ABIDJAN' ? 'Basé sur distribution Abidjan' : 'Basé sur distribution Nationale'}
           </p>
         </div>
@@ -436,19 +436,19 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
 
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[1200px]">
             <thead>
-              <tr className="bg-[#f26522] text-white">
-                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 w-[180px]">Site Source</th>
-                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 w-[220px]">Structure</th>
-                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 w-[160px]">Produit</th>
+              <tr className="bg-orange-600 text-white h-14">
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-left w-[180px]">Site Source</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-left w-[220px]">Structure</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-left w-[160px]">Produit</th>
                 {SANG_GROUPS.map(g => (
-                  <th key={g} className="px-2 py-6 text-[13px] font-black uppercase tracking-widest border-r border-white/10 text-center w-[60px]">{g}</th>
+                  <th key={g} className="border border-orange-700 px-2 py-2 text-center w-[60px] uppercase tracking-widest">{g}</th>
                 ))}
-                <th className="px-6 py-6 text-[13px] font-black uppercase tracking-widest text-center w-[120px] bg-white/10">Total</th>
+                <th className="border border-orange-700 px-6 py-2 text-center w-[120px] uppercase tracking-widest bg-orange-700/50">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {(Object.entries(groupedStock) as [string, GroupedStock[string]][]).length > 0 ? (
                 (Object.entries(groupedStock) as [string, GroupedStock[string]][]).map(([pres, presData]) => {
                   const presSiteCount = Object.values(presData.sites).reduce((acc, s) => acc + Object.keys(s.products).length, 0);
@@ -465,39 +465,33 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                               }
                             });
 
-                            // Calcul autonomie pour ce produit sur ce site
-                            const productDaily = SANG_GROUPS.reduce((acc, g) => {
-                              return acc + (stats.consumptionMap[`${productType}|${g}`] || 0);
-                            }, 0);
-                            const autonomy = productDaily > 0 ? productData.total / productDaily : Infinity;
-
                             return (
-                              <tr key={productType} className="hover:bg-slate-50 transition-colors group">
+                              <tr key={productType} className="h-10 hover:brightness-95 transition-all bg-white">
                                 {sIdx === 0 && pIdx === 0 && (
-                                  <td rowSpan={presSiteCount} className="px-6 py-4 align-top border-r border-slate-50 bg-white group-hover:bg-slate-50">
-                                    <span className="text-[13px] font-black text-[#f26522] uppercase leading-tight">{pres}</span>
+                                  <td rowSpan={presSiteCount} className="border border-slate-300 px-6 py-2 align-top bg-orange-50/20">
+                                    <span className="text-[12px] font-black text-orange-700 uppercase leading-tight">{pres}</span>
                                   </td>
                                 )}
                                 {pIdx === 0 && (
-                                  <td rowSpan={Object.keys(siteData.products).length} className="px-6 py-4 align-top border-r border-slate-50">
-                                    <span className="text-[12px] font-black text-slate-800 uppercase leading-tight">{site}</span>
+                                  <td rowSpan={Object.keys(siteData.products).length} className="border border-slate-300 px-6 py-2 align-top">
+                                    <span className="text-[11px] font-black text-slate-800 uppercase leading-tight">{site}</span>
                                   </td>
                                 )}
-                                <td className="px-6 py-4 border-r border-slate-50">
+                                <td className="border border-slate-300 px-6 py-2">
                                   <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PRODUCT_COLORS[productType] || '#cbd5e1' }}></div>
-                                    <span className="text-[12px] font-black uppercase text-slate-600 truncate">{productType}</span>
+                                    <span className="text-[11px] font-black uppercase text-slate-600 truncate">{productType}</span>
                                   </div>
                                 </td>
                                 {SANG_GROUPS.map(g => {
                                   const val = rowGroups[g];
                                   return (
-                                    <td key={g} className={`px-2 py-4 text-center text-[13px] border-r border-slate-50 ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>
-                                      <span className={val > 0 && val <= 5 ? 'text-rose-600' : ''}>{val}</span>
+                                    <td key={g} className={`border border-slate-300 px-2 py-2 text-center text-[12px] ${val > 0 ? 'font-black text-slate-900' : 'text-slate-200'}`}>
+                                      <span className={val > 0 && val <= 5 ? 'text-rose-600' : ''}>{val || '-'}</span>
                                     </td>
                                   );
                                 })}
-                                <td className="px-6 py-4 text-center text-[13px] font-black text-slate-900 bg-slate-50/50">
+                                <td className="border border-slate-300 px-6 py-2 text-center text-[13px] font-black text-slate-900 bg-slate-50/50">
                                   {productData.total.toLocaleString()}
                                 </td>
                               </tr>
@@ -519,17 +513,17 @@ export const StockView: React.FC<StockViewProps> = ({ data, user, lastSync, onSy
                 </tr>
               )}
             </tbody>
-            <tfoot>
-              <tr className="bg-[#2d1610] text-white font-black">
-                <td colSpan={3} className="px-12 py-8 text-left">
-                  <span className="text-3xl uppercase tracking-[0.2em] leading-none">Total Général Consolidé</span>
+            <tfoot className="bg-orange-950 text-white font-black">
+              <tr className="h-16">
+                <td colSpan={3} className="border border-orange-900 px-12 py-2 text-left">
+                  <span className="text-2xl uppercase tracking-[0.2em] leading-none">Total Général Consolidé</span>
                 </td>
                 {SANG_GROUPS.map(g => (
-                  <td key={g} className="px-2 py-8 text-center text-2xl border-l border-white/5">
+                  <td key={g} className="border border-orange-900 px-2 py-2 text-center text-xl">
                     {stats.byGroup[g]?.toLocaleString() || 0}
                   </td>
                 ))}
-                <td className="px-6 py-8 text-center text-5xl border-l border-white/5 bg-white/5 text-[#f26522]">
+                <td className="border border-orange-900 px-6 py-2 text-center text-4xl bg-white/5 text-orange-400">
                   {stats.total.toLocaleString()}
                 </td>
               </tr>

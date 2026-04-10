@@ -150,11 +150,11 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-12">
       <div className="bg-slate-900 rounded-[2.5rem] p-6 lg:p-10 shadow-2xl text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-[80px]"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/10 rounded-full blur-[80px]"></div>
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-6">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner ${selectionInfo.isConsolidated ? 'bg-blue-600' : 'bg-white/10'}`}>
-               {selectionInfo.isConsolidated ? <BarChart3 size={24} className="text-white" /> : <Search size={24} className="text-red-500" />}
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner ${selectionInfo.isConsolidated ? 'bg-orange-600' : 'bg-white/10'}`}>
+               {selectionInfo.isConsolidated ? <BarChart3 size={24} className="text-white" /> : <Search size={24} className="text-orange-500" />}
             </div>
             <div>
               <h2 className="text-2xl font-black uppercase tracking-tighter">
@@ -182,7 +182,7 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
             </div>
 
             {user?.role !== 'AGENT' && (
-              <div className={`border rounded-xl px-4 py-2 flex items-center gap-2 transition-all ${selectedRegion === "TOUS LES SITES" ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20' : 'bg-white/5 border-white/10'}`}>
+              <div className={`border rounded-xl px-4 py-2 flex items-center gap-2 transition-all ${selectedRegion === "TOUS LES SITES" ? 'bg-orange-600 border-orange-500 shadow-lg shadow-orange-900/20' : 'bg-white/5 border-white/10'}`}>
                 <MapPin size={14} className={selectedRegion === "TOUS LES SITES" ? "text-white" : "text-slate-400"} />
                 <select value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)} disabled={user?.role === 'PRES'} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
                   {regions.map(r => <option key={r} value={r} className="text-slate-900">{r}</option>)}
@@ -190,7 +190,7 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
               </div>
             )}
 
-            <div className="bg-red-600 border border-red-500 rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg shadow-red-900/40">
+            <div className="bg-orange-600 border border-orange-500 rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg shadow-orange-900/40">
               <Building2 size={14} className="text-white" />
               <select value={selectedSiteCode} onChange={(e) => setSelectedSiteCode(e.target.value)} disabled={user?.role === 'AGENT'} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white max-w-[150px] lg:max-w-none">
                 {sitesInRegion.map(s => <option key={s.code} value={s.code} className="text-slate-900">{s.name}</option>)}
@@ -213,22 +213,22 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
            </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
             <thead>
-              <tr className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
-                <th className="px-10 py-6 text-left">Date</th>
-                <th className="px-6 py-6 text-center">FIXE</th>
-                <th className="px-6 py-6 text-center">MOBILE</th>
-                <th className="px-6 py-6 text-center">Total</th>
+              <tr className="bg-orange-600 text-white h-12">
+                <th className="border border-orange-700 px-10 py-2 uppercase tracking-widest text-left">Date</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">FIXE</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">MOBILE</th>
+                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody>
               {historyData.length > 0 ? historyData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/80 transition-all group">
-                  <td className="px-10 py-5 font-black text-slate-800 group-hover:text-red-600 transition-colors">{row.date}</td>
-                  <td className="px-6 py-5 text-center text-emerald-600 font-bold">{row.fixe}</td>
-                  <td className="px-6 py-5 text-center text-orange-600 font-bold">{row.mobile}</td>
-                  <td className="px-6 py-5 text-center text-slate-900 font-black">{row.total}</td>
+                <tr key={idx} className="h-10 hover:brightness-95 transition-all bg-white">
+                  <td className="border border-slate-300 px-10 py-2 font-black text-slate-800">{row.date}</td>
+                  <td className="border border-slate-300 px-6 py-2 text-center text-orange-600 font-bold">{row.fixe}</td>
+                  <td className="border border-slate-300 px-6 py-2 text-center text-orange-600 font-bold">{row.mobile}</td>
+                  <td className="border border-slate-300 px-6 py-2 text-center text-slate-900 font-black">{row.total}</td>
                 </tr>
               )) : (
                 <tr>
