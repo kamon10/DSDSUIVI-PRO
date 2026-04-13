@@ -12,7 +12,7 @@ interface CapacityPlanningViewProps {
   sites: any[];
 }
 
-export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data, user, sites }) => {
+const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data, user, sites }) => {
   const [viewMode, setViewMode] = useState<'NATIONAL' | 'ABIDJAN'>('NATIONAL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -339,3 +339,5 @@ export const CapacityPlanningView: React.FC<CapacityPlanningViewProps> = ({ data
     </div>
   );
 };
+
+export default CapacityPlanningView;
