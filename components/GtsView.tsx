@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData } from '../types.ts';
 import { Search, Filter, Truck, Calendar, MapPin, Package, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface GtsViewProps {
   data: DashboardData;

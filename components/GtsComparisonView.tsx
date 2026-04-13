@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData } from '../types.ts';
 import { Truck, RefreshCw, AlertCircle, CheckCircle2, Search, Calendar, MapPin, Package, Download, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 

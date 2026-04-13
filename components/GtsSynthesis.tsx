@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { DashboardData } from '../types.ts';
 import { Truck, PieChart, BarChart3, TrendingUp, Package, MapPin, Activity, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart as RePieChart, Pie } from 'recharts';
 
 interface GtsSynthesisProps {

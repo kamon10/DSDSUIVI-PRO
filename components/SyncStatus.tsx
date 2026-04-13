@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Zap, ZapOff, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface SyncStatusProps {
   status: 'synced' | 'syncing' | 'error';
@@ -41,21 +41,6 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
 
   return (
     <div className="flex items-center gap-3">
-      {/* Progress Bar Container */}
-      <div className="fixed top-0 left-0 right-0 z-[200] h-1 pointer-events-none">
-        <AnimatePresence>
-          {status === 'syncing' && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: '100%', opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
-              className="h-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]"
-            />
-          )}
-        </AnimatePresence>
-      </div>
-
       <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-2xl px-2 sm:px-4 py-2 shadow-sm">
         <div className="flex items-center gap-2 pr-2 sm:pr-3 border-r border-slate-200">
           <div className={`w-2 h-2 rounded-full ${

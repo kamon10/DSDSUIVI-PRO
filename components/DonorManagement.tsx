@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import { Search, User, Calendar, CheckCircle, XCircle, Clock, History, Phone, MapPin, Droplets, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { format, addMonths, isAfter, parse, isValid, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { fetchWithRetry } from '../services/googleSheetService';

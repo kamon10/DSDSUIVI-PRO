@@ -1,10 +1,10 @@
 
 import React, { useMemo, useState } from 'react';
-import { DashboardData, User, SiteRecord } from '../types';
-import { SITES_DATA, COLORS } from '../constants';
+import { DashboardData, User, SiteRecord } from '../types.ts';
+import { SITES_DATA, COLORS } from '../constants.tsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Target, TrendingUp, Zap, AlertTriangle, CheckCircle2, Filter, Search, Download, Info } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface CapacityPlanningViewProps {
   data: DashboardData;

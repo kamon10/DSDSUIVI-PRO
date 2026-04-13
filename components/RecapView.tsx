@@ -11,11 +11,11 @@ import {
   X, MapPin, Building2, Package, Layers, CalendarDays, Clock, Target, ArrowRight,
   FileSpreadsheet, ChevronLeft, ChevronRight
 } from 'lucide-react';
-
-registerLocale('fr', fr);
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
+
+registerLocale('fr', fr);
 
 interface RecapViewProps {
   data: DashboardData;
@@ -59,7 +59,9 @@ const parseDate = (dateStr: string) => {
   return new Date(y, m - 1, d);
 };
 
-export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode = 'collecte', user, branding, situationTime, setActiveTab }) => {
+export default function RecapView({ data, sites, initialMode = 'collecte', user, branding, situationTime, setActiveTab }: RecapViewProps) {
+  if (!data) return null;
+
   const [viewMode, setViewMode] = useState<'collecte' | 'distribution'>(initialMode);
   // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
   const [distTimeScale, setDistTimeScale] = useState<'day' | 'month' | 'year'>('month');
@@ -519,44 +521,44 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
         utils.book_append_sheet(wb, ws, "Recap");
         writeFile(wb, `${filename}.xlsx`);
       } else if (type === 'image') {
-        // Force a minimum width for the capture to ensure it looks like a desktop report even on mobile
+        // Force a width that accommodates the widest table (Distribution is min-w-1200)
         const originalWidth = element.style.width;
-        const isMobile = window.innerWidth < 768;
-        if (isMobile) {
-          element.style.width = '1200px';
-        }
-        await new Promise(res => setTimeout(res, 500));
+        const originalMaxWidth = element.style.maxWidth;
+        
+        element.style.width = '1250px';
+        element.style.maxWidth = 'none';
+        
+        await new Promise(res => setTimeout(res, 800));
 
         const imgData = await domToPng(element, { 
           scale: 2.5, 
           backgroundColor: '#ffffff',
         });
 
-        if (isMobile) {
-          element.style.width = originalWidth;
-        }
+        element.style.width = originalWidth;
+        element.style.maxWidth = originalMaxWidth;
 
         const link = document.createElement('a'); 
         link.download = `${filename}.png`; 
         link.href = imgData; 
         link.click();
       } else {
-        // Force a minimum width for the capture to ensure it looks like a desktop report even on mobile
+        // Force a width that accommodates the widest table
         const originalWidth = element.style.width;
-        const isMobile = window.innerWidth < 768;
-        if (isMobile) {
-          element.style.width = '1200px';
-        }
-        await new Promise(res => setTimeout(res, 500));
+        const originalMaxWidth = element.style.maxWidth;
+        
+        element.style.width = '1250px';
+        element.style.maxWidth = 'none';
+        
+        await new Promise(res => setTimeout(res, 800));
 
         const imgData = await domToPng(element, { 
           scale: 2, 
           backgroundColor: '#ffffff',
         });
 
-        if (isMobile) {
-          element.style.width = originalWidth;
-        }
+        element.style.width = originalWidth;
+        element.style.maxWidth = originalMaxWidth;
 
         const img = new Image();
         img.src = imgData;
@@ -890,12 +892,12 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
 
       {/* DOCUMENT DE SYNTHÈSE */}
       <div className="overflow-x-auto rounded-[3.5rem] shadow-3xl bg-white border border-slate-100">
-        <div ref={recapRef} className="min-w-[1050px] p-12 bg-white text-slate-900" style={{ width: '100%', maxWidth: '1150px', margin: '0 auto' }}>
+        <div ref={recapRef} className="min-w-[1000px] p-8 bg-white text-slate-900" style={{ width: '100%', maxWidth: '1150px', margin: '0 auto' }}>
           
           {/* HEADER DOCUMENT */}
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex items-center gap-6">
-              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center bg-white shadow-xl overflow-hidden border border-slate-100`}>
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex items-center gap-4">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center bg-white shadow-xl overflow-hidden border border-slate-100`}>
                  <img 
                    src={branding?.logo} 
                    alt="Logo" 
@@ -907,13 +909,13 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                  />
               </div>
               <div>
-                <h1 className="text-4xl font-[900] uppercase tracking-tight text-[#0f172a] leading-none">
+                <h1 className="text-3xl font-[900] uppercase tracking-tight text-[#0f172a] leading-none">
                   {viewMode === 'collecte' ? 'DETAIL DES PRELEVEMENTS' : 'SYNTHESE DES DISTRIBUTIONS'}
                 </h1>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">CENTRE NATIONAL DE TRANSFUSION SANGUINE CI</p>
               </div>
             </div>
-            <div className="bg-orange-600 text-white px-8 py-3 rounded-2xl text-center">
+            <div className="bg-orange-600 text-white px-6 py-2 rounded-2xl text-center">
                <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">SITUATION AU</p>
                <p className="text-xl font-black">{currentPeriodLabel}</p>
                {situationTime && (
@@ -923,8 +925,8 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           </div>
 
           {/* SUMMARY CARDS */}
-          <div className="grid grid-cols-3 gap-6 mb-10">
-             <div className="border-2 border-orange-600 p-6 rounded-xl flex flex-col items-center justify-center bg-white text-center">
+          <div className="grid grid-cols-3 gap-4 mb-10">
+             <div className="border-2 border-orange-600 p-4 rounded-xl flex flex-col items-center justify-center bg-white text-center">
                 <div className="flex items-center gap-2 mb-2 text-orange-600">
                    <CalendarDays size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{isPeriodMode ? 'TOTAL PÉRIODE' : 'FLUX JOUR'}</span>
                 </div>
@@ -932,7 +934,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   {viewMode === 'collecte' ? nationalTotals.jour.toLocaleString() : distTotals.qty.toLocaleString()}
                 </p>
              </div>
-             <div className="border-2 border-orange-600 p-6 rounded-xl flex flex-col items-center justify-center bg-white text-center">
+             <div className="border-2 border-orange-600 p-4 rounded-xl flex flex-col items-center justify-center bg-white text-center">
                 <div className="flex items-center gap-2 mb-2 text-[#f97316]">
                    <Activity size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{viewMode === 'collecte' ? 'CUMUL MENSUEL' : 'SORTIES NETTES'}</span>
                 </div>
@@ -940,7 +942,7 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                    {viewMode === 'collecte' ? nationalTotals.mois.toLocaleString() : (distTotals.qty - distTotals.rendu).toLocaleString()}
                 </p>
              </div>
-             <div className="border-2 border-orange-600 p-6 rounded-xl flex flex-col items-center justify-center bg-white text-center">
+             <div className="border-2 border-orange-600 p-4 rounded-xl flex flex-col items-center justify-center bg-white text-center">
                 <div className="flex items-center gap-2 mb-2 text-orange-600">
                    <Target size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{viewMode === 'collecte' ? 'OBJECTIF MENSUEL' : 'EFFICACITÉ NETTE'}</span>
                 </div>
@@ -953,18 +955,18 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
           {/* TABLEAU RENDU */}
           {viewMode === 'collecte' ? (
             <div className="overflow-x-auto custom-scrollbar border-4 border-orange-600 rounded-3xl shadow-2xl">
-              <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[1000px]">
+              <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[950px]">
               <thead>
-                <tr className="bg-orange-600 text-white h-12">
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-left w-[180px]">PRES / RÉGION</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-left">LIBELLÉ SITE</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[70px]">FIXE</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[70px]">MOB.</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[80px] bg-orange-700/50">ENCODÉ GTS</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[90px]">MOIS</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[100px]">OBJECTIF/M</th>
-                  <th className="border border-orange-700 px-4 py-2 uppercase tracking-widest text-center w-[80px]">TAUX/M</th>
+                <tr className="bg-orange-600 text-white h-10">
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-left w-[110px]">PRES / RÉGION</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-left w-[200px]">LIBELLÉ SITE</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[60px]">FIXE</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[60px]">MOB.</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[80px]">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[80px] bg-orange-700/50">ENCODÉ GTS</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[80px]">MOIS</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[90px]">OBJECTIF/M</th>
+                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[70px]">TAUX/M</th>
                 </tr>
               </thead>
               <tbody>
@@ -994,14 +996,14 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                         if (row.isSubtotal) {
                           return (
                             <tr key="subtotal-abidjan" className="font-black h-10 bg-orange-100/30">
-                              <td className="border border-slate-400 px-4 py-2 uppercase text-right pr-6 italic text-orange-900">SOUS-TOTAL ABIDJAN VILLE</td>
-                              <td className="border border-slate-400 px-4 py-2 text-center text-orange-900">{region.abidjanVille.fixe}</td>
-                              <td className="border border-slate-400 px-4 py-2 text-center text-orange-900">{region.abidjanVille.mobile}</td>
-                              <td className={`border border-slate-400 px-4 py-2 text-center text-[13px] font-black ${region.abidjanVille.jour === region.abidjanVille.gts ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.jour}</td>
-                              <td className={`border border-slate-400 px-4 py-2 text-center text-[13px] font-black ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.gts}</td>
-                              <td className="border border-slate-400 px-4 py-2 text-center text-orange-900 text-[13px]">{region.abidjanVille.mois.toLocaleString()}</td>
-                              <td className="border border-slate-400 px-4 py-2 text-center text-orange-900 text-[13px]">{region.abidjanVille.obj.toLocaleString()}</td>
-                              <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
+                              <td className="border border-slate-400 px-2 py-2 uppercase text-right pr-2 italic text-orange-900">SOUS-TOTAL ABIDJAN VILLE</td>
+                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900">{region.abidjanVille.fixe}</td>
+                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900">{region.abidjanVille.mobile}</td>
+                              <td className={`border border-slate-400 px-2 py-2 text-center text-[12px] font-black ${region.abidjanVille.jour === region.abidjanVille.gts ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.jour}</td>
+                              <td className={`border border-slate-400 px-2 py-2 text-center text-[12px] font-black ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.gts}</td>
+                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900 text-[12px]">{region.abidjanVille.mois.toLocaleString()}</td>
+                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900 text-[12px]">{region.abidjanVille.obj.toLocaleString()}</td>
+                              <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[13px] ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
                             </tr>
                           );
                         }
@@ -1010,30 +1012,30 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                         return (
                           <tr key={`${rIdx}-${idx}`} style={{ backgroundColor: regColor }} className="h-10 hover:brightness-95 transition-all">
                             {idx === 0 && (
-                              <td rowSpan={rows.length + 1} className="border border-slate-400 p-4 align-top font-black uppercase text-[12px] text-[#0f172a]" style={{ backgroundColor: regColor }}>
+                              <td rowSpan={rows.length + 1} className="border border-slate-400 p-2 align-top font-black uppercase text-[11px] text-[#0f172a]" style={{ backgroundColor: regColor }}>
                                 <span className="inline-block mt-1">{region.name}</span>
                               </td>
                             )}
-                            <td className="border border-slate-400 px-4 py-2 uppercase text-[11px] text-[#0f172a]">{site.name}</td>
-                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.fixe}</td>
-                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{site.mobile}</td>
-                            <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.totalJour === site.gts ? 'text-orange-600' : 'text-red-600'}`}>{site.totalJour}</td>
-                            <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[13px] ${site.gts === site.totalJour ? 'text-orange-600' : 'text-red-600'}`}>{site.gts}</td>
-                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.totalMois.toLocaleString()}</td>
-                            <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[13px]">{site.objMensuel.toLocaleString()}</td>
-                            <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
+                            <td className="border border-slate-400 px-2 py-2 uppercase text-[10px] text-[#0f172a]">{site.name}</td>
+                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{site.fixe}</td>
+                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{site.mobile}</td>
+                            <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[12px] ${site.totalJour === site.gts ? 'text-orange-600' : 'text-red-600'}`}>{site.totalJour}</td>
+                            <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[12px] ${site.gts === site.totalJour ? 'text-orange-600' : 'text-red-600'}`}>{site.gts}</td>
+                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[12px]">{site.totalMois.toLocaleString()}</td>
+                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[12px]">{site.objMensuel.toLocaleString()}</td>
+                            <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[13px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
                           </tr>
                         );
                       })}
-                      <tr className="font-black h-12 bg-slate-200/50" style={{ backgroundColor: `${regColor}dd` }}>
-                        <td className="border border-slate-400 px-4 py-2 uppercase text-right pr-6 italic text-[#0f172a]">TOTAL {region.name}</td>
-                        <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.fixePres}</td>
-                        <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a]">{region.mobilePres}</td>
-                        <td className={`border border-slate-400 px-4 py-2 text-center text-[14px] font-black ${region.totalJourPres === region.gtsPres ? 'text-orange-700' : 'text-red-700'}`}>{region.totalJourPres}</td>
-                        <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[14px] ${region.gtsPres === region.totalJourPres ? 'text-orange-700' : 'text-red-700'}`}>{region.gtsPres}</td>
-                        <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.totalMoisPres.toLocaleString()}</td>
-                        <td className="border border-slate-400 px-4 py-2 text-center text-[#0f172a] text-[14px]">{region.objMensPres.toLocaleString()}</td>
-                        <td className={`border border-slate-400 px-4 py-2 text-center font-black text-[15px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
+                      <tr className="font-black h-10 bg-slate-200/50" style={{ backgroundColor: `${regColor}dd` }}>
+                        <td className="border border-slate-400 px-2 py-2 uppercase text-right pr-2 italic text-[#0f172a]">TOTAL {region.name}</td>
+                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{region.fixePres}</td>
+                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{region.mobilePres}</td>
+                        <td className={`border border-slate-400 px-2 py-2 text-center text-[13px] font-black ${region.totalJourPres === region.gtsPres ? 'text-orange-700' : 'text-red-700'}`}>{region.totalJourPres}</td>
+                        <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[13px] ${region.gtsPres === region.totalJourPres ? 'text-orange-700' : 'text-red-700'}`}>{region.gtsPres}</td>
+                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[13px]">{region.totalMoisPres.toLocaleString()}</td>
+                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[13px]">{region.objMensPres.toLocaleString()}</td>
+                        <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[14px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
                       </tr>
                     </React.Fragment>
                   );
@@ -1041,37 +1043,37 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
               </tbody>
               <tfoot className="bg-orange-950 text-white font-[950]">
                 <tr className="h-20">
-                  <td colSpan={2} className="border border-orange-900 p-6 text-2xl uppercase tracking-widest pl-12">TOTAL NATIONAL</td>
-                  <td className="border border-orange-900 p-2 text-center text-xl">{nationalTotals.fixe.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-2 text-center text-xl">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className={`border border-orange-900 p-2 text-center text-4xl font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-400' : 'text-red-400'}`}>{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`border border-orange-900 p-2 text-center text-4xl font-black ${nationalTotals.gts === nationalTotals.jour ? 'text-orange-400' : 'text-red-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-2 text-center text-3xl">{nationalTotals.mois.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-2 text-center text-3xl">{nationalTotals.objectif.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-2 text-center text-4xl text-orange-400">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
+                  <td colSpan={2} className="border border-orange-900 p-2 text-3xl uppercase tracking-tighter pl-4">TOTAL NATIONAL</td>
+                  <td className="border border-orange-900 p-1 text-center text-2xl">{nationalTotals.fixe.toLocaleString()}</td>
+                  <td className="border border-orange-900 p-1 text-center text-2xl">{nationalTotals.mobile.toLocaleString()}</td>
+                  <td className={`border border-orange-900 p-1 text-center text-5xl font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-400' : 'text-red-400'}`}>{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`border border-orange-900 p-1 text-center text-5xl font-black ${nationalTotals.gts === nationalTotals.jour ? 'text-orange-400' : 'text-red-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className="border border-orange-900 p-1 text-center text-4xl">{nationalTotals.mois.toLocaleString()}</td>
+                  <td className="border border-orange-900 p-1 text-center text-4xl">{nationalTotals.objectif.toLocaleString()}</td>
+                  <td className="border border-orange-900 p-1 text-center text-5xl text-orange-400">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
                 </tr>
               </tfoot>
             </table>
           </div>
         ) : (
              <div className="border-4 border-orange-600 rounded-3xl overflow-hidden shadow-2xl overflow-x-auto custom-scrollbar">
-               <table className="w-full border-collapse text-[11px] font-bold text-slate-950 leading-tight min-w-[1200px]">
+               <table className="w-full border-collapse text-[11px] font-bold text-slate-950 leading-tight min-w-[1100px]">
                   <thead>
-                     <tr className="bg-orange-600 text-white h-14">
-                        <th className="border-2 border-orange-700 p-4 text-left w-[180px] uppercase tracking-widest">Site Source</th>
-                        <th className="border-2 border-orange-700 p-4 text-left w-[220px] uppercase tracking-widest">Structure Servie</th>
-                        <th className="border-2 border-orange-700 p-4 text-left w-[150px] uppercase tracking-widest">Produit</th>
+                     <tr className="bg-orange-600 text-white h-12">
+                        <th className="border-2 border-orange-700 p-1 text-left w-[140px] uppercase tracking-tighter">Site Source</th>
+                        <th className="border-2 border-orange-700 p-1 text-left w-[160px] uppercase tracking-tighter">Structure Servie</th>
+                        <th className="border-2 border-orange-700 p-1 text-left w-[120px] uppercase tracking-tighter">Produit</th>
                         {SANG_GROUPS.map(g => (
                 <th 
                   key={g} 
-                  className="border-2 border-slate-800 p-2 text-center w-[50px] uppercase text-slate-950"
+                  className="border-2 border-slate-800 p-1 text-center w-[50px] uppercase text-slate-950"
                   style={{ backgroundColor: GROUP_COLORS[g] || '#f1f5f9' }}
                 >
                   {g}
                 </th>
               ))}
-                        <th className="border-2 border-orange-700 p-4 text-right w-[70px] uppercase text-red-100">Rendu</th>
-                        <th className="border-2 border-orange-700 p-4 text-right w-[90px] uppercase bg-white/10 text-orange-200">Total</th>
+                        <th className="border-2 border-orange-700 p-2 text-right w-[60px] uppercase text-red-100">Rendu</th>
+                        <th className="border-2 border-orange-700 p-2 text-right w-[80px] uppercase bg-white/10 text-orange-200">Total</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -1104,16 +1106,16 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                                    return (
                                      <tr key={`${destName}-${prodName}`} className={`${rowBg || (pIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')} border-b border-slate-200 hover:opacity-90 transition-opacity group`}>
                                        {dIdx === 0 && pIdx === 0 && (
-                                         <td rowSpan={rowCount + 1} className="border-2 border-slate-200 p-4 align-top font-[900] text-orange-700 bg-orange-50/20 uppercase text-[12px]">{sitName}</td>
+                                         <td rowSpan={rowCount + 1} className="border-2 border-slate-200 p-2 align-top font-[900] text-orange-700 bg-orange-50/20 uppercase text-[11px]">{sitName}</td>
                                        )}
-                                       {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="border-2 border-slate-200 p-4 align-top text-slate-800 uppercase font-[900] text-[11px]">{destName}</td>}
-                                       <td className="border-2 border-slate-200 p-3">
+                                       {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="border-2 border-slate-200 p-2 align-top text-slate-800 uppercase font-[900] text-[10px]">{destName}</td>}
+                                       <td className="border-2 border-slate-200 p-2">
                                          <span className="px-2 py-1.5 rounded text-[9px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: isCgr || isPlasma ? 'inherit' : (PRODUCT_COLORS[prodName] || '#64748b'), borderColor: isCgr || isPlasma ? 'currentColor' : `${PRODUCT_COLORS[prodName]}33`, backgroundColor: isCgr || isPlasma ? 'transparent' : `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
                                        </td>
                                        {SANG_GROUPS.map(g => (
                                          <td 
                                            key={g} 
-                                           className={`border-2 border-slate-200 p-2 text-center text-[12px] ${prodMetrics.groups[g] > 0 ? 'font-[950]' : 'text-slate-200'}`}
+                                           className={`border-2 border-slate-200 p-1 text-center text-[11px] ${prodMetrics.groups[g] > 0 ? 'font-[950]' : 'text-slate-200'}`}
                                            style={{ 
                                              backgroundColor: prodMetrics.groups[g] > 0 ? GROUP_COLORS[g] : 'transparent',
                                              color: prodMetrics.groups[g] > 0 ? (['AB+', 'B-', 'O-', 'AB-'].includes(g) ? '#fff' : '#000') : 'inherit'
@@ -1122,18 +1124,18 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                                            {prodMetrics.groups[g] || '-'}
                                          </td>
                                        ))}
-                                       <td className="border-2 border-slate-200 p-3 text-right font-black text-red-600 text-[12px]">{prodMetrics.rendu || '-'}</td>
-                                       <td className="border-2 border-slate-200 p-3 text-right font-black text-slate-900 bg-slate-50/50 text-[13px]">{rowGrossTotal}</td>
+                                       <td className="border-2 border-slate-200 p-2 text-right font-black text-red-600 text-[11px]">{prodMetrics.rendu || '-'}</td>
+                                       <td className="border-2 border-slate-200 p-2 text-right font-black text-slate-900 bg-slate-50/50 text-[12px]">{rowGrossTotal}</td>
                                      </tr>
                                    );
                                  })}
                                </React.Fragment>
                              ))}
-                             <tr className="bg-orange-600/10 font-black h-12">
-                               <td colSpan={2} className="border-2 border-slate-200 p-4 text-right uppercase tracking-wider text-orange-800 pr-8 italic">SOUS-TOTAL RÉSEAU {sitName}</td>
-                               {SANG_GROUPS.map(g => <td key={g} className="border-2 border-slate-200 p-2 text-center text-orange-950 bg-white/40 text-[13px]">{siteTotals[g]}</td>)}
-                               <td className="border-2 border-slate-200 p-3 text-right text-red-700 text-[13px]">{siteRendu}</td>
-                               <td className="border-2 border-slate-200 p-3 text-right text-orange-900 bg-white/60 text-[15px]">{siteGrossTotal}</td>
+                             <tr className="bg-orange-600/10 font-black h-10">
+                               <td colSpan={2} className="border-2 border-slate-200 p-2 text-right uppercase tracking-tighter text-orange-800 pr-4 italic text-[11px]">SOUS-TOTAL RÉSEAU {sitName}</td>
+                               {SANG_GROUPS.map(g => <td key={g} className="border-2 border-slate-200 p-1 text-center text-orange-950 bg-white/40 text-[11px]">{siteTotals[g]}</td>)}
+                               <td className="border-2 border-slate-200 p-2 text-right text-red-700 text-[12px]">{siteRendu}</td>
+                               <td className="border-2 border-slate-200 p-2 text-right text-orange-900 bg-white/60 text-[14px]">{siteGrossTotal}</td>
                              </tr>
                            </React.Fragment>
                          );
@@ -1144,17 +1146,17 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
                   </tbody>
                   <tfoot className="bg-orange-950 text-white font-black">
                     <tr className="h-16">
-                      <td colSpan={3} className="border-2 border-orange-900 p-5 text-center uppercase tracking-[0.3em] text-[15px]">TOTAL GÉNÉRAL CONSOLIDÉ</td>
-                      {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-900 p-2 text-center text-[15px]">{distTotals.groups[g]}</td>)}
-                      <td className="border-2 border-orange-900 p-4 text-right text-red-400 text-[15px]">{distTotals.rendu}</td>
-                      <td className="border-2 border-orange-900 p-5 text-right text-orange-400 text-[24px] bg-white/5">{distTotals.qty}</td>
+                      <td colSpan={3} className="border-2 border-orange-900 p-2 text-center uppercase tracking-tighter text-[20px]">TOTAL GÉNÉRAL CONSOLIDÉ</td>
+                      {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-900 p-1 text-center text-[20px]">{distTotals.groups[g]}</td>)}
+                      <td className="border-2 border-orange-900 p-2 text-right text-red-400 text-[20px]">{distTotals.rendu}</td>
+                      <td className="border-2 border-orange-900 p-2 text-right text-orange-400 text-[36px] bg-white/5">{distTotals.qty}</td>
                     </tr>
                     {abidjanVilleDistributionSubtotal && (
-                      <tr className="h-14 bg-orange-900/90 text-white">
-                        <td colSpan={3} className="border-2 border-orange-800 p-4 text-right uppercase tracking-widest text-[13px] italic pr-8">SOUS-TOTAL ABIDJAN VILLE</td>
-                        {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-800 p-2 text-center text-[13px]">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
-                        <td className="border-2 border-orange-800 p-3 text-right text-orange-200 text-[13px]">{abidjanVilleDistributionSubtotal.rendu}</td>
-                        <td className="border-2 border-orange-800 p-4 text-right text-orange-100 text-[18px] bg-white/5">{abidjanVilleDistributionSubtotal.gross}</td>
+                      <tr className="h-12 bg-orange-900/90 text-white">
+                        <td colSpan={3} className="border-2 border-orange-800 p-2 text-right uppercase tracking-tighter text-[12px] italic pr-4">SOUS-TOTAL ABIDJAN VILLE</td>
+                        {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-800 p-1 text-center text-[12px]">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
+                        <td className="border-2 border-orange-800 p-2 text-right text-orange-200 text-[12px]">{abidjanVilleDistributionSubtotal.rendu}</td>
+                        <td className="border-2 border-orange-800 p-2 text-right text-orange-100 text-[16px] bg-white/5">{abidjanVilleDistributionSubtotal.gross}</td>
                       </tr>
                     )}
                   </tfoot>
@@ -1176,4 +1178,4 @@ export const RecapView: React.FC<RecapViewProps> = ({ data, sites, initialMode =
       </div>
     </div>
   );
-};
+}

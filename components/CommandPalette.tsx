@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Search, Command, X, ArrowRight, Activity, LayoutDashboard, Map, PlusSquare, Package, UserCheck, History, BarChart3, Settings, TrendingUp, Zap, ShieldCheck, Truck, PieChart, RefreshCw, Calendar } from 'lucide-react';
 import { AppTab, SiteRecord } from '../types';
 
@@ -48,6 +48,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     { id: 'stock-synthesis', label: 'Synthèse Stock - STOCK Prévisionnelle', icon: <TrendingUp size={16} /> },
     { id: 'stock-planning', label: 'Planning Stock - Autonomie par Site', icon: <ShieldCheck size={16} /> },
     { id: 'capacity-planning', label: 'Capacité - Prévisions de Prélèvement', icon: <Zap size={16} /> },
+    { id: 'forecasting', label: 'Estimation - Estimation des Prélèvements dans le temps', icon: <TrendingUp size={16} /> },
     { id: 'site-focus', label: 'Focus - Analyse par Site', icon: <UserCheck size={16} /> },
     { id: 'history', label: 'Historique - Rapports Passés', icon: <History size={16} /> },
     { id: 'performance', label: 'Performance - Classement', icon: <BarChart3 size={16} /> },

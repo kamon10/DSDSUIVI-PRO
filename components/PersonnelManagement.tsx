@@ -9,7 +9,7 @@ import {
   MapPin, Info, X, TrendingUp, PieChart as PieChartIcon, BarChart3, Banknote,
   Coins, Wallet
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, LineChart, Line

@@ -348,6 +348,36 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
                 </p>
               </div>
             </div>
+
+            <div 
+              onClick={() => setActiveTab('forecasting')}
+              className="bg-white rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-slate-100 flex flex-col items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
+            >
+              <div className="flex items-center gap-8 w-full">
+                <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-orange-600 flex items-center justify-center text-white shadow-2xl">
+                  <TrendingUp size={48} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-orange-600">Estimation Flux</h2>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-5xl lg:text-7xl font-black tracking-tighter text-slate-900 leading-none">
+                      PRÉVISIONS
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-center lg:items-end text-center lg:text-right w-full">
+                <div className="px-6 py-3 rounded-2xl bg-orange-50 border border-orange-100 text-orange-600 mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp size={14} className="text-orange-500" /> Analyse Prédictive
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
+                  Estimez les prélèvements futurs basés sur les tendances actuelles.
+                  <span className="text-orange-600 font-black block mt-1">Ouvrir l'estimation →</span>
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

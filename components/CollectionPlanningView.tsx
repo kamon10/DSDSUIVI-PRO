@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { DashboardData, GtsRecord } from '../types.ts';
 import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle, ChevronRight, Filter, Search, PlusCircle, Download, FileText, Image as ImageIcon, Loader2, TrendingUp, Users, Target, LayoutGrid, List } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { getSiteByInput } from '../constants.tsx';
 import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';

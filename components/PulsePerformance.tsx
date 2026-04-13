@@ -1,6 +1,6 @@
 
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 /* Added User import */
 import { DashboardData, DistributionRecord, User, AppTab } from '../types';
 import { Activity, Zap, Flame, Waves, Heart, Target, Trophy, Calendar, Filter, Star, FileImage, FileText, Loader2, User as UserIcon, Truck, Package, TrendingUp, ArrowUpRight, ArrowDownRight, Info, AlertTriangle } from 'lucide-react';
@@ -243,7 +243,11 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
             </div>
           </motion.div>
 
-          <motion.div whileHover={{ y: -8 }} className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm">
+          <motion.div 
+            whileHover={{ y: -8 }} 
+            onClick={() => setActiveTab?.('forecasting')}
+            className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm cursor-pointer"
+          >
             <div className="w-16 h-16 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group">
               <div className="absolute inset-0 bg-orange-600 opacity-0 group-hover:opacity-10 transition-opacity" />
               <TrendingUp size={28} className="relative z-10" />

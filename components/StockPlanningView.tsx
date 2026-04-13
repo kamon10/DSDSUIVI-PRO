@@ -4,7 +4,7 @@ import { DashboardData, User, SiteRecord, StockRecord } from '../types';
 import { SITES_DATA, COLORS, STOCK_FORECASTS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Package, ShieldCheck, AlertTriangle, CheckCircle2, Search, Info, TrendingUp, Clock, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface StockPlanningViewProps {
   data: DashboardData;

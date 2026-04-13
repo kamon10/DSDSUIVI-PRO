@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { DashboardData, User } from '../types.ts';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Book, Download, ChevronLeft, ChevronRight, Printer, FileText, Heart, 
   Package, Truck, Target, Activity, BookOpen, MapPin, BarChart3, 

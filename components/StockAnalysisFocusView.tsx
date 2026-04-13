@@ -12,7 +12,7 @@ import {
   ResponsiveContainer, Cell, PieChart as RePieChart, Pie, Legend
 } from 'recharts';
 import { GROUP_COLORS, PRODUCT_COLORS, STOCK_FORECASTS } from '../constants.tsx';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface StockAnalysisFocusViewProps {
   data: DashboardData;

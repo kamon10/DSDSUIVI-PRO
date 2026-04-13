@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { DashboardData, GtsRecord } from '../types';
 import { Activity, Zap, Clock, CheckCircle2, AlertCircle, Truck, Database, TrendingUp, ArrowUpRight, ArrowDownRight, User, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface GtsPulseProps {
   data: DashboardData;

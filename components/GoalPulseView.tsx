@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { DashboardData, User, AppTab } from '../types';
 import { Target, Trophy, Calendar, Download, Share2, ChevronRight, ChevronLeft, Heart, Activity, Clock } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
