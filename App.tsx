@@ -26,7 +26,7 @@ const DistributionDetailedSynthesisView = lazy(() => import('./components/Distri
 const StockPlanningView = lazy(() => import('./components/StockPlanningView.tsx').then(m => ({ default: m.StockPlanningView })));
 const GlobalSynthesisReportView = lazy(() => import('./components/GlobalSynthesisReportView.tsx').then(m => ({ default: m.GlobalSynthesisReportView })));
 const DistributionStockView = lazy(() => import('./components/DistributionStockView.tsx').then(m => ({ default: m.DistributionStockView })));
-const CapacityPlanningView = lazy(() => import('./components/CapacityPlanningView.tsx').then(m => ({ default: m.CapacityPlanningView })));
+const CapacityPlanningView = lazy(() => import('./components/CapacityPlanningView.tsx'));
 const ForecastingView = lazy(() => import('./components/ForecastingView.tsx').then(m => ({ default: m.ForecastingView })));
 const GtsView = lazy(() => import('./components/GtsView.tsx').then(m => ({ default: m.GtsView })));
 const GtsSynthesis = lazy(() => import('./components/GtsSynthesis.tsx').then(m => ({ default: m.GtsSynthesis })));
@@ -45,7 +45,7 @@ import { SyncStatus } from './components/SyncStatus.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2, Maximize2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
 const App: React.FC = () => {
