@@ -6,7 +6,7 @@ import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_LINK_S
 const VisualDashboard = lazy(() => import('./components/VisualDashboard.tsx').then(m => ({ default: m.VisualDashboard })));
 const GoalPulseView = lazy(() => import('./components/GoalPulseView.tsx').then(m => ({ default: m.GoalPulseView })));
 const PerformanceView = lazy(() => import('./components/PerformanceView.tsx').then(m => ({ default: m.PerformanceView })));
-const RecapView = lazy(() => import('./components/RecapView.tsx').then(m => ({ default: m.RecapView })));
+const RecapView = lazy(() => import('./components/RecapView.tsx'));
 const PulsePerformance = lazy(() => import('./components/PulsePerformance.tsx').then(m => ({ default: m.PulsePerformance })));
 const EvolutionView = lazy(() => import('./components/EvolutionView.tsx').then(m => ({ default: m.EvolutionView })));
 const SummaryView = lazy(() => import('./components/SummaryView.tsx').then(m => ({ default: m.SummaryView })));
@@ -27,12 +27,14 @@ const StockPlanningView = lazy(() => import('./components/StockPlanningView.tsx'
 const GlobalSynthesisReportView = lazy(() => import('./components/GlobalSynthesisReportView.tsx').then(m => ({ default: m.GlobalSynthesisReportView })));
 const DistributionStockView = lazy(() => import('./components/DistributionStockView.tsx').then(m => ({ default: m.DistributionStockView })));
 const CapacityPlanningView = lazy(() => import('./components/CapacityPlanningView.tsx').then(m => ({ default: m.CapacityPlanningView })));
+const ForecastingView = lazy(() => import('./components/ForecastingView.tsx').then(m => ({ default: m.ForecastingView })));
 const GtsView = lazy(() => import('./components/GtsView.tsx').then(m => ({ default: m.GtsView })));
 const GtsSynthesis = lazy(() => import('./components/GtsSynthesis.tsx').then(m => ({ default: m.GtsSynthesis })));
 const GtsComparisonView = lazy(() => import('./components/GtsComparisonView.tsx').then(m => ({ default: m.GtsComparisonView })));
 const CollectionPlanningView = lazy(() => import('./components/CollectionPlanningView.tsx').then(m => ({ default: m.CollectionPlanningView })));
 const EbookView = lazy(() => import('./components/EbookView.tsx').then(m => ({ default: m.EbookView })));
 const PersonnelManagement = lazy(() => import('./components/PersonnelManagement.tsx').then(m => ({ default: m.PersonnelManagement })));
+const PresSlideshow = lazy(() => import('./components/PresSlideshow.tsx'));
 
 import { LoginView } from './components/LoginView.tsx';
 import { fetchSheetData, fetchUsers, fetchBrandingConfig, fetchDynamicSites } from './services/googleSheetService.ts';
@@ -40,8 +42,9 @@ import { NotificationManager } from './components/NotificationManager.tsx';
 import { StockAlert } from './components/StockAlert.tsx';
 import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { SyncStatus } from './components/SyncStatus.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2 } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
@@ -116,6 +119,10 @@ const App: React.FC = () => {
         });
       });
     }
+  }, []);
+
+  useEffect(() => {
+    console.log('[HEMO-STATS] App component mounted');
   }, []);
 
   const handleSync = useCallback(async (isSilent = false, force = false) => {
@@ -334,6 +341,7 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'pulse', icon: <HeartPulse size={18} />, label: 'Pulse', public: true },
     { id: 'goal-pulse', icon: <Target size={18} />, label: 'Objectifs', public: true },
+    { id: 'pres-slideshow', icon: <Maximize2 size={18} />, label: 'Présentation PRES', public: false },
     { id: 'summary', icon: <Layout size={18} />, label: 'Résumé', public: false },
     { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Cockpit', public: false },
     { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
@@ -353,6 +361,7 @@ const App: React.FC = () => {
     { id: 'stock-synthesis', icon: <TrendingUp size={18} />, label: 'Synthèse Stock', public: false },
     { id: 'stock-planning', icon: <ShieldCheck size={18} />, label: 'Planning Stock', public: false },
     { id: 'capacity-planning', icon: <Zap size={18} />, label: 'Capacité', public: false },
+    { id: 'forecasting', icon: <TrendingUp size={18} />, label: 'Estimation', public: false },
     { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
     { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
     { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
@@ -374,8 +383,8 @@ const App: React.FC = () => {
 
   const groupedNavItems = useMemo(() => {
     const groups = [
-      { id: 'pilotage', label: 'Pilotage & Monitoring', icon: <LayoutDashboard size={18} />, items: ['pulse', 'goal-pulse', 'summary', 'cockpit', 'map'] },
-      { id: 'prelevement', label: 'Collecte & Prélèvement', icon: <Activity size={18} />, items: ['entry', 'recap', 'collection-planning', 'capacity-planning', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
+      { id: 'pilotage', label: 'Pilotage & Monitoring', icon: <LayoutDashboard size={18} />, items: ['pulse', 'goal-pulse', 'pres-slideshow', 'summary', 'cockpit', 'map'] },
+      { id: 'prelevement', label: 'Collecte & Prélèvement', icon: <Activity size={18} />, items: ['entry', 'recap', 'collection-planning', 'capacity-planning', 'forecasting', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
       { id: 'gts', label: 'GTS', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison'] },
       { id: 'stock', label: 'Gestion des Stocks', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
@@ -598,7 +607,27 @@ const App: React.FC = () => {
         </header>
 
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-12 py-6 lg:py-10 pb-32 pb-safe">
-          <StockAlert data={fullData} user={currentUser} className="mb-8" />
+          <ErrorBoundary>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 p-6 bg-rose-50 border border-rose-100 rounded-[2rem] flex items-center gap-4 text-rose-600 shadow-sm"
+              >
+                <AlertCircle className="shrink-0" size={24} />
+                <div className="flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest mb-1">Erreur de Synchronisation</p>
+                  <p className="text-xs font-bold">{error}</p>
+                </div>
+                <button 
+                  onClick={() => handleSync(false, true)}
+                  className="px-6 py-2 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-lg shadow-rose-600/20"
+                >
+                  Réessayer
+                </button>
+              </motion.div>
+            )}
+            <StockAlert data={fullData} user={currentUser} className="mb-8" />
           {loading && !fullData.dailyHistory.length ? (
             <div className="flex flex-col items-center justify-center py-48 gap-6">
                <Activity size={60} className="text-orange-600 animate-pulse" />
@@ -626,6 +655,7 @@ const App: React.FC = () => {
                   {currentUser && (
                     <>
                       {activeTab === 'summary' && <SummaryView data={filteredData} user={currentUser} setActiveTab={setActiveTab} branding={branding} />}
+                      {activeTab === 'pres-slideshow' && <PresSlideshow data={filteredData} />}
                       {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} onCloudSyncChange={setIsCloudSyncing} />}
@@ -648,6 +678,7 @@ const App: React.FC = () => {
                       {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
                       {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                       {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'forecasting' && <ForecastingView data={filteredData} user={currentUser} />}
                       {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                       {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
@@ -659,6 +690,7 @@ const App: React.FC = () => {
               </AnimatePresence>
             </Suspense>
           )}
+          </ErrorBoundary>
         </main>
 
         {/* QUICK ACTIONS FLOATING */}
