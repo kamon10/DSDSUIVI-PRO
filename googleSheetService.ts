@@ -477,54 +477,83 @@ export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
   }
 };
 
-const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
+export const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
   if (!targetUrl || !targetUrl.startsWith('http')) {
     console.warn(`Source ${key} URL invalide ou manquante.`);
     return { text: lastRawContent[key] || '', hasChanged: false, error: true };
   }
   
+  // Cache busting plus simple (uniquement des chiffres)
   const urlWithCacheBusting = `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
   
-  for (let i = 0; i <= retries; i++) {
+    for (let i = 0; i <= retries; i++) {
     console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
     
     const strategies = [
-      async () => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`),
-      async () => fetch(urlWithCacheBusting, { 
-        method: 'GET',
-        headers: { 'Accept': 'text/csv, text/plain, */*' },
-        credentials: 'omit'
-      }),
-      async () => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-      async () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' }),
-      async () => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit' })
+      // Stratégie 1: Proxy interne (le plus fiable si configuré)
+      (signal: AbortSignal) => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`, { cache: 'no-store', signal }),
+      
+      // Stratégie 2: AllOrigins (via JSON pour éviter les blocages CORS sur le raw)
+      (signal: AbortSignal) => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal })
+        .then(async res => {
+          if (!res.ok) throw new Error(`AllOrigins status ${res.status}`);
+          const data = await res.json();
+          return { ok: true, text: () => Promise.resolve(data.contents) };
+        }),
+
+      // Stratégie 3: CorsProxy.io
+      (signal: AbortSignal) => fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal }),
+      
+      // Stratégie 4: AllOrigins Raw
+      (signal: AbortSignal) => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal }),
+      
+      // Stratégie 5: CodeTabs Proxy
+      (signal: AbortSignal) => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal }),
+      
+      // Stratégie 6: Fetch direct (peut échouer à cause de CORS, mais à tenter)
+      (signal: AbortSignal) => fetch(urlWithCacheBusting, { signal })
     ];
 
     for (let j = 0; j < strategies.length; j++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout per strategy
+
       try {
-        const response = await strategies[j]();
+        const response = await (strategies[j] as any)(controller.signal);
         if (response.ok) {
           const text = await response.text();
+          clearTimeout(timeoutId);
           const trimmedText = text.trim();
           
-          // Vérification plus robuste du contenu (pas de HTML, pas vide)
           if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html") && trimmedText.length > 0) {
             const hasChanged = force || text !== lastRawContent[key];
             lastRawContent[key] = text;
+            console.log(`[Sync] ${key} récupéré avec succès via stratégie ${j+1}.`);
             return { text, hasChanged, error: false };
           }
-          console.warn(`[Sync] Contenu invalide reçu pour ${key} via stratégie ${j+1}. Longueur: ${text?.length}, Début: ${text?.substring(0, 50)}`);
+          
+          if (trimmedText.includes("ServiceLogin") || trimmedText.includes("Google Accounts")) {
+            console.error(`[Sync] ${key} : Redirection vers une page de connexion Google. Vérifiez que la feuille est publiée en tant que CSV public.`);
+          }
+          
+          const preview = trimmedText.substring(0, 150).replace(/\n/g, ' ');
+          console.warn(`[Sync] Contenu invalide pour ${key} via stratégie ${j+1} (début: "${preview}").`);
         } else {
-          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status})`);
+          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status} ${response.statusText})`);
         }
       } catch (e: any) {
-        console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}:`, e.message || e);
+        clearTimeout(timeoutId);
+        const errorMsg = e.name === 'AbortError' ? 'Timeout (65s)' : (e.message || e);
+        console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}: ${errorMsg}`);
       }
+
+      // Délai progressif entre les stratégies
+      await new Promise(r => setTimeout(r, 1500 * (j + 1)));
     }
 
     if (i < retries) {
-      const delay = 1000 * (i + 1);
-      console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative dans ${delay}ms...`);
+      const delay = 2000 * (i + 1);
+      console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative globale (${i + 2}/${retries + 1}) dans ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
     }
   }
@@ -535,11 +564,13 @@ const fetchWithRetry = async (targetUrl: string, key: string, force = false, ret
 
 export const fetchSheetData = async (url: string, force = false, distributionUrl?: string, dynamicSites: any[] = [], stockUrl?: string, gtsUrl?: string): Promise<DashboardData | null> => {
   try {
-    // Récupération séquentielle pour éviter les limites de connexion du navigateur
-    const collecteResult = await fetchWithRetry(url, 'collecte', force);
-    const distResult = distributionUrl ? await fetchWithRetry(distributionUrl, 'BASE', force) : { text: '', hasChanged: false, error: false };
-    const stockResult = stockUrl ? await fetchWithRetry(stockUrl, 'STOCK', force) : { text: '', hasChanged: false, error: false };
-    const gtsResult = gtsUrl ? await fetchWithRetry(gtsUrl, 'GTS', force) : { text: '', hasChanged: false, error: false };
+    // Récupération en parallèle pour plus de rapidité
+    const [collecteResult, distResult, stockResult, gtsResult] = await Promise.all([
+      fetchWithRetry(url, 'collecte', force),
+      distributionUrl ? fetchWithRetry(distributionUrl, 'BASE', force) : Promise.resolve({ text: '', hasChanged: false, error: false }),
+      stockUrl ? fetchWithRetry(stockUrl, 'STOCK', force) : Promise.resolve({ text: '', hasChanged: false, error: false }),
+      gtsUrl ? fetchWithRetry(gtsUrl, 'GTS', force) : Promise.resolve({ text: '', hasChanged: false, error: false })
+    ]);
 
     if (stockResult.error && stockUrl) {
       console.warn(`[Sync] Échec de récupération pour STOCK. Utilisation du cache si disponible.`);
@@ -601,6 +632,9 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     let latestDateObj = new Date(2000, 0, 1);
     const validRows: any[] = [];
 
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    
     rows.slice(1).forEach(row => {
       const dateStr = normalizeDate(row[col.date]);
       if (!dateStr) return;
@@ -612,6 +646,9 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       const dateObj = new Date(y, m - 1, d);
       
       if (!isNaN(dateObj.getTime())) {
+        // On ignore les dates futures pour le calcul de la date de référence
+        if (dateObj > tomorrow) return;
+        
         if (dateObj > latestDateObj) latestDateObj = dateObj;
         validRows.push({ row, dateObj, dateStr });
       }
@@ -626,7 +663,10 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const historyMap = new Map<string, DailyHistoryRecord>();
     const siteAgg = new Map<string, { f: number, m: number, t: number, mf: number, mm: number }>();
 
-    validRows.forEach(({ row, dateStr }) => {
+    validRows.forEach(({ row, dateObj, dateStr }) => {
+      // On ignore les dates futures (plus de 1 jour d'avance) pour éviter de fausser le mois en cours
+      if (dateObj > tomorrow) return;
+      
       const parts = dateStr.split('/');
       const [d, m, y] = parts.map(Number);
       const code = cleanStr(row[col.code]);
