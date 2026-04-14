@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { DashboardData, User, AppTab } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DashboardData, SiteRecord, GtsRecord } from '../types';
 import { Target, Trophy, Calendar, Download, Share2, ChevronRight, ChevronLeft, Heart, Activity, Clock } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
 import { format, differenceInDays, endOfMonth, endOfYear } from 'date-fns';
@@ -17,7 +17,7 @@ const MONTHS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
+const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
   const [exporting, setExporting] = useState(false);
   const pulseRef = useRef<HTMLDivElement>(null);
 
@@ -413,3 +413,5 @@ export const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) 
     </div>
   );
 };
+
+export default GoalPulseView;
