@@ -141,10 +141,16 @@ const App: React.FC = () => {
     setSyncStatus('syncing');
 
     try {
-      const dynSitesResult = await fetchDynamicSites(DEFAULT_SCRIPT_URL);
-      const brandingResult = await fetchBrandingConfig(DEFAULT_SCRIPT_URL);
+      const [dynSitesResult, brandingResult] = await Promise.all([
+        fetchDynamicSites(DEFAULT_SCRIPT_URL),
+        fetchBrandingConfig(DEFAULT_SCRIPT_URL)
+      ]);
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
+      if (brandingResult) {
+        setBranding(brandingResult);
+        localStorage.setItem('hemo_branding', JSON.stringify(brandingResult));
+      }
       
       const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS);
       
@@ -152,11 +158,6 @@ const App: React.FC = () => {
         setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
         localStorage.setItem('hemo_full_data', JSON.stringify(dataResult));
-      }
-      
-      if (brandingResult) {
-        setBranding(brandingResult);
-        localStorage.setItem('hemo_branding', JSON.stringify(brandingResult));
       }
       
       setLastSync(new Date());
@@ -267,7 +268,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Synchronisation initiale
-    handleSync(false, true);
+    // Si on a déjà des données en cache, on fait une synchro silencieuse (background)
+    const hasCache = localStorage.getItem('hemo_full_data') !== null;
+    handleSync(hasCache, true);
   }, [handleSync]);
 
   useEffect(() => {
