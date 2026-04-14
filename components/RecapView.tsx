@@ -954,7 +954,8 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
 
           {/* TABLEAU RENDU */}
           {viewMode === 'collecte' ? (
-            <div className="overflow-x-auto custom-scrollbar border-4 border-orange-600 rounded-3xl shadow-2xl">
+            <>
+              <div className="overflow-x-auto custom-scrollbar border-4 border-orange-600 rounded-3xl shadow-2xl">
               <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[950px]">
               <thead>
                 <tr className="bg-orange-600 text-white h-10">
@@ -1041,22 +1042,25 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                   );
                 }) : null}
               </tbody>
-              <tfoot className="bg-orange-950 text-white font-[950]">
-                <tr className="h-20">
-                  <td colSpan={2} className="border border-orange-900 p-2 text-3xl uppercase tracking-tighter pl-4">TOTAL NATIONAL</td>
-                  <td className="border border-orange-900 p-1 text-center text-2xl">{nationalTotals.fixe.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-1 text-center text-2xl">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className={`border border-orange-900 p-1 text-center text-5xl font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-400' : 'text-red-400'}`}>{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`border border-orange-900 p-1 text-center text-5xl font-black ${nationalTotals.gts === nationalTotals.jour ? 'text-orange-400' : 'text-red-400'}`}>{nationalTotals.gts.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-1 text-center text-4xl">{nationalTotals.mois.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-1 text-center text-4xl">{nationalTotals.objectif.toLocaleString()}</td>
-                  <td className="border border-orange-900 p-1 text-center text-5xl text-orange-400">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
+              <tfoot className="bg-white text-slate-950 font-[950] border-t-4 border-slate-900">
+                <tr className="h-32">
+                  <td colSpan={2} className="border-2 border-slate-900 p-4 text-5xl uppercase tracking-tighter pl-8 bg-white">TOTAL NATIONAL</td>
+                  <td className="border-2 border-slate-900 p-2 text-center text-4xl bg-slate-50">{nationalTotals.fixe.toLocaleString()}</td>
+                  <td className="border-2 border-slate-900 p-2 text-center text-4xl bg-slate-50">{nationalTotals.mobile.toLocaleString()}</td>
+                  <td className={`border-2 border-slate-900 p-2 text-center text-7xl font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`border-2 border-slate-900 p-2 text-center text-7xl font-black ${nationalTotals.gts === nationalTotals.jour ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className="border-2 border-slate-900 p-2 text-center text-6xl bg-slate-50">{nationalTotals.mois.toLocaleString()}</td>
+                  <td className="border-2 border-slate-900 p-2 text-center text-6xl bg-slate-50">{nationalTotals.objectif.toLocaleString()}</td>
+                  <td className="border-2 border-slate-900 p-2 text-center text-7xl text-orange-600 bg-white">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
                 </tr>
               </tfoot>
             </table>
           </div>
+          <div className="h-12"></div> {/* Espace de sécurité en bas du tableau */}
+          </>
         ) : (
-             <div className="border-4 border-orange-600 rounded-3xl overflow-hidden shadow-2xl overflow-x-auto custom-scrollbar">
+          <>
+             <div className="border-4 border-orange-600 rounded-3xl shadow-2xl overflow-x-auto custom-scrollbar bg-white">
                <table className="w-full border-collapse text-[11px] font-bold text-slate-950 leading-tight min-w-[1100px]">
                   <thead>
                      <tr className="bg-orange-600 text-white h-12">
@@ -1144,24 +1148,26 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                       <tr><td colSpan={14} className="py-20 text-center text-slate-300 uppercase italic">Aucune donnée trouvée pour cette sélection</td></tr>
                     )}
                   </tbody>
-                  <tfoot className="bg-orange-950 text-white font-black">
-                    <tr className="h-16">
-                      <td colSpan={3} className="border-2 border-orange-900 p-2 text-center uppercase tracking-tighter text-[20px]">TOTAL GÉNÉRAL CONSOLIDÉ</td>
-                      {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-900 p-1 text-center text-[20px]">{distTotals.groups[g]}</td>)}
-                      <td className="border-2 border-orange-900 p-2 text-right text-red-400 text-[20px]">{distTotals.rendu}</td>
-                      <td className="border-2 border-orange-900 p-2 text-right text-orange-400 text-[36px] bg-white/5">{distTotals.qty}</td>
+                  <tfoot className="bg-white text-slate-950 font-black border-t-4 border-slate-900">
+                    <tr className="h-28">
+                      <td colSpan={3} className="border-2 border-slate-900 p-4 text-center uppercase tracking-tighter text-[32px] bg-white">TOTAL GÉNÉRAL CONSOLIDÉ</td>
+                      {SANG_GROUPS.map(g => <td key={g} className="border-2 border-slate-900 p-1 text-center text-[28px] bg-slate-50">{distTotals.groups[g]}</td>)}
+                      <td className="border-2 border-slate-900 p-2 text-right text-red-600 text-[28px] bg-slate-50">{distTotals.rendu}</td>
+                      <td className="border-2 border-slate-900 p-2 text-right text-orange-600 text-[60px] bg-white">{distTotals.qty}</td>
                     </tr>
                     {abidjanVilleDistributionSubtotal && (
-                      <tr className="h-12 bg-orange-900/90 text-white">
-                        <td colSpan={3} className="border-2 border-orange-800 p-2 text-right uppercase tracking-tighter text-[12px] italic pr-4">SOUS-TOTAL ABIDJAN VILLE</td>
-                        {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-800 p-1 text-center text-[12px]">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
-                        <td className="border-2 border-orange-800 p-2 text-right text-orange-200 text-[12px]">{abidjanVilleDistributionSubtotal.rendu}</td>
-                        <td className="border-2 border-orange-800 p-2 text-right text-orange-100 text-[16px] bg-white/5">{abidjanVilleDistributionSubtotal.gross}</td>
+                      <tr className="h-14 bg-orange-900/90 text-white">
+                        <td colSpan={3} className="border-2 border-orange-800 p-2 text-right uppercase tracking-tighter text-[14px] italic pr-6 bg-orange-950/40">SOUS-TOTAL ABIDJAN VILLE</td>
+                        {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-800 p-1 text-center text-[14px] bg-orange-950/20">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
+                        <td className="border-2 border-orange-800 p-2 text-right text-orange-200 text-[14px] bg-orange-950/20">{abidjanVilleDistributionSubtotal.rendu}</td>
+                        <td className="border-2 border-orange-800 p-2 text-right text-orange-100 text-[20px] bg-orange-950/60">{abidjanVilleDistributionSubtotal.gross}</td>
                       </tr>
                     )}
                   </tfoot>
                </table>
             </div>
+            <div className="h-12"></div> {/* Espace de sécurité final */}
+          </>
           )}
 
           {/* FOOTER DOCUMENT */}
