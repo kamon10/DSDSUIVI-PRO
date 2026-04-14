@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2, Activity, MapPin, Calendar, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2, Activity, MapPin, Calendar, TrendingUp, Clock } from 'lucide-react';
 import { DashboardData, RegionData, SiteRecord } from '../types.ts';
 
 interface PresSlideshowProps {
@@ -12,20 +12,77 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(data.date);
 
-  const regions = data.regions.filter(r => r.sites.length > 0);
+  // Reconstruct regions based on selected date
+  const displayRegions = useMemo(() => {
+    if (selectedDate === data.date) {
+      return data.regions.filter(r => r.sites.length > 0);
+    }
+
+    const record = data.dailyHistory.find(h => h.date === selectedDate);
+    if (!record) return data.regions.filter(r => r.sites.length > 0);
+
+    // Mapping site to region from current data
+    const siteToRegion: Record<string, string> = {};
+    data.regions.forEach(r => {
+      r.sites.forEach(s => {
+        siteToRegion[s.name] = r.name;
+      });
+    });
+
+    // Calculate monthly totals up to this selected date
+    const [selDay, selMonth, selYear] = selectedDate.split('/').map(Number);
+    const monthRecords = data.dailyHistory.filter(h => {
+      const [hDay, hMonth, hYear] = h.date.split('/').map(Number);
+      return hMonth === selMonth && hYear === selYear && (hYear < selYear || (hYear === selYear && hMonth < selMonth) || (hYear === selYear && hMonth === selMonth && hDay <= selDay));
+    });
+
+    const monthlyTotals: Record<string, number> = {};
+    monthRecords.forEach(h => {
+      h.sites.forEach(s => {
+        monthlyTotals[s.name] = (monthlyTotals[s.name] || 0) + s.total;
+      });
+    });
+
+    const regionsMap: Record<string, SiteRecord[]> = {};
+    record.sites.forEach(s => {
+      const regionName = s.region || siteToRegion[s.name] || 'AUTRE';
+      if (!regionsMap[regionName]) regionsMap[regionName] = [];
+      
+      const originalSite = data.regions.flatMap(r => r.sites).find(os => os.name === s.name);
+
+      regionsMap[regionName].push({
+        name: s.name,
+        region: regionName,
+        totalJour: s.total,
+        totalMois: monthlyTotals[s.name] || 0,
+        objMensuel: originalSite?.objMensuel || 0,
+        fixe: s.fixe,
+        mobile: s.mobile
+      });
+    });
+
+    return Object.entries(regionsMap)
+      .map(([name, sites]) => ({ name, sites }))
+      .filter(r => r.sites.length > 0);
+  }, [selectedDate, data]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedDate]);
 
   useEffect(() => {
     let interval: any;
     if (isAutoPlay) {
       interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % regions.length);
+        setCurrentIndex((prev) => (prev + 1) % displayRegions.length);
       }, 10000); // 10 seconds per slide
     }
     return () => clearInterval(interval);
-  }, [isAutoPlay, regions.length]);
+  }, [isAutoPlay, displayRegions.length]);
 
-  if (regions.length === 0) {
+  if (displayRegions.length === 0) {
     return (
       <div className="flex items-center justify-center h-[60vh] text-slate-500 font-medium">
         Aucune donnée par PRES disponible.
@@ -33,10 +90,10 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
     );
   }
 
-  const currentRegion = regions[currentIndex];
+  const currentRegion = displayRegions[currentIndex];
 
-  const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % regions.length);
-  const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + regions.length) % regions.length);
+  const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % displayRegions.length);
+  const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + displayRegions.length) % displayRegions.length);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -63,12 +120,27 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
               Présentation par PRES
             </h2>
             <p className="text-sm text-slate-500 font-medium">
-              Slide {currentIndex + 1} sur {regions.length}
+              Slide {currentIndex + 1} sur {displayRegions.length}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Period Selector */}
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm">
+            <Clock size={16} className="text-orange-500" />
+            <select 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="text-[10px] font-black uppercase outline-none cursor-pointer bg-transparent"
+            >
+              <option value={data.date}>Aujourd'hui ({data.date})</option>
+              {data.dailyHistory.filter(h => h.date !== data.date).map(h => (
+                <option key={h.date} value={h.date}>{h.date}</option>
+              ))}
+            </select>
+          </div>
+
           <button 
             onClick={() => setIsAutoPlay(!isAutoPlay)}
             className={`p-3 rounded-xl transition-all ${isAutoPlay ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'}`}
@@ -208,14 +280,14 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
           <motion.div 
             className="h-full bg-orange-500"
             initial={{ width: 0 }}
-            animate={{ width: `${((currentIndex + 1) / regions.length) * 100}%` }}
+            animate={{ width: `${((currentIndex + 1) / displayRegions.length) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Indicators */}
       <div className="flex justify-center gap-2 mt-8">
-        {regions.map((_, idx) => (
+        {displayRegions.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
