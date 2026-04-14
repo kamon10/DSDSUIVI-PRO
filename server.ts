@@ -9,7 +9,7 @@ import fs from "fs";
 // Database connection pool
 const isDbConfigured = false;
 
-console.log("[SERVER] Starting initialization...");
+console.log("[SERVER] Starting initialization... VERSION 2.0 (60s timeout)");
 
 process.on('uncaughtException', (err) => {
   console.error('[SERVER] Uncaught Exception:', err);
@@ -47,8 +47,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // VAPID keys should be generated and stored securely
-let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BDdrj94n3PTusNcd5JIO5APbc24j2rA5P8tsi9We65lNl-c8hB9GU_jwRTs30nGtjRkQ23fjYojzZRxT34kzd3o";
-let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "OcHvsUQtCRgDyfMEb1qeEHdw9DPv9OtFNS4otB4j5wc";
+let publicVapidKey = process.env.VAPID_PUBLIC_KEY || "BNGiQoS7ReLQJjPSaue33zzETKVFbb2XYWoByI2kU6pU4D1qROvRRMQ4fpp92iC1XVxFiQDjk3pCKiqshXesMlk";
+let privateVapidKey = process.env.VAPID_PRIVATE_KEY || "Q-717Ebgg2P66AzR5aOG_2RPZezRy-H7c1pG0vDBMWI";
 
 const vapidEmail = process.env.VAPID_EMAIL || "mailto:kadioamon@gmail.com";
 const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('http')) 
@@ -58,6 +58,9 @@ const vapidSubject = (vapidEmail.startsWith('mailto:') || vapidEmail.startsWith(
 function setupVapid() {
   try {
     console.log("[SERVER] Setting up VAPID details...");
+    if (!publicVapidKey || !privateVapidKey) {
+      throw new Error("VAPID keys are missing");
+    }
     webpush.setVapidDetails(
       vapidSubject,
       publicVapidKey,
@@ -65,7 +68,7 @@ function setupVapid() {
     );
     console.log("[SERVER] VAPID details set successfully");
   } catch (err) {
-    console.error("[SERVER] Failed to set VAPID details with provided keys, generating new ones...", err);
+    console.warn("[SERVER] Provided VAPID keys invalid or missing, generating temporary ones...");
     try {
       const keys = webpush.generateVAPIDKeys();
       publicVapidKey = keys.publicKey;
@@ -75,7 +78,7 @@ function setupVapid() {
         publicVapidKey,
         privateVapidKey
       );
-      console.log("[SERVER] VAPID details set successfully with generated keys");
+      console.log("[SERVER] VAPID details set successfully with generated keys. Note: These will change on restart unless saved to environment variables.");
     } catch (innerErr) {
       console.error("[SERVER] Fatal: Failed to set VAPID details even with generated keys:", innerErr);
     }
@@ -95,6 +98,10 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// In-memory cache for proxy requests
+const proxyCache = new Map<string, { text: string, timestamp: number }>();
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes cache
+
 app.get("/api/proxy", async (req, res) => {
   let targetUrl = req.query.url as string;
   
@@ -109,27 +116,41 @@ app.get("/api/proxy", async (req, res) => {
   if (!targetUrl) {
     return res.status(400).send("URL parameter is required");
   }
+
+  // Check cache
+  const cached = proxyCache.get(targetUrl);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    console.log(`[Proxy] Cache hit for: ${targetUrl.substring(0, 50)}...`);
+    res.setHeader('X-Cache', 'HIT');
+    res.set('Content-Type', 'text/plain; charset=utf-8');
+    res.set('Access-Control-Allow-Origin', '*');
+    return res.send(cached.text);
+  }
   
   console.log(`[Proxy] Request for: ${targetUrl.substring(0, 100)}...`);
 
-  // Désactiver le cache
+  // Désactiver le cache navigateur (on gère notre propre cache serveur)
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  res.setHeader('X-Cache', 'MISS');
   
-  const maxRetries = 1;
+  const maxRetries = 2;
   let lastError = null;
 
   for (let i = 0; i <= maxRetries; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
+    const startTime = Date.now();
     try {
+      console.log(`[Proxy] Attempt ${i+1} for ${targetUrl.substring(0, 50)}...`);
       const response = await fetch(targetUrl, {
         headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Accept': 'text/csv, text/plain, */*',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
         signal: controller.signal
       });
@@ -137,28 +158,45 @@ app.get("/api/proxy", async (req, res) => {
       if (response.ok) {
         const text = await response.text();
         clearTimeout(timeoutId);
+        const duration = Date.now() - startTime;
         
-        if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-          lastError = new Error("Received HTML instead of CSV (possible redirect or block)");
+        const trimmedText = text.trim();
+        if (trimmedText.startsWith("<!DOCTYPE") || trimmedText.startsWith("<html")) {
+          const preview = trimmedText.substring(0, 200).replace(/\n/g, ' ');
+          console.warn(`[Proxy] Received HTML instead of CSV after ${duration}ms (Preview: "${preview}")`);
+          
+          if (trimmedText.includes("ServiceLogin") || trimmedText.includes("Google Accounts")) {
+            lastError = new Error("Google Sheets requires authentication (not public)");
+          } else {
+            lastError = new Error("Received HTML content (possible block or redirect)");
+          }
           continue;
         }
         
+        console.log(`[Proxy] Success! Received ${text.length} characters in ${duration}ms.`);
+        
+        // Store in cache
+        proxyCache.set(targetUrl, { text, timestamp: Date.now() });
+        
         res.set('Content-Type', 'text/plain; charset=utf-8');
+        res.set('Access-Control-Allow-Origin', '*');
         return res.send(text);
       } else {
-        const errorText = await response.text().catch(() => "");
+        const statusText = response.statusText;
         clearTimeout(timeoutId);
-        console.warn(`[Proxy] Status ${response.status} for ${targetUrl.substring(0, 50)}`);
-        lastError = new Error(`Status ${response.status}`);
+        console.warn(`[Proxy] Status ${response.status} (${statusText}) for ${targetUrl.substring(0, 50)}`);
+        lastError = new Error(`Status ${response.status}: ${statusText}`);
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
       lastError = err;
-      console.warn(`[Proxy] Attempt ${i+1} failed: ${err.message || err}`);
+      const duration = Date.now() - startTime;
+      const msg = err.name === 'AbortError' ? `Timeout (60s)` : (err.message || err);
+      console.warn(`[Proxy] Attempt ${i+1} failed after ${duration}ms: ${msg}`);
     }
 
     if (i < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
   
@@ -300,66 +338,94 @@ const STOCK_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvWxbSrjoG4X
 let lastCollecteHash = "";
 let lastStockHash = "";
 
+async function fetchWithTimeout(url: string, options: any = {}, timeout = 60000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 async function checkDataChanges() {
   try {
     const fetchOptions = {
       headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/csv,text/plain,application/json,*/*',
         'Cache-Control': 'no-cache'
       }
     };
 
+    console.log("[SERVER] Checking for data changes...");
+
     // Check Collecte
-    const collecteRes = await fetch(COLLECTE_URL + "&_t=" + Date.now(), fetchOptions);
+    const collecteRes = await fetchWithTimeout(COLLECTE_URL + "&_t=" + Date.now(), fetchOptions);
     if (collecteRes.ok) {
       const text = await collecteRes.text();
-      if (lastCollecteHash && text !== lastCollecteHash) {
-        console.log("Change detected in Collecte!");
-        sendNotificationToAll("Nouvelle entrée : Prélèvements mis à jour", "Les données de collecte ont été actualisées.");
+      if (text.trim() && !text.trim().startsWith("<!DOCTYPE")) {
+        if (lastCollecteHash && text !== lastCollecteHash) {
+          console.log("[SERVER] Change detected in Collecte!");
+          sendNotificationToAll("Nouvelle entrée : Prélèvements mis à jour", "Les données de collecte ont été actualisées.");
+        }
+        lastCollecteHash = text;
       }
-      lastCollecteHash = text;
+    } else {
+      console.warn(`[SERVER] Failed to fetch Collecte: ${collecteRes.status}`);
     }
+
+    // Wait 2 seconds before next fetch
+    await new Promise(r => setTimeout(r, 2000));
 
     // Check Stock
-    const stockRes = await fetch(STOCK_URL + "&_t=" + Date.now(), fetchOptions);
+    const stockRes = await fetchWithTimeout(STOCK_URL + "&_t=" + Date.now(), fetchOptions);
     if (stockRes.ok) {
       const text = await stockRes.text();
-      
-      // WhatsApp Alert Logic
-      const config = getWhatsAppConfig();
-      const totalStock = calculateTotalStock(text);
-      console.log(`Current Total Stock: ${totalStock}`);
+      if (text.trim() && !text.trim().startsWith("<!DOCTYPE")) {
+        // WhatsApp Alert Logic
+        const config = getWhatsAppConfig();
+        const totalStock = calculateTotalStock(text);
+        console.log(`[SERVER] Current Total Stock: ${totalStock}`);
 
-      if (totalStock < config.alertThreshold) {
-        const now = Date.now();
-        // Alert every 4 hours if stock is still low
-        if (now - config.lastAlertSent > 4 * 60 * 60 * 1000) {
-          console.log("CRITICAL STOCK DETECTED! Sending WhatsApp alerts...");
-          const prefix = "[DSDCNTSCI] ";
-          const message = `${prefix}🚨 ALERTE STOCK CRITIQUE : Le stock national est à ${totalStock.toLocaleString()} poches. Seuil de sécurité (${config.alertThreshold.toLocaleString()}) non atteint.`;
-          
-          for (const number of config.numbers) {
-            await sendWhatsAppMessage(number, message, config);
-          }
+        if (totalStock > 0 && totalStock < config.alertThreshold) {
+          const now = Date.now();
+          // Alert every 4 hours if stock is still low
+          if (now - config.lastAlertSent > 4 * 60 * 60 * 1000) {
+            console.log("[SERVER] CRITICAL STOCK DETECTED! Sending WhatsApp alerts...");
+            const prefix = "[DSDCNTSCI] ";
+            const message = `${prefix}🚨 ALERTE STOCK CRITIQUE : Le stock national est à ${totalStock.toLocaleString()} poches. Seuil de sécurité (${config.alertThreshold.toLocaleString()}) non atteint.`;
+            
+            for (const number of config.numbers) {
+              await sendWhatsAppMessage(number, message, config);
+            }
 
-          if (config.groupId && config.groupApiUrl) {
-            await sendWhatsAppGroupMessage(config.groupId, message, config);
+            if (config.groupId && config.groupApiUrl) {
+              await sendWhatsAppGroupMessage(config.groupId, message, config);
+            }
+            
+            config.lastAlertSent = now;
+            saveWhatsAppConfig(config);
           }
-          
-          config.lastAlertSent = now;
-          saveWhatsAppConfig(config);
         }
-      }
 
-      if (lastStockHash && text !== lastStockHash) {
-        console.log("Change detected in Stock!");
-        sendNotificationToAll("Alerte Stock : Changement détecté", "Le niveau des stocks a été mis à jour.");
+        if (lastStockHash && text !== lastStockHash) {
+          console.log("[SERVER] Change detected in Stock!");
+          sendNotificationToAll("Alerte Stock : Changement détecté", "Le niveau des stocks a été mis à jour.");
+        }
+        lastStockHash = text;
       }
-      lastStockHash = text;
+    } else {
+      console.warn(`[SERVER] Failed to fetch Stock: ${stockRes.status}`);
     }
   } catch (err) {
-    console.error("Error checking data changes:", err);
+    console.error("[SERVER] Error checking data changes:", err);
   }
 }
 
