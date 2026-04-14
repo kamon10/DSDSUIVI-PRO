@@ -4,7 +4,7 @@ import { INITIAL_DATA, DEFAULT_LINK_1, DEFAULT_LINK_DISTRIBUTION, DEFAULT_LINK_S
 
 // Lazy load components for better performance
 const VisualDashboard = lazy(() => import('./components/VisualDashboard.tsx').then(m => ({ default: m.VisualDashboard })));
-const GoalPulseView = lazy(() => import('./components/GoalPulseView.tsx').then(m => ({ default: m.GoalPulseView })));
+const GoalPulseView = lazy(() => import('./components/GoalPulseView.tsx'));
 const PerformanceView = lazy(() => import('./components/PerformanceView.tsx').then(m => ({ default: m.PerformanceView })));
 const RecapView = lazy(() => import('./components/RecapView.tsx'));
 const PulsePerformance = lazy(() => import('./components/PulsePerformance.tsx').then(m => ({ default: m.PulsePerformance })));
