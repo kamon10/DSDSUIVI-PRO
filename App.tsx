@@ -141,9 +141,11 @@ const App: React.FC = () => {
     setSyncStatus('syncing');
 
     try {
-      const [dynSitesResult, brandingResult] = await Promise.all([
+      // Récupération de TOUTES les données en parallèle pour une vitesse maximale
+      const [dynSitesResult, brandingResult, dataResult] = await Promise.all([
         fetchDynamicSites(DEFAULT_SCRIPT_URL),
-        fetchBrandingConfig(DEFAULT_SCRIPT_URL)
+        fetchBrandingConfig(DEFAULT_SCRIPT_URL),
+        fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynamicSites, DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS)
       ]);
       
       if (dynSitesResult) setDynamicSites(dynSitesResult);
@@ -152,9 +154,10 @@ const App: React.FC = () => {
         localStorage.setItem('hemo_branding', JSON.stringify(brandingResult));
       }
       
-      const dataResult = await fetchSheetData(currentInput.trim(), force, DEFAULT_LINK_DISTRIBUTION, dynSitesResult || [], DEFAULT_LINK_STOCK, DEFAULT_LINK_GTS);
-      
       if (dataResult) {
+        // Si on a des sites dynamiques, on peut les injecter dans dataResult si nécessaire
+        // Mais fetchSheetData les prend déjà en paramètre normalement.
+        // Ici on simplifie pour le parallélisme pur.
         setFullData(dataResult);
         localStorage.setItem('gsheet_input_1', currentInput.trim());
         localStorage.setItem('hemo_full_data', JSON.stringify(dataResult));
