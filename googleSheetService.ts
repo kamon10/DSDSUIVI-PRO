@@ -477,10 +477,49 @@ export const fetchGts = async (url: string): Promise<GtsRecord[] | null> => {
   }
 };
 
+const CACHE_KEY_PREFIX = 'dsd_cnts_cache_';
+
+const getCachedData = (key: string): string | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY_PREFIX + key);
+    if (cached) {
+      const { text, timestamp } = JSON.parse(cached);
+      // Cache valide pendant 10 minutes côté client
+      if (Date.now() - timestamp < 10 * 60 * 1000) {
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn("Error reading from localStorage cache", e);
+  }
+  return null;
+};
+
+const setCachedData = (key: string, text: string) => {
+  try {
+    localStorage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify({
+      text,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.warn("Error writing to localStorage cache", e);
+  }
+};
+
 export const fetchWithRetry = async (targetUrl: string, key: string, force = false, retries = 2): Promise<{ text: string, hasChanged: boolean, error: boolean }> => {
   if (!targetUrl || !targetUrl.startsWith('http')) {
     console.warn(`Source ${key} URL invalide ou manquante.`);
     return { text: lastRawContent[key] || '', hasChanged: false, error: true };
+  }
+
+  // Tentative de récupération du cache local si pas de force refresh
+  if (!force) {
+    const cached = getCachedData(key);
+    if (cached) {
+      console.log(`[Sync] Cache local utilisé pour ${key}`);
+      lastRawContent[key] = cached;
+      return { text: cached, hasChanged: false, error: false };
+    }
   }
   
   // Cache busting plus simple (uniquement des chiffres)
@@ -490,10 +529,10 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
     console.log(`[Sync] Tentative ${i + 1}/${retries + 1} pour ${key}...`);
     
     const strategies = [
-      // Stratégie 1: Proxy interne (le plus fiable si configuré)
+      // Stratégie 1: Proxy interne (le plus fiable et rapide car cache serveur)
       (signal: AbortSignal) => fetch(`/api/proxy?url=${encodeURIComponent(urlWithCacheBusting)}`, { cache: 'no-store', signal }),
       
-      // Stratégie 2: AllOrigins (via JSON pour éviter les blocages CORS sur le raw)
+      // Stratégie 2: AllOrigins (via JSON)
       (signal: AbortSignal) => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal })
         .then(async res => {
           if (!res.ok) throw new Error(`AllOrigins status ${res.status}`);
@@ -510,13 +549,57 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
       // Stratégie 5: CodeTabs Proxy
       (signal: AbortSignal) => fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(urlWithCacheBusting)}`, { credentials: 'omit', cache: 'no-store', signal }),
       
-      // Stratégie 6: Fetch direct (peut échouer à cause de CORS, mais à tenter)
+      // Stratégie 6: Fetch direct
       (signal: AbortSignal) => fetch(urlWithCacheBusting, { signal })
     ];
 
-    for (let j = 0; j < strategies.length; j++) {
+    // OPTIMISATION: On tente les 2 premières stratégies en parallèle (Race) pour gagner du temps
+    const tryParallel = async (startIndex: number, count: number): Promise<{text: string, strategyIndex: number} | null> => {
+      const controllers = Array.from({ length: count }, () => new AbortController());
+      const timeoutId = setTimeout(() => controllers.forEach(c => c.abort()), 12000); // 12s timeout for parallel attempts
+
+      try {
+        const promises = strategies.slice(startIndex, startIndex + count).map(async (s, idx) => {
+          try {
+            const res = await s(controllers[idx].signal);
+            if (res.ok) {
+              const text = await res.text();
+              const trimmed = text.trim();
+              if (trimmed && !trimmed.startsWith("<!DOCTYPE") && !trimmed.startsWith("<html")) {
+                // On a réussi, on annule les autres
+                controllers.forEach((c, i) => { if (i !== idx) c.abort(); });
+                return { text, strategyIndex: startIndex + idx };
+              }
+            }
+            return null;
+          } catch (e) {
+            return null;
+          }
+        });
+
+        const results = await Promise.all(promises);
+        clearTimeout(timeoutId);
+        return results.find(r => r !== null) || null;
+      } catch (e) {
+        clearTimeout(timeoutId);
+        return null;
+      }
+    };
+
+    // 1. Essai des 2 meilleures stratégies en parallèle (Fast Path)
+    const fastResult = await tryParallel(0, 2);
+    if (fastResult) {
+      const hasChanged = force || fastResult.text !== lastRawContent[key];
+      lastRawContent[key] = fastResult.text;
+      setCachedData(key, fastResult.text); // On met à jour le cache local
+      console.log(`[Sync] ${key} récupéré avec succès via stratégie ${fastResult.strategyIndex + 1} (Fast Path).`);
+      return { text: fastResult.text, hasChanged, error: false };
+    }
+
+    // 2. Fallback séquentiel sur les autres stratégies si le fast path a échoué
+    for (let j = 2; j < strategies.length; j++) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout per strategy
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout per fallback strategy
 
       try {
         const response = await (strategies[j] as any)(controller.signal);
@@ -525,36 +608,22 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
           clearTimeout(timeoutId);
           const trimmedText = text.trim();
           
-          if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html") && trimmedText.length > 0) {
+          if (trimmedText && !trimmedText.startsWith("<!DOCTYPE") && !trimmedText.startsWith("<html")) {
             const hasChanged = force || text !== lastRawContent[key];
             lastRawContent[key] = text;
-            console.log(`[Sync] ${key} récupéré avec succès via stratégie ${j+1}.`);
+            setCachedData(key, text); // On met à jour le cache local
+            console.log(`[Sync] ${key} récupéré via fallback stratégie ${j+1}.`);
             return { text, hasChanged, error: false };
           }
-          
-          if (trimmedText.includes("ServiceLogin") || trimmedText.includes("Google Accounts")) {
-            console.error(`[Sync] ${key} : Redirection vers une page de connexion Google. Vérifiez que la feuille est publiée en tant que CSV public.`);
-          }
-          
-          const preview = trimmedText.substring(0, 150).replace(/\n/g, ' ');
-          console.warn(`[Sync] Contenu invalide pour ${key} via stratégie ${j+1} (début: "${preview}").`);
-        } else {
-          console.warn(`[Sync] Stratégie ${j+1} échouée pour ${key} (Status: ${response.status} ${response.statusText})`);
         }
       } catch (e: any) {
         clearTimeout(timeoutId);
-        const errorMsg = e.name === 'AbortError' ? 'Timeout (65s)' : (e.message || e);
-        console.warn(`[Sync] Erreur stratégie ${j+1} pour ${key}: ${errorMsg}`);
       }
-
-      // Délai progressif entre les stratégies
-      await new Promise(r => setTimeout(r, 1500 * (j + 1)));
+      await new Promise(r => setTimeout(r, 500)); // Petit délai entre fallbacks
     }
 
     if (i < retries) {
-      const delay = 2000 * (i + 1);
-      console.log(`[Sync] Toutes les stratégies ont échoué pour ${key}. Nouvelle tentative globale (${i + 2}/${retries + 1}) dans ${delay}ms...`);
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise(r => setTimeout(r, 1000));
     }
   }
 
