@@ -175,62 +175,271 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
   const exportToPPTX = () => {
     const pres = new pptxgen();
     pres.layout = 'LAYOUT_WIDE';
+    
+    // Define Theme Colors
+    const COLORS = {
+      ORANGE: 'F97316',
+      BLUE: '2563EB',
+      GREEN: '10B981',
+      ROSE: 'E11D48',
+      SLATE_50: 'F8FAFC',
+      SLATE_200: 'E2E8F0',
+      SLATE_400: '94A3B8',
+      SLATE_700: '334155',
+      SLATE_900: '0F172A',
+      WHITE: 'FFFFFF'
+    };
 
     slides.forEach(slide => {
       const pptSlide = pres.addSlide();
       
       if (slide.type === 'FAMILY_HEADER') {
-        pptSlide.background = { color: 'F97316' }; // Orange-500
+        pptSlide.background = { color: COLORS.ORANGE };
+        
+        // Decorative circle
+        pptSlide.addShape(pres.ShapeType.ellipse, { 
+          x: 5.15, y: 1.5, w: 3, h: 3, 
+          fill: { color: COLORS.WHITE, transparency: 80 } 
+        });
+        
         pptSlide.addText(slide.familyTitle || '', { 
-          x: 0, y: 0, w: '100%', h: '100%', 
-          fontSize: 60, bold: true, color: 'FFFFFF', 
+          x: 0, y: 4.5, w: '100%', h: 1, 
+          fontSize: 54, bold: true, color: COLORS.WHITE, 
           align: 'center', valign: 'middle' 
+        });
+        
+        // Bottom line
+        pptSlide.addShape(pres.ShapeType.rect, { 
+          x: 5.65, y: 5.6, w: 2, h: 0.1, 
+          fill: { color: COLORS.WHITE } 
         });
         return;
       }
 
-      // Background and Title
-      pptSlide.addText(slide.regionName, { x: 0.5, y: 0.5, w: '90%', h: 1, fontSize: 36, bold: true, color: '333333', align: 'center' });
-      pptSlide.addText(slide.type === 'COLLECTION' ? 'Réalisation Collecte' : 
+      // Background
+      pptSlide.background = { color: COLORS.SLATE_50 };
+      
+      // Header Bar
+      pptSlide.addShape(pres.ShapeType.rect, { 
+        x: 0, y: 0, w: '100%', h: 0.6, 
+        fill: { color: COLORS.WHITE } 
+      });
+      pptSlide.addText("HEMO STATS", { 
+        x: 0.5, y: 0.15, w: 2, h: 0.3, 
+        fontSize: 12, bold: true, color: COLORS.ORANGE 
+      });
+      pptSlide.addText(startDate === endDate ? startDate : `${startDate} - ${endDate}`, { 
+        x: 10.5, y: 0.15, w: 2.5, h: 0.3, 
+        fontSize: 10, color: COLORS.SLATE_400, align: 'right' 
+      });
+
+      // Slide Title
+      pptSlide.addText(slide.regionName, { 
+        x: 0.5, y: 0.8, w: '90%', h: 0.6, 
+        fontSize: 32, bold: true, color: COLORS.SLATE_900, align: 'center' 
+      });
+      
+      const subTitle = slide.type === 'COLLECTION' ? 'Réalisation Collecte' : 
                       slide.type === 'STOCK' ? 'État des Stocks' : 
-                      slide.type === 'DISTRIBUTION' ? 'Distribution PSL' : 'COMPARAISON DECLARATION / GTS', 
-                      { x: 0.5, y: 1.2, w: '90%', h: 0.5, fontSize: 20, color: '666666', align: 'center' });
-      pptSlide.addText(startDate === endDate ? startDate : `${startDate} - ${endDate}`, { x: 0.5, y: 1.6, w: '90%', h: 0.3, fontSize: 14, color: '999999', align: 'center' });
+                      slide.type === 'DISTRIBUTION' ? 'Distribution PSL' : 'COMPARAISON DECLARATION / GTS';
+      
+      pptSlide.addText(subTitle, { 
+        x: 0.5, y: 1.3, w: '90%', h: 0.4, 
+        fontSize: 16, bold: true, color: COLORS.SLATE_400, align: 'center' 
+      });
 
       if (slide.type === 'COLLECTION') {
-        const rows = [['Site', startDate === endDate ? 'Jour' : 'Période', 'Mois', 'Objectif', '%']];
+        const totalJour = slide.sites.reduce((acc, s) => acc + (s.totalJour || 0), 0);
+        const totalMois = slide.sites.reduce((acc, s) => acc + (s.totalMois || 0), 0);
+        const objMensuel = slide.sites.reduce((acc, s) => acc + (s.objMensuel || 0), 0);
+
+        // Summary Boxes
+        pptSlide.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.9, w: 3.8, h: 0.9, fill: { color: 'EFF6FF' }, line: { color: 'DBEAFE', width: 1 } });
+        pptSlide.addText(startDate === endDate ? "JOUR" : "PERIODE", { x: 0.6, y: 2.0, w: 3.6, h: 0.2, fontSize: 9, bold: true, color: '2563EB', align: 'center' });
+        pptSlide.addText(totalJour.toString(), { x: 0.6, y: 2.2, w: 3.6, h: 0.4, fontSize: 22, bold: true, color: '1E40AF', align: 'center' });
+
+        pptSlide.addShape(pres.ShapeType.rect, { x: 4.75, y: 1.9, w: 3.8, h: 0.9, fill: { color: 'FFF7ED' }, line: { color: 'FFEDD5', width: 1 } });
+        pptSlide.addText("MOIS", { x: 4.85, y: 2.0, w: 3.6, h: 0.2, fontSize: 9, bold: true, color: 'EA580C', align: 'center' });
+        pptSlide.addText(totalMois.toString(), { x: 4.85, y: 2.2, w: 3.6, h: 0.4, fontSize: 22, bold: true, color: '9A3412', align: 'center' });
+
+        pptSlide.addShape(pres.ShapeType.rect, { x: 9, y: 1.9, w: 3.8, h: 0.9, fill: { color: 'F0FDF4' }, line: { color: 'DCFCE7', width: 1 } });
+        pptSlide.addText("OBJECTIF", { x: 9.1, y: 2.0, w: 3.6, h: 0.2, fontSize: 9, bold: true, color: '16A34A', align: 'center' });
+        pptSlide.addText(objMensuel.toString(), { x: 9.1, y: 2.2, w: 3.6, h: 0.4, fontSize: 22, bold: true, color: '166534', align: 'center' });
+
+        const rows = [
+          [
+            { text: 'Site', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569' } },
+            { text: startDate === endDate ? 'Jour' : 'Période', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } },
+            { text: 'Mois', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } },
+            { text: 'Objectif', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } },
+            { text: '%', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } }
+          ]
+        ];
+        
         slide.sites.forEach(s => {
-          rows.push([s.name, s.totalJour.toString(), s.totalMois.toString(), s.objMensuel.toString(), Math.round((s.totalMois / (s.objMensuel || 1)) * 100) + '%']);
+          const percent = Math.round((s.totalMois / (s.objMensuel || 1)) * 100);
+          rows.push([
+            { text: s.name, options: { bold: true, color: '334155' } },
+            { text: s.totalJour.toString(), options: { align: 'center', color: '2563EB', bold: true } },
+            { text: s.totalMois.toString(), options: { align: 'center', color: 'EA580C', bold: true } },
+            { text: s.objMensuel.toString(), options: { align: 'center', color: '64748B' } },
+            { text: percent + '%', options: { align: 'center', bold: true, color: percent >= 100 ? '16A34A' : '334155' } }
+          ] as any);
         });
-        pptSlide.addTable(rows as any, { x: 0.5, y: 2.2, w: 12.3, colW: [4, 2, 2, 2, 2.3], border: { pt: 1, color: 'E2E8F0' }, fontSize: 12 });
+        
+        pptSlide.addTable(rows as any, { 
+          x: 0.5, y: 3.0, w: 12.3, 
+          colW: [4, 2, 2, 2, 2.3], 
+          border: { pt: 1, color: 'E2E8F0' }, 
+          fontSize: 11,
+          fill: { color: 'FFFFFF' }
+        });
       } else if (slide.type === 'STOCK') {
-        const stockByGroup: Record<string, number> = {};
-        slide.stock.forEach(s => {
-          stockByGroup[s.groupeSanguin] = (stockByGroup[s.groupeSanguin] || 0) + s.quantite;
+        const totalStock = slide.stock.reduce((acc, s) => acc + s.quantite, 0);
+        
+        pptSlide.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.9, w: 12.3, h: 0.8, fill: { color: 'EEF2FF' }, line: { color: 'E0E7FF', width: 1 } });
+        pptSlide.addText("TOTAL STOCK SUR LA PERIODE", { x: 0.6, y: 2.0, w: 12.1, h: 0.2, fontSize: 10, bold: true, color: '4F46E5', align: 'center' });
+        pptSlide.addText(totalStock.toString() + " POCHES", { x: 0.6, y: 2.2, w: 12.1, h: 0.4, fontSize: 24, bold: true, color: '3730A3', align: 'center' });
+
+        const groups = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+        const rows = [[{ text: 'Groupe', options: { fill: { color: 'F1F5F9' }, bold: true } }, { text: 'Quantité', options: { fill: { color: 'F1F5F9' }, bold: true, align: 'center' } }]];
+        
+        groups.forEach(group => {
+          const qty = slide.stock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
+          rows.push([
+            { text: group, options: { bold: true, color: COLORS.ROSE } },
+            { text: qty.toString(), options: { align: 'center', bold: true } }
+          ] as any);
         });
-        const rows = [['Groupe Sanguin', 'Quantité']];
-        Object.entries(stockByGroup).forEach(([group, qty]) => {
-          rows.push([group, qty.toString()]);
+        
+        pptSlide.addTable(rows as any, { 
+          x: 0.5, y: 3.0, w: 5.8, 
+          border: { pt: 1, color: 'E2E8F0' }, 
+          fontSize: 12,
+          fill: { color: 'FFFFFF' }
         });
-        pptSlide.addTable(rows as any, { x: 0.5, y: 2.2, w: 12.3, colW: [6, 6.3], border: { pt: 1, color: 'E2E8F0' }, fontSize: 14 });
+
+        // Product types
+        const types = Array.from(new Set(slide.stock.map(s => s.typeProduit)));
+        const typeRows = [[{ text: 'Type de Produit', options: { fill: { color: 'F1F5F9' }, bold: true } }, { text: 'Quantité', options: { fill: { color: 'F1F5F9' }, bold: true, align: 'center' } }]];
+        
+        types.forEach(type => {
+          const qty = slide.stock.filter(s => s.typeProduit === type).reduce((acc, s) => acc + s.quantite, 0);
+          typeRows.push([
+            { text: type, options: { bold: true } },
+            { text: qty.toString(), options: { align: 'center', bold: true, color: '4F46E5' } }
+          ] as any);
+        });
+
+        pptSlide.addTable(typeRows as any, { 
+          x: 7.0, y: 3.0, w: 5.8, 
+          border: { pt: 1, color: 'E2E8F0' }, 
+          fontSize: 12,
+          fill: { color: 'FFFFFF' }
+        });
+
+        // Site Detail Table
+        const siteNames = Array.from(new Set(slide.stock.map(s => s.site))).sort();
+        const siteRows = [
+          [
+            { text: 'Site', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569' } },
+            ...groups.map(g => ({ text: g, options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } })),
+            { text: 'Total', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'right' } }
+          ]
+        ];
+
+        siteNames.forEach(siteName => {
+          const siteStock = slide.stock.filter(s => s.site === siteName);
+          const total = siteStock.reduce((acc, s) => acc + s.quantite, 0);
+          siteRows.push([
+            { text: siteName, options: { bold: true } },
+            ...groups.map(group => {
+              const qty = siteStock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
+              return { text: qty || '-', options: { align: 'center' } };
+            }),
+            { text: total.toString(), options: { align: 'right', bold: true, color: '2563EB' } }
+          ] as any);
+        });
+
+        pptSlide.addTable(siteRows as any, { 
+          x: 0.5, y: 5.5, w: 12.3, 
+          border: { pt: 1, color: 'E2E8F0' }, 
+          fontSize: 9,
+          fill: { color: 'FFFFFF' }
+        });
       } else if (slide.type === 'DISTRIBUTION') {
-        const distByGroup: Record<string, number> = {};
-        slide.distributions.forEach(d => {
-          distByGroup[d.groupeSanguin] = (distByGroup[d.groupeSanguin] || 0) + d.quantite;
+        const groups = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+        groups.forEach((group, idx) => {
+          const qty = slide.distributions.filter(d => d.groupeSanguin === group).reduce((acc, d) => acc + d.quantite, 0);
+          const xPos = 0.5 + (idx % 4) * 3.15;
+          const yPos = 2.2 + Math.floor(idx / 4) * 1.8;
+          
+          pptSlide.addShape(pres.ShapeType.rect, { 
+            x: xPos, y: yPos, w: 2.8, h: 1.5, 
+            fill: { color: COLORS.WHITE }, 
+            line: { color: COLORS.SLATE_200, width: 1 } 
+          });
+          
+          pptSlide.addText(group, { 
+            x: xPos, y: yPos + 0.2, w: 2.8, h: 0.4, 
+            fontSize: 24, bold: true, color: COLORS.ROSE, align: 'center' 
+          });
+          pptSlide.addText(qty.toString(), { 
+            x: xPos, y: yPos + 0.6, w: 2.8, h: 0.5, 
+            fontSize: 32, bold: true, color: COLORS.SLATE_900, align: 'center' 
+          });
+          pptSlide.addText("Poches", { 
+            x: xPos, y: yPos + 1.1, w: 2.8, h: 0.2, 
+            fontSize: 10, bold: true, color: COLORS.SLATE_400, align: 'center' 
+          });
         });
-        const rows = [['Groupe Sanguin', 'Distribué']];
-        Object.entries(distByGroup).forEach(([group, qty]) => {
-          rows.push([group, qty.toString()]);
-        });
-        pptSlide.addTable(rows as any, { x: 0.5, y: 2.2, w: 12.3, colW: [6, 6.3], border: { pt: 1, color: 'E2E8F0' }, fontSize: 14 });
       } else if (slide.type === 'GTS_COMPARISON') {
-        const rows = [['Site', 'DECLARATION', 'ENCODAGE GTS', 'Écart']];
+        const totalDecl = slide.sites.reduce((acc, s) => acc + (s.totalJour || 0), 0);
+        const totalGts = slide.gts.reduce((acc, g) => acc + g.total, 0);
+        const totalDiff = totalDecl - totalGts;
+
+        // Summary Boxes
+        pptSlide.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.9, w: 3.8, h: 0.9, fill: { color: 'FFF7ED' }, line: { color: 'FFEDD5', width: 1 } });
+        pptSlide.addText("DECLARATION", { x: 0.6, y: 2.0, w: 3.6, h: 0.2, fontSize: 9, bold: true, color: 'EA580C', align: 'center' });
+        pptSlide.addText(totalDecl.toString(), { x: 0.6, y: 2.2, w: 3.6, h: 0.4, fontSize: 22, bold: true, color: '9A3412', align: 'center' });
+
+        pptSlide.addShape(pres.ShapeType.rect, { x: 4.75, y: 1.9, w: 3.8, h: 0.9, fill: { color: 'EFF6FF' }, line: { color: 'DBEAFE', width: 1 } });
+        pptSlide.addText("ENCODAGE GTS", { x: 4.85, y: 2.0, w: 3.6, h: 0.2, fontSize: 9, bold: true, color: '2563EB', align: 'center' });
+        pptSlide.addText(totalGts.toString(), { x: 4.85, y: 2.2, w: 3.6, h: 0.4, fontSize: 22, bold: true, color: '1E40AF', align: 'center' });
+
+        pptSlide.addShape(pres.ShapeType.rect, { x: 9, y: 1.9, w: 3.8, h: 0.9, fill: { color: 'F0FDF4' }, line: { color: 'DCFCE7', width: 1 } });
+        pptSlide.addText("ECART", { x: 9.1, y: 2.0, w: 3.6, h: 0.2, fontSize: 9, bold: true, color: '16A34A', align: 'center' });
+        pptSlide.addText((totalDiff > 0 ? '+' : '') + totalDiff.toString(), { x: 9.1, y: 2.2, w: 3.6, h: 0.4, fontSize: 22, bold: true, color: totalDiff >= 0 ? '166534' : '991B1B', align: 'center' });
+
+        const rows = [
+          [
+            { text: 'Site', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569' } },
+            { text: 'DECLARATION', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } },
+            { text: 'ENCODAGE GTS', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } },
+            { text: 'Écart', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569', align: 'center' } }
+          ]
+        ];
+        
         slide.sites.forEach(s => {
           const gtsMatch = slide.gts.find(g => g.site.toUpperCase() === s.name.toUpperCase());
           const gtsTotal = gtsMatch ? gtsMatch.total : 0;
-          rows.push([s.name, s.totalJour.toString(), gtsTotal.toString(), (s.totalJour - gtsTotal).toString()]);
+          const diff = s.totalJour - gtsTotal;
+          
+          rows.push([
+            { text: s.name, options: { bold: true } },
+            { text: s.totalJour.toString(), options: { align: 'center', bold: true } },
+            { text: gtsTotal.toString(), options: { align: 'center', bold: true, color: '2563EB' } },
+            { text: (diff > 0 ? '+' : '') + diff.toString(), options: { align: 'center', bold: true, color: diff >= 0 ? '16A34A' : 'E11D48' } }
+          ] as any);
         });
-        pptSlide.addTable(rows as any, { x: 0.5, y: 2.2, w: 12.3, colW: [4, 3, 3, 2.3], border: { pt: 1, color: 'E2E8F0' }, fontSize: 12 });
+        
+        pptSlide.addTable(rows as any, { 
+          x: 0.5, y: 3.0, w: 12.3, 
+          colW: [4, 3, 3, 2.3], 
+          border: { pt: 1, color: 'E2E8F0' }, 
+          fontSize: 11,
+          fill: { color: 'FFFFFF' }
+        });
       }
     });
 
@@ -263,7 +472,7 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
   };
 
   return (
-    <div className={`relative flex flex-col ${isFullscreen ? 'fixed inset-0 z-[200] bg-slate-900 p-8' : 'w-full max-w-7xl mx-auto p-4'}`}>
+    <div className={`relative flex flex-col ${isFullscreen ? 'fixed inset-0 z-[200] bg-slate-900 p-8' : 'w-full max-w-7xl mx-auto p-4 h-[850px]'}`}>
       {/* Header Controls */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
@@ -479,7 +688,7 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
 
                 {currentSlide.type === 'STOCK' && (
                   <div className="flex-1 flex flex-col">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                       <StatBox 
                         label="Total Stock" 
                         value={currentSlide.stock.reduce((acc, s) => acc + s.quantite, 0)} 
@@ -493,46 +702,15 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                         color="orange"
                       />
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-                      {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(group => {
-                        const qty = currentSlide.stock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
-                        return (
-                          <div key={group} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                            <span className="text-2xl font-black text-rose-600 mb-1">{group}</span>
-                            <span className="text-3xl font-black text-slate-900">{qty}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase mt-2">Poches</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {currentSlide.type === 'DISTRIBUTION' && (
-                  <div className="flex-1 flex flex-col">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                      <StatBox 
-                        label="Total Distribué" 
-                        value={currentSlide.distributions.reduce((acc, d) => acc + d.quantite, 0)} 
-                        icon={<Truck className="text-indigo-500" />}
-                        color="blue"
-                      />
-                      <StatBox 
-                        label="Rendus / Périmés" 
-                        value={currentSlide.distributions.reduce((acc, d) => acc + (d.rendu || 0), 0)} 
-                        icon={<X className="text-rose-500" />}
-                        color="orange"
-                      />
-                    </div>
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Distribution by Product Type */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        {/* Stock by Product Type */}
                         <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
                           <h5 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Par Type de Produit</h5>
                           <div className="space-y-4">
-                            {Array.from(new Set(currentSlide.distributions.map(d => d.typeProduit))).map(type => {
-                              const qty = currentSlide.distributions.filter(d => d.typeProduit === type).reduce((acc, d) => acc + d.quantite, 0);
-                              const total = currentSlide.distributions.reduce((acc, d) => acc + d.quantite, 0);
+                            {Array.from(new Set(currentSlide.stock.map(s => s.typeProduit))).map(type => {
+                              const qty = currentSlide.stock.filter(s => s.typeProduit === type).reduce((acc, s) => acc + s.quantite, 0);
+                              const total = currentSlide.stock.reduce((acc, s) => acc + s.quantite, 0);
                               return (
                                 <div key={type} className="flex flex-col gap-2">
                                   <div className="flex justify-between items-end">
@@ -547,12 +725,12 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                             })}
                           </div>
                         </div>
-                        {/* Distribution by Group */}
+                        {/* Stock by Group */}
                         <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
                           <h5 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Par Groupe Sanguin</h5>
                           <div className="grid grid-cols-4 gap-4">
                             {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(group => {
-                              const qty = currentSlide.distributions.filter(d => d.groupeSanguin === group).reduce((acc, d) => acc + d.quantite, 0);
+                              const qty = currentSlide.stock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
                               return (
                                 <div key={group} className="flex flex-col items-center">
                                   <span className="text-xs font-black text-rose-600">{group}</span>
@@ -563,6 +741,76 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Stock by Site Table */}
+                      <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8">
+                        <h5 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                          <MapPin size={16} className="text-slate-400" />
+                          Détail par Site
+                        </h5>
+                        <table className="w-full border-separate border-spacing-y-2">
+                          <thead>
+                            <tr className="text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                              <th className="px-4 py-2">Site</th>
+                              {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(g => (
+                                <th key={g} className="px-2 py-2 text-center">{g}</th>
+                              ))}
+                              <th className="px-4 py-2 text-right">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentSlide.sites.sort((a, b) => a.name.localeCompare(b.name)).map(site => {
+                              const siteStock = currentSlide.stock.filter(s => s.site.toUpperCase() === site.name.toUpperCase());
+                              const total = siteStock.reduce((acc, s) => acc + s.quantite, 0);
+                              return (
+                                <tr key={site.name} className="bg-slate-50/50 hover:bg-slate-50 transition-colors rounded-xl">
+                                  <td className="px-4 py-3 font-bold text-slate-700 text-sm rounded-l-xl border-l-4 border-indigo-500">{site.name}</td>
+                                  {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(group => {
+                                    const qty = siteStock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
+                                    return (
+                                      <td key={group} className={`px-2 py-3 text-center text-xs font-bold ${qty > 0 ? 'text-slate-900' : 'text-slate-300'}`}>
+                                        {qty || '-'}
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="px-4 py-3 text-right font-black text-indigo-600 text-sm rounded-r-xl bg-indigo-50/30">{total}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentSlide.type === 'DISTRIBUTION' && (
+                  <div className="flex-1 flex flex-col">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+                      <StatBox 
+                        label="Total Distribué" 
+                        value={currentSlide.distributions.reduce((acc, d) => acc + d.quantite, 0)} 
+                        icon={<Truck className="text-indigo-500" />}
+                        color="blue"
+                      />
+                      <StatBox 
+                        label="Rendus / Périmés" 
+                        value={currentSlide.distributions.reduce((acc, d) => acc + (d.rendu || 0), 0)} 
+                        icon={<X className="text-rose-500" />}
+                        color="orange"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+                      {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(group => {
+                        const qty = currentSlide.distributions.filter(d => d.groupeSanguin === group).reduce((acc, d) => acc + d.quantite, 0);
+                        return (
+                          <div key={group} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                            <span className="text-2xl font-black text-rose-600 mb-1">{group}</span>
+                            <span className="text-3xl font-black text-slate-900">{qty}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase mt-2">Poches</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
