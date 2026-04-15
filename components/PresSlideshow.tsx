@@ -339,7 +339,6 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
         });
 
         // Site Detail Table
-        const siteNames = Array.from(new Set(slide.stock.map(s => s.site))).sort();
         const siteRows = [
           [
             { text: 'Site', options: { fill: { color: 'F1F5F9' }, bold: true, color: '475569' } },
@@ -348,11 +347,13 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
           ]
         ];
 
-        siteNames.forEach(siteName => {
-          const siteStock = slide.stock.filter(s => s.site === siteName);
+        slide.sites.sort((a, b) => a.name.localeCompare(b.name)).forEach(site => {
+          const siteStock = slide.stock.filter(s => 
+            s.site && site.name && s.site.trim().toUpperCase() === site.name.trim().toUpperCase()
+          );
           const total = siteStock.reduce((acc, s) => acc + s.quantite, 0);
           siteRows.push([
-            { text: siteName, options: { bold: true } },
+            { text: site.name, options: { bold: true } },
             ...groups.map(group => {
               const qty = siteStock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
               return { text: qty || '-', options: { align: 'center' } };
@@ -472,7 +473,7 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
   };
 
   return (
-    <div className={`relative flex flex-col ${isFullscreen ? 'fixed inset-0 z-[200] bg-slate-900 p-8' : 'w-full max-w-7xl mx-auto p-4 h-[850px]'}`}>
+    <div className={`relative flex flex-col ${isFullscreen ? 'fixed inset-0 z-[200] bg-slate-900 p-8' : 'w-full max-w-7xl mx-auto p-4 h-[calc(100vh-140px)] min-h-[700px]'}`}>
       {/* Header Controls */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
@@ -749,18 +750,20 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                           Détail par Site
                         </h5>
                         <table className="w-full border-separate border-spacing-y-2">
-                          <thead>
+                          <thead className="sticky top-0 bg-white z-10">
                             <tr className="text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                              <th className="px-4 py-2">Site</th>
+                              <th className="px-4 py-2 bg-white">Site</th>
                               {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(g => (
-                                <th key={g} className="px-2 py-2 text-center">{g}</th>
+                                <th key={g} className="px-2 py-2 text-center bg-white">{g}</th>
                               ))}
-                              <th className="px-4 py-2 text-right">Total</th>
+                              <th className="px-4 py-2 text-right bg-white">Total</th>
                             </tr>
                           </thead>
                           <tbody>
                             {currentSlide.sites.sort((a, b) => a.name.localeCompare(b.name)).map(site => {
-                              const siteStock = currentSlide.stock.filter(s => s.site.toUpperCase() === site.name.toUpperCase());
+                              const siteStock = currentSlide.stock.filter(s => 
+                                s.site && site.name && s.site.trim().toUpperCase() === site.name.trim().toUpperCase()
+                              );
                               const total = siteStock.reduce((acc, s) => acc + s.quantite, 0);
                               return (
                                 <tr key={site.name} className="bg-slate-50/50 hover:bg-slate-50 transition-colors rounded-xl">
