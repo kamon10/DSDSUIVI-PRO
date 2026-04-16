@@ -556,34 +556,37 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
     // OPTIMISATION: On tente les 2 premières stratégies en parallèle (Race) pour gagner du temps
     const tryParallel = async (startIndex: number, count: number): Promise<{text: string, strategyIndex: number} | null> => {
       const controllers = Array.from({ length: count }, () => new AbortController());
-      const timeoutId = setTimeout(() => controllers.forEach(c => c.abort()), 12000); // 12s timeout for parallel attempts
+      const timeoutId = setTimeout(() => controllers.forEach(c => c.abort()), 8000); // 8s timeout for parallel attempts (reduced from 12s)
 
-      try {
-        const promises = strategies.slice(startIndex, startIndex + count).map(async (s, idx) => {
+      return new Promise((resolve) => {
+        let completed = 0;
+        let resolved = false;
+
+        strategies.slice(startIndex, startIndex + count).forEach(async (s, idx) => {
           try {
             const res = await s(controllers[idx].signal);
-            if (res.ok) {
+            if (res.ok && !resolved) {
               const text = await res.text();
               const trimmed = text.trim();
               if (trimmed && !trimmed.startsWith("<!DOCTYPE") && !trimmed.startsWith("<html")) {
-                // On a réussi, on annule les autres
+                resolved = true;
                 controllers.forEach((c, i) => { if (i !== idx) c.abort(); });
-                return { text, strategyIndex: startIndex + idx };
+                clearTimeout(timeoutId);
+                resolve({ text, strategyIndex: startIndex + idx });
+                return;
               }
             }
-            return null;
           } catch (e) {
-            return null;
+            // Ignore error
+          }
+          
+          completed++;
+          if (completed === count && !resolved) {
+            clearTimeout(timeoutId);
+            resolve(null);
           }
         });
-
-        const results = await Promise.all(promises);
-        clearTimeout(timeoutId);
-        return results.find(r => r !== null) || null;
-      } catch (e) {
-        clearTimeout(timeoutId);
-        return null;
-      }
+      });
     };
 
     // 1. Essai des 2 meilleures stratégies en parallèle (Fast Path)
@@ -599,7 +602,7 @@ export const fetchWithRetry = async (targetUrl: string, key: string, force = fal
     // 2. Fallback séquentiel sur les autres stratégies si le fast path a échoué
     for (let j = 2; j < strategies.length; j++) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout per fallback strategy
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout per fallback strategy (reduced from 10s)
 
       try {
         const response = await (strategies[j] as any)(controller.signal);
