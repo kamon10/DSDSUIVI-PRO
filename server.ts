@@ -1,15 +1,18 @@
 import express from "express";
-import * as vite from "vite";
+import { createServer as createViteServer } from "vite";
 import webpush from "web-push";
 import bodyParser from "body-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import fetch from "node-fetch";
 
 // Database connection pool
 const isDbConfigured = false;
 
-console.log("[SERVER] Starting initialization... VERSION 2.0 (60s timeout)");
+console.log("[SERVER] Starting initialization... VERSION 2.1");
+console.log("[SERVER] NODE_ENV:", process.env.NODE_ENV);
+console.log("[SERVER] VERCEL:", process.env.VERCEL);
 
 process.on('uncaughtException', (err) => {
   console.error('[SERVER] Uncaught Exception:', err);
@@ -100,7 +103,7 @@ app.get("/api/health", (req, res) => {
 
 // In-memory cache for proxy requests
 const proxyCache = new Map<string, { text: string, timestamp: number }>();
-const CACHE_TTL = 2 * 60 * 1000; // 2 minutes cache
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 
 app.get("/api/proxy", async (req, res) => {
   let targetUrl = req.query.url as string;
@@ -196,7 +199,7 @@ app.get("/api/proxy", async (req, res) => {
     }
 
     if (i < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
   
@@ -515,45 +518,39 @@ setTimeout(checkDataChanges, 30000);
 
 async function startServer() {
   console.log("[SERVER] startServer() called");
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-    console.log("[SERVER] Starting Vite in middleware mode...");
-    const viteInstance = await vite.createServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(viteInstance.middlewares);
-    console.log("[SERVER] Vite middleware attached");
-  } else {
-    console.log("[SERVER] Production mode: serving static files");
-    const distPath = path.join(process.cwd(), "dist");
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
-      app.get("*all", (req, res) => {
-        res.sendFile(path.join(distPath, "index.html"));
+  try {
+    // Vite middleware for development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[SERVER] Starting Vite in middleware mode...");
+      const viteInstance = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
       });
+      app.use(viteInstance.middlewares);
+      console.log("[SERVER] Vite middleware attached");
     } else {
-      // Fallback for Vercel if dist is not in current working directory
-      const fallbackDistPath = path.join(__dirname, "dist");
-      if (fs.existsSync(fallbackDistPath)) {
-        app.use(express.static(fallbackDistPath));
-        app.get("*all", (req, res) => {
-          res.sendFile(path.join(fallbackDistPath, "index.html"));
+      console.log("[SERVER] Production mode: serving static files");
+      const distPath = path.join(process.cwd(), "dist");
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get("*", (req, res) => {
+          res.sendFile(path.join(distPath, "index.html"));
         });
+      } else {
+        console.error("[SERVER] dist directory not found!");
       }
     }
-  }
 
-  if (!process.env.VERCEL) {
     console.log(`[SERVER] Attempting to listen on port ${PORT}...`);
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`[SERVER] Server successfully running on http://0.0.0.0:${PORT}`);
     });
+  } catch (err) {
+    console.error("[SERVER] Failed to start server:", err);
+    process.exit(1);
   }
 }
 
-if (!process.env.VERCEL) {
-  startServer();
-}
+startServer();
 
 export default app;
