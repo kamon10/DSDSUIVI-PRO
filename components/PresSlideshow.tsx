@@ -296,10 +296,15 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
         });
       } else if (slide.type === 'STOCK') {
         const totalStock = slide.stock.reduce((acc, s) => acc + s.quantite, 0);
+        const totalCgr = slide.stock.filter(s => (s.typeProduit || "").toUpperCase().includes('CGR')).reduce((acc, s) => acc + s.quantite, 0);
         
-        pptSlide.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.9, w: 12.3, h: 0.8, fill: { color: 'EEF2FF' }, line: { color: 'E0E7FF', width: 1 } });
-        pptSlide.addText("TOTAL STOCK SUR LA PERIODE", { x: 0.6, y: 2.0, w: 12.1, h: 0.2, fontSize: 10, bold: true, color: '4F46E5', align: 'center' });
-        pptSlide.addText(totalStock.toString() + " POCHES", { x: 0.6, y: 2.2, w: 12.1, h: 0.4, fontSize: 24, bold: true, color: '3730A3', align: 'center' });
+        pptSlide.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.9, w: 6.0, h: 0.8, fill: { color: 'EEF2FF' }, line: { color: 'E0E7FF', width: 1 } });
+        pptSlide.addText("TOTAL STOCK SUR LA PERIODE", { x: 0.6, y: 2.0, w: 5.8, h: 0.2, fontSize: 9, bold: true, color: '4F46E5', align: 'center' });
+        pptSlide.addText(totalStock.toString() + " POCHES", { x: 0.6, y: 2.2, w: 5.8, h: 0.4, fontSize: 20, bold: true, color: '3730A3', align: 'center' });
+
+        pptSlide.addShape(pres.ShapeType.rect, { x: 6.8, y: 1.9, w: 6.0, h: 0.8, fill: { color: 'FFF1F2' }, line: { color: 'FFE4E6', width: 1 } });
+        pptSlide.addText("TOTAL CGR SUR LA PERIODE", { x: 6.9, y: 2.0, w: 5.8, h: 0.2, fontSize: 9, bold: true, color: 'E11D48', align: 'center' });
+        pptSlide.addText(totalCgr.toString() + " POCHES", { x: 6.9, y: 2.2, w: 5.8, h: 0.4, fontSize: 20, bold: true, color: '9F1239', align: 'center' });
 
         const groups = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
         const rows = [[{ text: 'Groupe', options: { fill: { color: 'F1F5F9' }, bold: true } }, { text: 'Quantité', options: { fill: { color: 'F1F5F9' }, bold: true, align: 'center' } }]];
@@ -697,9 +702,15 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                         color="blue"
                       />
                       <StatBox 
+                        label="Total CGR" 
+                        value={currentSlide.stock.filter(s => (s.typeProduit || "").toUpperCase().includes('CGR')).reduce((acc, s) => acc + s.quantite, 0)} 
+                        icon={<Activity className="text-rose-500" />}
+                        color="green"
+                      />
+                      <StatBox 
                         label="Groupes Différents" 
                         value={new Set(currentSlide.stock.map(s => s.groupeSanguin)).size} 
-                        icon={<Activity className="text-rose-500" />}
+                        icon={<Activity className="text-orange-500" />}
                         color="orange"
                       />
                     </div>
