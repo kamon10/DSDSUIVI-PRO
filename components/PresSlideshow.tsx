@@ -25,23 +25,27 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [startDate, setStartDate] = useState(data.date);
-  const [endDate, setEndDate] = useState(data.date);
+  const [startDate, setStartDate] = useState(data?.date || "");
+  const [endDate, setEndDate] = useState(data?.date || "");
 
   const parseDate = (dateStr: string) => {
-    const [d, m, y] = dateStr.split('/').map(Number);
+    if (!dateStr || dateStr === "---") return 0;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return 0;
+    const [d, m, y] = parts.map(Number);
     return new Date(y, m - 1, d).getTime();
   };
 
   // Reconstruct slides based on selected period and region data
   const slides = useMemo(() => {
+    if (!data?.regions) return [];
     const regions = data.regions.filter(r => r.sites.length > 0);
     
     const startTs = parseDate(startDate);
     const endTs = parseDate(endDate);
     
     // Filter history for the selected period
-    const periodRecords = data.dailyHistory.filter(h => {
+    const periodRecords = (data.dailyHistory || []).filter(h => {
       const hTs = parseDate(h.date);
       return hTs >= Math.min(startTs, endTs) && hTs <= Math.max(startTs, endTs);
     });
@@ -639,27 +643,30 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                         Détail par Site
                       </h4>
                       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        <table className="w-full border-separate border-spacing-y-3">
-                          <thead>
-                            <tr className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                              <th className="px-6 py-2">Site</th>
-                              <th className="px-6 py-2 text-center">{startDate === endDate ? "Jour" : "Période"}</th>
-                              <th className="px-6 py-2 text-center">Mois</th>
-                              <th className="px-6 py-2 text-center">Objectif</th>
-                              <th className="px-6 py-2 text-right">Réalisation</th>
+                        <table className="w-full border-collapse">
+                          <thead className="sticky top-0 bg-white z-10">
+                            <tr className="text-left">
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Site</th>
+                              <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">{startDate === endDate ? "Jour" : "Période"}</th>
+                              <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Mois</th>
+                              <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Objectif</th>
+                              <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Réalisation</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-slate-50">
                             {currentSlide.sites.sort((a, b) => (b.totalMois || 0) - (a.totalMois || 0)).map((site, idx) => (
                               <motion.tr 
                                 key={site.name}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="bg-slate-50 hover:bg-slate-100 transition-colors rounded-2xl overflow-hidden"
+                                className="group hover:bg-slate-50/80 transition-colors"
                               >
-                                <td className="px-6 py-4 font-bold text-slate-700 rounded-l-2xl border-l-4 border-orange-500">
-                                  {site.name}
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-6 bg-orange-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <span className="font-bold text-slate-700">{site.name}</span>
+                                  </div>
                                 </td>
                                 <td className="px-6 py-4 text-center font-mono font-bold text-blue-600">
                                   {site.totalJour || 0}
@@ -667,18 +674,19 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                                 <td className="px-6 py-4 text-center font-mono font-bold text-orange-600">
                                   {site.totalMois || 0}
                                 </td>
-                                <td className="px-6 py-4 text-center font-mono text-slate-500">
+                                <td className="px-6 py-4 text-center font-mono text-slate-400">
                                   {site.objMensuel || 0}
                                 </td>
-                                <td className="px-6 py-4 text-right rounded-r-2xl">
-                                  <div className="flex items-center justify-end gap-3">
-                                    <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                      <div 
+                                <td className="px-6 py-4 text-right">
+                                  <div className="flex items-center justify-end gap-4">
+                                    <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                      <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(100, ((site.totalMois || 0) / (site.objMensuel || 1)) * 100)}%` }}
                                         className="h-full bg-orange-500" 
-                                        style={{ width: `${Math.min(100, ((site.totalMois || 0) / (site.objMensuel || 1)) * 100)}%` }}
                                       />
                                     </div>
-                                    <span className="text-sm font-black text-slate-900 w-12">
+                                    <span className="text-xs font-black text-slate-900 w-10">
                                       {Math.round(((site.totalMois || 0) / (site.objMensuel || 1)) * 100)}%
                                     </span>
                                   </div>
@@ -755,39 +763,46 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                       </div>
 
                       {/* Stock by Site Table */}
-                      <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8">
-                        <h5 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                          <MapPin size={16} className="text-slate-400" />
+                      <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
+                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                           Détail par Site
                         </h5>
-                        <table className="w-full border-separate border-spacing-y-2">
+                        <table className="w-full border-collapse">
                           <thead className="sticky top-0 bg-white z-10">
-                            <tr className="text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                              <th className="px-4 py-2 bg-white">Site</th>
+                            <tr className="text-left">
+                              <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Site</th>
                               {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(g => (
-                                <th key={g} className="px-2 py-2 text-center bg-white">{g}</th>
+                                <th key={g} className="px-2 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">{g}</th>
                               ))}
-                              <th className="px-4 py-2 text-right bg-white">Total</th>
+                              <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Total</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-slate-50">
                             {currentSlide.sites.sort((a, b) => a.name.localeCompare(b.name)).map(site => {
                               const siteStock = currentSlide.stock.filter(s => 
                                 s.site && site.name && s.site.trim().toUpperCase() === site.name.trim().toUpperCase()
                               );
                               const total = siteStock.reduce((acc, s) => acc + s.quantite, 0);
                               return (
-                                <tr key={site.name} className="bg-slate-50/50 hover:bg-slate-50 transition-colors rounded-xl">
-                                  <td className="px-4 py-3 font-bold text-slate-700 text-sm rounded-l-xl border-l-4 border-indigo-500">{site.name}</td>
+                                <tr key={site.name} className="group hover:bg-slate-50/80 transition-colors">
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-1 h-4 bg-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                      <span className="font-bold text-slate-700 text-sm">{site.name}</span>
+                                    </div>
+                                  </td>
                                   {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(group => {
                                     const qty = siteStock.filter(s => s.groupeSanguin === group).reduce((acc, s) => acc + s.quantite, 0);
                                     return (
-                                      <td key={group} className={`px-2 py-3 text-center text-xs font-bold ${qty > 0 ? 'text-slate-900' : 'text-slate-300'}`}>
+                                      <td key={group} className={`px-2 py-4 text-center text-xs font-mono font-bold ${qty > 0 ? 'text-slate-900' : 'text-slate-200'}`}>
                                         {qty || '-'}
                                       </td>
                                     );
                                   })}
-                                  <td className="px-4 py-3 text-right font-black text-indigo-600 text-sm rounded-r-xl bg-indigo-50/30">{total}</td>
+                                  <td className="px-4 py-4 text-right font-mono font-black text-indigo-600 text-sm">
+                                    {total}
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -852,26 +867,31 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
                       />
                     </div>
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                      <table className="w-full border-separate border-spacing-y-3">
-                        <thead>
-                          <tr className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            <th className="px-6 py-2">Site</th>
-                            <th className="px-6 py-2 text-center">{startDate === endDate ? "DECLARATION" : "DECLARATION PERIODE"}</th>
-                            <th className="px-6 py-2 text-center">{startDate === endDate ? "ENCODAGE GTS" : "ENCODAGE GTS PERIODE"}</th>
-                            <th className="px-6 py-2 text-right">Écart</th>
+                      <table className="w-full border-collapse">
+                        <thead className="sticky top-0 bg-white z-10">
+                          <tr className="text-left">
+                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Site</th>
+                            <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">{startDate === endDate ? "DECLARATION" : "DECLARATION PERIODE"}</th>
+                            <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">{startDate === endDate ? "ENCODAGE GTS" : "ENCODAGE GTS PERIODE"}</th>
+                            <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Écart</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-50">
                           {currentSlide.sites.map((site, idx) => {
                             const gtsMatch = currentSlide.gts.find(g => g.site.toUpperCase() === site.name.toUpperCase());
                             const gtsTotal = gtsMatch ? gtsMatch.total : 0;
                             const diff = site.totalJour - gtsTotal;
                             return (
-                              <tr key={site.name} className="bg-slate-50 rounded-2xl overflow-hidden">
-                                <td className="px-6 py-4 font-bold text-slate-700 rounded-l-2xl border-l-4 border-orange-500">{site.name}</td>
+                              <tr key={site.name} className="group hover:bg-slate-50/80 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-6 bg-orange-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <span className="font-bold text-slate-700">{site.name}</span>
+                                  </div>
+                                </td>
                                 <td className="px-6 py-4 text-center font-mono font-bold text-slate-900">{site.totalJour}</td>
                                 <td className="px-6 py-4 text-center font-mono font-bold text-blue-600">{gtsTotal}</td>
-                                <td className={`px-6 py-4 text-right font-mono font-black rounded-r-2xl ${diff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                <td className={`px-6 py-4 text-right font-mono font-black ${diff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                   {diff > 0 ? '+' : ''}{diff}
                                 </td>
                               </tr>

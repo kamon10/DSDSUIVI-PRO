@@ -17,17 +17,19 @@ const MONTHS_FR = [
 
 export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, user, sites }) => {
   const availableYears = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
       const year = h.date.split('/')[2];
       if (year) years.add(year);
     });
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data.dailyHistory]);
+  }, [data?.dailyHistory]);
 
   const [selectedYear, setSelectedYear] = useState(availableYears[0] || "2026");
 
   const availableMonths = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     const months = new Set<number>();
     data.dailyHistory.forEach(h => {
       const parts = h.date.split('/');
@@ -36,7 +38,7 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
       }
     });
     return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, selectedYear]);
+  }, [data?.dailyHistory, selectedYear]);
 
   const [selectedMonth, setSelectedMonth] = useState<number>(
     availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()
@@ -214,25 +216,25 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
-            <thead>
-              <tr className="bg-orange-600 text-white h-12">
-                <th className="border border-orange-700 px-10 py-2 uppercase tracking-widest text-left">Date</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">FIXE</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">MOBILE</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Total</th>
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-slate-900 text-white h-14">
+                <th className="px-10 py-2 uppercase tracking-[0.2em] text-left font-black text-[10px]">Date</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">FIXE</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">MOBILE</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px] bg-slate-800">Total</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {historyData.length > 0 ? historyData.map((row, idx) => (
-                <tr key={idx} className="h-10 hover:brightness-95 transition-all bg-white">
-                  <td className="border border-slate-300 px-10 py-2 font-black text-slate-800">{row.date}</td>
-                  <td className="border border-slate-300 px-6 py-2 text-center text-orange-600 font-bold">{row.fixe}</td>
-                  <td className="border border-slate-300 px-6 py-2 text-center text-orange-600 font-bold">{row.mobile}</td>
-                  <td className="border border-slate-300 px-6 py-2 text-center text-slate-900 font-black">{row.total}</td>
+                <tr key={idx} className="h-12 hover:bg-slate-50 transition-colors group">
+                  <td className="px-10 py-2 font-black text-slate-800 border-r border-slate-100">{row.date}</td>
+                  <td className="px-6 py-2 text-center text-orange-600 font-mono font-bold">{row.fixe}</td>
+                  <td className="px-6 py-2 text-center text-orange-600 font-mono font-bold">{row.mobile}</td>
+                  <td className="px-6 py-2 text-center text-slate-900 font-mono font-black text-[13px] bg-slate-50/50">{row.total}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center opacity-30 italic text-sm uppercase font-black tracking-widest">
+                  <td colSpan={4} className="py-24 text-center opacity-30 italic text-sm uppercase font-black tracking-widest">
                     Aucune donnée pour cette sélection
                   </td>
                 </tr>

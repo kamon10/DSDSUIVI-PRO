@@ -36,17 +36,19 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
   const pulseRef = useRef<HTMLDivElement>(null);
 
   const availableYears = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
       const parts = h.date.split('/');
       if (parts[2]) years.add(parts[2]);
     });
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data.dailyHistory]);
+  }, [data?.dailyHistory]);
 
   const [selectedYear, setSelectedYear] = useState(availableYears[0] || "2026");
 
   const availableMonths = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     const months = new Set<number>();
     data.dailyHistory.forEach(h => {
       const parts = h.date.split('/');
@@ -55,20 +57,21 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
       }
     });
     return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, selectedYear]);
+  }, [data?.dailyHistory, selectedYear]);
 
   const [selectedMonth, setSelectedMonth] = useState<number>(
     availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()
   );
 
   const availableDays = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     return data.dailyHistory
       .filter(h => {
         const parts = h.date.split('/');
         return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
       })
       .map(h => h.date);
-  }, [data.dailyHistory, selectedYear, selectedMonth]);
+  }, [data?.dailyHistory, selectedYear, selectedMonth]);
 
   const [selectedDay, setSelectedDay] = useState(availableDays[0] || data.date);
 

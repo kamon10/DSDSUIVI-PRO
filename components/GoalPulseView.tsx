@@ -22,7 +22,7 @@ const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
   const pulseRef = useRef<HTMLDivElement>(null);
 
   const gtsStats = useMemo(() => {
-    if (!data.gts) return { monthly: { realized: 0, objective: 0, percentage: 0 }, annual: { realized: 0, objective: 0, percentage: 0 } };
+    if (!data?.gts) return { monthly: { realized: 0, objective: 0, percentage: 0 }, annual: { realized: 0, objective: 0, percentage: 0 } };
     
     const targetMonth = MONTHS_FR.indexOf(data.month);
     const targetYear = data.year;

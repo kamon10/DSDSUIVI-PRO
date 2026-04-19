@@ -60,14 +60,13 @@ const parseDate = (dateStr: string) => {
 };
 
 export default function RecapView({ data, sites, initialMode = 'collecte', user, branding, situationTime, setActiveTab }: RecapViewProps) {
-  if (!data) return null;
-
   const [viewMode, setViewMode] = useState<'collecte' | 'distribution'>(initialMode);
   // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
   const [distTimeScale, setDistTimeScale] = useState<'day' | 'month' | 'year'>('month');
   
   // --- ÉTATS FILTRES TEMPORELS ---
   const availableYears = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     const years = new Set<string>();
     data.dailyHistory.forEach((h: any) => {
       const parts = h.date.split('/');
@@ -80,7 +79,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
       });
     }
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data.dailyHistory, data.distributions]);
+  }, [data?.dailyHistory, data?.distributions]);
 
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<number>(-1);
@@ -119,21 +118,21 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
 
   // Initialisation intelligente des dates
   useEffect(() => {
-    if (data.date && data.date !== "---") {
-      const parts = data.date.split('/');
-      if (parts.length === 3) {
-        if (!selectedYear) setSelectedYear(parts[2]);
-        if (selectedMonth === -1) setSelectedMonth(parseInt(parts[1]) - 1);
-        if (!selectedDate) setSelectedDate(data.date);
-        if (!startDate) setStartDate(data.date);
-        if (!endDate) setEndDate(data.date);
-      }
+    if (!data?.date || data.date === "---") return;
+    const parts = data.date.split('/');
+    if (parts.length === 3) {
+      if (!selectedYear) setSelectedYear(parts[2]);
+      if (selectedMonth === -1) setSelectedMonth(parseInt(parts[1]) - 1);
+      if (!selectedDate) setSelectedDate(data.date);
+      if (!startDate) setStartDate(data.date);
+      if (!endDate) setEndDate(data.date);
     }
   }, [data]);
 
   const allDates = useMemo(() => {
+    if (!data?.dailyHistory) return [];
     return data.dailyHistory.map(h => h.date).sort((a, b) => parseDate(b).getTime() - parseDate(a).getTime());
-  }, [data.dailyHistory]);
+  }, [data?.dailyHistory]);
 
   // Options dynamiques pour les listes
   const regionsList = useMemo(() => Array.from(new Set(sites.map(s => s.region))).sort(), [sites]);
@@ -143,12 +142,12 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
   }, [sites, filterRegion]);
 
   const productsList = useMemo(() => {
-    if (!data.distributions?.records) return [];
+    if (!data?.distributions?.records) return [];
     return Array.from(new Set(data.distributions.records.map(r => r.typeProduit))).sort();
-  }, [data.distributions]);
+  }, [data?.distributions]);
 
   const availableMonths = useMemo(() => {
-    if (!selectedYear) return [];
+    if (!selectedYear || !data?.dailyHistory) return [];
     const months = new Set<number>();
     data.dailyHistory.forEach((h: any) => {
       const parts = h.date.split('/');
@@ -163,19 +162,19 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
       });
     }
     return Array.from(months).sort((a, b) => a - b);
-  }, [data.dailyHistory, data.distributions, selectedYear]);
+  }, [data?.dailyHistory, data?.distributions, selectedYear]);
 
   const filteredDates = useMemo(() => {
-    if (!selectedYear || selectedMonth === -1) return [];
+    if (!selectedYear || selectedMonth === -1 || !data?.dailyHistory) return [];
     return data.dailyHistory.filter((h: any) => {
       const parts = h.date.split('/');
       return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
     }).map((h: any) => h.date);
-  }, [data.dailyHistory, selectedYear, selectedMonth]);
+  }, [data?.dailyHistory, selectedYear, selectedMonth]);
 
   // --- LOGIQUE FILTRAGE DISTRIBUTION CONSOLIDÉE ---
   const filteredDistRecords = useMemo(() => {
-    if (!data.distributions?.records || !selectedYear) return [];
+    if (!data?.distributions?.records || !selectedYear) return [];
     
     return data.distributions.records.filter(r => {
       const parts = r.date.split('/');
@@ -205,6 +204,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
 
   // Agrégation Matricielle pour le tableau de Distribution
   const registerData = useMemo(() => {
+    if (!data) return {};
     const tree: any = {};
     filteredDistRecords.forEach(r => {
       const sit = r.site || "INCONNU";
@@ -228,6 +228,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
   }, [filteredDistRecords]);
 
   const distTotals = useMemo(() => {
+    if (!data) return { qty: 0, rendu: 0, groups: Object.fromEntries(SANG_GROUPS.map(g => [g, 0])), efficiency: 0 };
     const globalGroups = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
     let globalRendu = 0, globalGross = 0;
     filteredDistRecords.forEach(r => {
@@ -243,6 +244,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
   }, [filteredDistRecords]);
 
   const abidjanVilleDistributionSubtotal = useMemo(() => {
+    if (!data) return null;
     const abidjanVilleSites = [
       "CRTS DE TREICHVILLE",
       "CDTS DE BINGERVILLE",
@@ -280,7 +282,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
 
   // LOGIQUE COLLECTE (Mise à jour pour gérer les périodes)
   const formattedCollecteData = useMemo(() => {
-    if (viewMode !== 'collecte') return [];
+    if (viewMode !== 'collecte' || !data) return [];
 
     let activeDates: string[] = [];
     if (isPeriodMode) {
@@ -396,15 +398,22 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
   }, [data, filterRegion, filterSite, selectedDate, startDate, endDate, isPeriodMode, viewMode]);
 
   const nationalTotals = useMemo(() => {
-    return formattedCollecteData.reduce((acc, r: any) => ({
-      fixe: acc.fixe + r.fixePres,
-      mobile: acc.mobile + r.mobilePres,
-      jour: acc.jour + r.totalJourPres,
-      mois: acc.mois + r.totalMoisPres,
-      objectif: acc.objectif + r.objMensPres,
-      gts: acc.gts + r.gtsPres
+    const totals = formattedCollecteData.reduce((acc, r: any) => ({
+      fixe: acc.fixe + (r.fixePres || 0),
+      mobile: acc.mobile + (r.mobilePres || 0),
+      jour: acc.jour + (r.totalJourPres || 0),
+      mois: acc.mois + (r.totalMoisPres || 0),
+      objectif: acc.objectif + (r.objMensPres || 0),
+      gts: acc.gts + (r.gtsPres || 0)
     }), { fixe: 0, mobile: 0, jour: 0, mois: 0, objectif: 0, gts: 0 });
+    
+    return {
+      ...totals,
+      taux: totals.objectif > 0 ? (totals.mois / totals.objectif) * 100 : 0
+    };
   }, [formattedCollecteData]);
+
+  if (!data) return null;
 
   const handleExport = async (type: 'image' | 'pdf' | 'excel') => {
     if (!recapRef.current) return;
@@ -955,22 +964,22 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
           {/* TABLEAU RENDU */}
           {viewMode === 'collecte' ? (
             <>
-              <div className="overflow-x-auto custom-scrollbar border-4 border-orange-600 rounded-3xl shadow-2xl">
+              <div className="overflow-x-auto custom-scrollbar bg-white rounded-3xl shadow-xl border border-slate-200">
               <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[950px]">
-              <thead>
-                <tr className="bg-orange-600 text-white h-10">
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-left w-[110px]">PRES / RÉGION</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-left w-[200px]">LIBELLÉ SITE</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[60px]">FIXE</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[60px]">MOB.</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[80px]">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[80px] bg-orange-700/50">ENCODÉ GTS</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[80px]">MOIS</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[90px]">OBJECTIF/M</th>
-                  <th className="border border-orange-700 px-2 py-1 uppercase tracking-tighter text-center w-[70px]">TAUX/M</th>
+              <thead className="sticky top-0 z-20">
+                <tr className="bg-slate-900 text-white h-12">
+                  <th className="px-4 py-2 uppercase tracking-widest text-left w-[120px] font-black text-[10px]">PRES / RÉGION</th>
+                  <th className="px-4 py-2 uppercase tracking-widest text-left w-[220px] font-black text-[10px]">LIBELLÉ SITE</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[60px] font-black text-[10px]">FIXE</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[60px] font-black text-[10px]">MOB.</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[90px] font-black text-[10px]">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[90px] font-black text-[10px] bg-slate-800">ENCODÉ GTS</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[90px] font-black text-[10px]">MOIS</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[100px] font-black text-[10px]">OBJECTIF/M</th>
+                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[80px] font-black text-[10px]">TAUX/M</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {formattedCollecteData.length > 0 ? formattedCollecteData.map((region: any, rIdx: number) => {
                   const regColor = REGION_COLORS[region.name.trim().toUpperCase()] || '#ffffff';
                   const regTaux = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
@@ -996,91 +1005,93 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                       {rows.map((row: any, idx: number) => {
                         if (row.isSubtotal) {
                           return (
-                            <tr key="subtotal-abidjan" className="font-black h-10 bg-orange-100/30">
-                              <td className="border border-slate-400 px-2 py-2 uppercase text-right pr-2 italic text-orange-900">SOUS-TOTAL ABIDJAN VILLE</td>
-                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900">{region.abidjanVille.fixe}</td>
-                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900">{region.abidjanVille.mobile}</td>
-                              <td className={`border border-slate-400 px-2 py-2 text-center text-[12px] font-black ${region.abidjanVille.jour === region.abidjanVille.gts ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.jour}</td>
-                              <td className={`border border-slate-400 px-2 py-2 text-center text-[12px] font-black ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.gts}</td>
-                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900 text-[12px]">{region.abidjanVille.mois.toLocaleString()}</td>
-                              <td className="border border-slate-400 px-2 py-2 text-center text-orange-900 text-[12px]">{region.abidjanVille.obj.toLocaleString()}</td>
-                              <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[13px] ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
+                            <tr key="subtotal-abidjan" className="font-black h-12 bg-orange-50/50">
+                              <td className="px-4 py-2 uppercase text-right pr-4 italic text-orange-900 border-r border-slate-100">SOUS-TOTAL ABIDJAN VILLE</td>
+                              <td className="px-2 py-2 text-center text-orange-900 font-mono">{region.abidjanVille.fixe}</td>
+                              <td className="px-2 py-2 text-center text-orange-900 font-mono">{region.abidjanVille.mobile}</td>
+                              <td className={`px-2 py-2 text-center text-[13px] font-mono font-black ${region.abidjanVille.jour === region.abidjanVille.gts ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.jour}</td>
+                              <td className={`px-2 py-2 text-center text-[13px] font-mono font-black ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.gts}</td>
+                              <td className="px-2 py-2 text-center text-orange-900 text-[13px] font-mono">{region.abidjanVille.mois.toLocaleString()}</td>
+                              <td className="px-2 py-2 text-center text-orange-900 text-[13px] font-mono">{region.abidjanVille.obj.toLocaleString()}</td>
+                              <td className={`px-2 py-2 text-center font-black text-[14px] font-mono ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
                             </tr>
                           );
                         }
 
                         const site = row;
                         return (
-                          <tr key={`${rIdx}-${idx}`} style={{ backgroundColor: regColor }} className="h-10 hover:brightness-95 transition-all">
+                          <tr key={`${rIdx}-${idx}`} style={{ backgroundColor: `${regColor}33` }} className="h-11 hover:bg-slate-50 transition-colors group">
                             {idx === 0 && (
-                              <td rowSpan={rows.length + 1} className="border border-slate-400 p-2 align-top font-black uppercase text-[11px] text-[#0f172a]" style={{ backgroundColor: regColor }}>
-                                <span className="inline-block mt-1">{region.name}</span>
+                              <td rowSpan={rows.length + 1} className="px-4 py-4 align-top font-black uppercase text-[10px] text-slate-900 border-r border-slate-100" style={{ backgroundColor: regColor }}>
+                                <div className="sticky top-16">
+                                  {region.name}
+                                </div>
                               </td>
                             )}
-                            <td className="border border-slate-400 px-2 py-2 uppercase text-[10px] text-[#0f172a]">{site.name}</td>
-                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{site.fixe}</td>
-                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{site.mobile}</td>
-                            <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[12px] ${site.totalJour === site.gts ? 'text-orange-600' : 'text-red-600'}`}>{site.totalJour}</td>
-                            <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[12px] ${site.gts === site.totalJour ? 'text-orange-600' : 'text-red-600'}`}>{site.gts}</td>
-                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[12px]">{site.totalMois.toLocaleString()}</td>
-                            <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[12px]">{site.objMensuel.toLocaleString()}</td>
-                            <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[13px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
+                            <td className="px-4 py-2 uppercase text-[10px] text-slate-700 font-bold border-r border-slate-100">{site.name}</td>
+                            <td className="px-2 py-2 text-center text-slate-600 font-mono">{site.fixe}</td>
+                            <td className="px-2 py-2 text-center text-slate-600 font-mono">{site.mobile}</td>
+                            <td className={`px-2 py-2 text-center font-mono font-black text-[13px] ${site.totalJour === site.gts ? 'text-orange-600' : 'text-red-600'}`}>{site.totalJour}</td>
+                            <td className={`px-2 py-2 text-center font-mono font-black text-[13px] bg-slate-50/50 ${site.gts === site.totalJour ? 'text-orange-600' : 'text-red-600'}`}>{site.gts}</td>
+                            <td className="px-2 py-2 text-center text-slate-800 text-[13px] font-mono">{site.totalMois.toLocaleString()}</td>
+                            <td className="px-2 py-2 text-center text-slate-400 text-[13px] font-mono">{site.objMensuel.toLocaleString()}</td>
+                            <td className={`px-2 py-2 text-center font-mono font-black text-[14px] ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
                           </tr>
                         );
                       })}
-                      <tr className="font-black h-10 bg-slate-200/50" style={{ backgroundColor: `${regColor}dd` }}>
-                        <td className="border border-slate-400 px-2 py-2 uppercase text-right pr-2 italic text-[#0f172a]">TOTAL {region.name}</td>
-                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{region.fixePres}</td>
-                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a]">{region.mobilePres}</td>
-                        <td className={`border border-slate-400 px-2 py-2 text-center text-[13px] font-black ${region.totalJourPres === region.gtsPres ? 'text-orange-700' : 'text-red-700'}`}>{region.totalJourPres}</td>
-                        <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[13px] ${region.gtsPres === region.totalJourPres ? 'text-orange-700' : 'text-red-700'}`}>{region.gtsPres}</td>
-                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[13px]">{region.totalMoisPres.toLocaleString()}</td>
-                        <td className="border border-slate-400 px-2 py-2 text-center text-[#0f172a] text-[13px]">{region.objMensPres.toLocaleString()}</td>
-                        <td className={`border border-slate-400 px-2 py-2 text-center font-black text-[14px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
+                      <tr className="font-black h-12 bg-slate-900 text-white">
+                        <td className="px-4 py-2 uppercase text-right pr-4 italic text-slate-300 border-r border-slate-800">TOTAL {region.name}</td>
+                        <td className="px-2 py-2 text-center font-mono">{region.fixePres}</td>
+                        <td className="px-2 py-2 text-center font-mono">{region.mobilePres}</td>
+                        <td className={`px-2 py-2 text-center text-[14px] font-mono font-black ${region.totalJourPres === region.gtsPres ? 'text-orange-400' : 'text-rose-400'}`}>{region.totalJourPres}</td>
+                        <td className={`px-2 py-2 text-center font-mono font-black text-[14px] bg-slate-800 ${region.gtsPres === region.totalJourPres ? 'text-orange-400' : 'text-rose-400'}`}>{region.gtsPres}</td>
+                        <td className="px-2 py-2 text-center text-[14px] font-mono">{region.totalMoisPres.toLocaleString()}</td>
+                        <td className="px-2 py-2 text-center text-slate-400 text-[14px] font-mono">{region.objMensPres.toLocaleString()}</td>
+                        <td className={`px-2 py-2 text-center font-mono font-black text-[16px] ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
                       </tr>
                     </React.Fragment>
                   );
                 }) : null}
               </tbody>
-              <tfoot className="bg-white text-slate-950 font-[950] border-t-4 border-slate-900">
-                <tr className="h-32">
-                  <td colSpan={2} className="border-2 border-slate-900 p-4 text-5xl uppercase tracking-tighter pl-8 bg-white">TOTAL NATIONAL</td>
-                  <td className="border-2 border-slate-900 p-2 text-center text-4xl bg-slate-50">{nationalTotals.fixe.toLocaleString()}</td>
-                  <td className="border-2 border-slate-900 p-2 text-center text-4xl bg-slate-50">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className={`border-2 border-slate-900 p-2 text-center text-7xl font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`border-2 border-slate-900 p-2 text-center text-7xl font-black ${nationalTotals.gts === nationalTotals.jour ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.gts.toLocaleString()}</td>
-                  <td className="border-2 border-slate-900 p-2 text-center text-6xl bg-slate-50">{nationalTotals.mois.toLocaleString()}</td>
-                  <td className="border-2 border-slate-900 p-2 text-center text-6xl bg-slate-50">{nationalTotals.objectif.toLocaleString()}</td>
-                  <td className="border-2 border-slate-900 p-2 text-center text-7xl text-orange-600 bg-white">{(nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0).toFixed(1)}%</td>
+              <tfoot className="bg-white text-slate-950 font-black border-t-4 border-slate-900">
+                <tr className="h-24">
+                  <td colSpan={2} className="px-8 py-4 text-4xl uppercase tracking-tighter bg-slate-50">TOTAL NATIONAL</td>
+                  <td className="px-2 py-2 text-center text-3xl font-mono bg-white">{nationalTotals.fixe.toLocaleString()}</td>
+                  <td className="px-2 py-2 text-center text-3xl font-mono bg-white">{nationalTotals.mobile.toLocaleString()}</td>
+                  <td className={`px-2 py-2 text-center text-6xl font-mono font-black ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`px-2 py-2 text-center text-6xl font-mono font-black bg-slate-50 ${nationalTotals.gts === nationalTotals.jour ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className="px-2 py-2 text-center text-3xl font-mono bg-white">{nationalTotals.mois.toLocaleString()}</td>
+                  <td className="px-2 py-2 text-center text-3xl font-mono text-slate-400 bg-white">{nationalTotals.objectif.toLocaleString()}</td>
+                  <td className={`px-2 py-2 text-center text-4xl font-mono font-black ${getPerfColor(nationalTotals.taux)}`}>{nationalTotals.taux.toFixed(0)}%</td>
                 </tr>
               </tfoot>
-            </table>
-          </div>
-          <div className="h-12"></div> {/* Espace de sécurité en bas du tableau */}
-          </>
-        ) : (
+              </table>
+              </div>
+              <div className="h-12"></div>
+           </>
+           ) : (
           <>
-             <div className="border-4 border-orange-600 rounded-3xl shadow-2xl overflow-x-auto custom-scrollbar bg-white">
+             <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-x-auto custom-scrollbar">
                <table className="w-full border-collapse text-[11px] font-bold text-slate-950 leading-tight min-w-[1100px]">
-                  <thead>
-                     <tr className="bg-orange-600 text-white h-12">
-                        <th className="border-2 border-orange-700 p-1 text-left w-[140px] uppercase tracking-tighter">Site Source</th>
-                        <th className="border-2 border-orange-700 p-1 text-left w-[160px] uppercase tracking-tighter">Structure Servie</th>
-                        <th className="border-2 border-orange-700 p-1 text-left w-[120px] uppercase tracking-tighter">Produit</th>
+                  <thead className="sticky top-0 z-20">
+                     <tr className="bg-slate-900 text-white h-14">
+                        <th className="px-4 py-2 text-left w-[150px] uppercase tracking-widest font-black text-[10px]">Site Source</th>
+                        <th className="px-4 py-2 text-left w-[180px] uppercase tracking-widest font-black text-[10px]">Structure Servie</th>
+                        <th className="px-4 py-2 text-left w-[140px] uppercase tracking-widest font-black text-[10px]">Produit</th>
                         {SANG_GROUPS.map(g => (
                 <th 
                   key={g} 
-                  className="border-2 border-slate-800 p-1 text-center w-[50px] uppercase text-slate-950"
+                  className="px-1 py-2 text-center w-[55px] uppercase text-slate-950 font-black text-[11px]"
                   style={{ backgroundColor: GROUP_COLORS[g] || '#f1f5f9' }}
                 >
                   {g}
                 </th>
               ))}
-                        <th className="border-2 border-orange-700 p-2 text-right w-[60px] uppercase text-red-100">Rendu</th>
-                        <th className="border-2 border-orange-700 p-2 text-right w-[80px] uppercase bg-white/10 text-orange-200">Total</th>
+                        <th className="px-4 py-2 text-right w-[70px] uppercase tracking-widest font-black text-[10px] text-rose-400">Rendu</th>
+                        <th className="px-4 py-2 text-right w-[90px] uppercase tracking-widest font-black text-[10px] bg-slate-800 text-orange-400">Total</th>
                      </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {Object.keys(registerData).length > 0 ? (
                       Object.entries(registerData).sort().map(([sitName, sitData]: [string, any]) => {
                          const siteTotals = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
@@ -1102,65 +1113,67 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                                    const isCgr = prodName.toUpperCase().includes('CGR');
                                    
                                    let rowBg = '';
-                                   if (isPlasma) rowBg = 'bg-[#FFFF00]';
-                                   else if (prodName.toUpperCase().includes('CGR ADULTE')) rowBg = 'bg-[#E65100] text-white';
-                                   else if (prodName.toUpperCase().includes('CGR NOURRISSON')) rowBg = 'bg-[#FB8C00] text-white';
-                                   else if (prodName.toUpperCase().includes('CGR PEDIATRIQUE')) rowBg = 'bg-[#FFB74D] text-white';
+                                   if (isPlasma) rowBg = 'bg-yellow-50';
+                                   else if (prodName.toUpperCase().includes('CGR ADULTE')) rowBg = 'bg-orange-50';
+                                   else if (prodName.toUpperCase().includes('CGR NOURRISSON')) rowBg = 'bg-orange-50/70';
+                                   else if (prodName.toUpperCase().includes('CGR PEDIATRIQUE')) rowBg = 'bg-orange-50/40';
 
                                    return (
-                                     <tr key={`${destName}-${prodName}`} className={`${rowBg || (pIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')} border-b border-slate-200 hover:opacity-90 transition-opacity group`}>
+                                     <tr key={`${destName}-${prodName}`} className={`${rowBg || (pIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')} hover:bg-slate-100 transition-colors group`}>
                                        {dIdx === 0 && pIdx === 0 && (
-                                         <td rowSpan={rowCount + 1} className="border-2 border-slate-200 p-2 align-top font-[900] text-orange-700 bg-orange-50/20 uppercase text-[11px]">{sitName}</td>
+                                         <td rowSpan={rowCount + 1} className="px-4 py-4 align-top font-black text-orange-700 bg-orange-50/30 uppercase text-[10px] border-r border-slate-100">
+                                           <div className="sticky top-20">{sitName}</div>
+                                         </td>
                                        )}
-                                       {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="border-2 border-slate-200 p-2 align-top text-slate-800 uppercase font-[900] text-[10px]">{destName}</td>}
-                                       <td className="border-2 border-slate-200 p-2">
-                                         <span className="px-2 py-1.5 rounded text-[9px] font-black border uppercase block leading-tight whitespace-normal" style={{ color: isCgr || isPlasma ? 'inherit' : (PRODUCT_COLORS[prodName] || '#64748b'), borderColor: isCgr || isPlasma ? 'currentColor' : `${PRODUCT_COLORS[prodName]}33`, backgroundColor: isCgr || isPlasma ? 'transparent' : `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
+                                       {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top text-slate-800 uppercase font-bold text-[10px] border-r border-slate-100">{destName}</td>}
+                                       <td className="px-4 py-3 border-r border-slate-100">
+                                         <span className="px-2 py-1 rounded-full text-[9px] font-black border uppercase inline-block leading-tight" style={{ color: isCgr || isPlasma ? 'inherit' : (PRODUCT_COLORS[prodName] || '#64748b'), borderColor: isCgr || isPlasma ? 'currentColor' : `${PRODUCT_COLORS[prodName]}33`, backgroundColor: isCgr || isPlasma ? 'transparent' : `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
                                        </td>
                                        {SANG_GROUPS.map(g => (
                                          <td 
                                            key={g} 
-                                           className={`border-2 border-slate-200 p-1 text-center text-[11px] ${prodMetrics.groups[g] > 0 ? 'font-[950]' : 'text-slate-200'}`}
+                                           className={`px-1 py-3 text-center text-[11px] font-mono ${prodMetrics.groups[g] > 0 ? 'font-black' : 'text-slate-200'}`}
                                            style={{ 
-                                             backgroundColor: prodMetrics.groups[g] > 0 ? GROUP_COLORS[g] : 'transparent',
-                                             color: prodMetrics.groups[g] > 0 ? (['AB+', 'B-', 'O-', 'AB-'].includes(g) ? '#fff' : '#000') : 'inherit'
+                                             backgroundColor: prodMetrics.groups[g] > 0 ? `${GROUP_COLORS[g]}22` : 'transparent',
+                                             color: prodMetrics.groups[g] > 0 ? GROUP_COLORS[g] : 'inherit'
                                            }}
                                          >
                                            {prodMetrics.groups[g] || '-'}
                                          </td>
                                        ))}
-                                       <td className="border-2 border-slate-200 p-2 text-right font-black text-red-600 text-[11px]">{prodMetrics.rendu || '-'}</td>
-                                       <td className="border-2 border-slate-200 p-2 text-right font-black text-slate-900 bg-slate-50/50 text-[12px]">{rowGrossTotal}</td>
+                                       <td className="px-4 py-3 text-right font-mono font-black text-rose-600 text-[11px]">{prodMetrics.rendu || '-'}</td>
+                                       <td className="px-4 py-3 text-right font-mono font-black text-slate-900 bg-slate-50/50 text-[12px]">{rowGrossTotal}</td>
                                      </tr>
                                    );
                                  })}
                                </React.Fragment>
                              ))}
-                             <tr className="bg-orange-600/10 font-black h-10">
-                               <td colSpan={2} className="border-2 border-slate-200 p-2 text-right uppercase tracking-tighter text-orange-800 pr-4 italic text-[11px]">SOUS-TOTAL RÉSEAU {sitName}</td>
-                               {SANG_GROUPS.map(g => <td key={g} className="border-2 border-slate-200 p-1 text-center text-orange-950 bg-white/40 text-[11px]">{siteTotals[g]}</td>)}
-                               <td className="border-2 border-slate-200 p-2 text-right text-red-700 text-[12px]">{siteRendu}</td>
-                               <td className="border-2 border-slate-200 p-2 text-right text-orange-900 bg-white/60 text-[14px]">{siteGrossTotal}</td>
+                             <tr className="bg-slate-900 text-white font-black h-12">
+                               <td colSpan={2} className="px-4 py-2 text-right uppercase tracking-widest text-slate-400 pr-6 italic text-[10px] border-r border-slate-800">SOUS-TOTAL RÉSEAU {sitName}</td>
+                               {SANG_GROUPS.map(g => <td key={g} className="px-1 py-2 text-center text-white bg-slate-800 font-mono text-[11px]">{siteTotals[g]}</td>)}
+                               <td className="px-4 py-2 text-right text-rose-400 font-mono text-[12px]">{siteRendu}</td>
+                               <td className="px-4 py-2 text-right text-orange-400 font-mono text-[14px] bg-slate-800">{siteGrossTotal}</td>
                              </tr>
                            </React.Fragment>
                          );
                       })
                     ) : (
-                      <tr><td colSpan={14} className="py-20 text-center text-slate-300 uppercase italic">Aucune donnée trouvée pour cette sélection</td></tr>
+                      <tr><td colSpan={14} className="py-24 text-center text-slate-300 uppercase font-black tracking-widest italic">Aucune donnée trouvée pour cette sélection</td></tr>
                     )}
                   </tbody>
                   <tfoot className="bg-white text-slate-950 font-black border-t-4 border-slate-900">
-                    <tr className="h-28">
-                      <td colSpan={3} className="border-2 border-slate-900 p-4 text-center uppercase tracking-tighter text-[32px] bg-white">TOTAL GÉNÉRAL CONSOLIDÉ</td>
-                      {SANG_GROUPS.map(g => <td key={g} className="border-2 border-slate-900 p-1 text-center text-[28px] bg-slate-50">{distTotals.groups[g]}</td>)}
-                      <td className="border-2 border-slate-900 p-2 text-right text-red-600 text-[28px] bg-slate-50">{distTotals.rendu}</td>
-                      <td className="border-2 border-slate-900 p-2 text-right text-orange-600 text-[60px] bg-white">{distTotals.qty}</td>
+                    <tr className="h-24">
+                      <td colSpan={3} className="px-8 py-4 text-center uppercase tracking-tighter text-3xl bg-slate-50">TOTAL GÉNÉRAL CONSOLIDÉ</td>
+                      {SANG_GROUPS.map(g => <td key={g} className="px-1 py-2 text-center text-2xl font-mono bg-white">{distTotals.groups[g]}</td>)}
+                      <td className="px-4 py-2 text-right text-2xl font-mono text-rose-600 bg-white">{distTotals.rendu}</td>
+                      <td className="px-4 py-2 text-right text-6xl font-mono text-orange-600 bg-slate-50">{distTotals.qty}</td>
                     </tr>
                     {abidjanVilleDistributionSubtotal && (
-                      <tr className="h-14 bg-orange-900/90 text-white">
-                        <td colSpan={3} className="border-2 border-orange-800 p-2 text-right uppercase tracking-tighter text-[14px] italic pr-6 bg-orange-950/40">SOUS-TOTAL ABIDJAN VILLE</td>
-                        {SANG_GROUPS.map(g => <td key={g} className="border-2 border-orange-800 p-1 text-center text-[14px] bg-orange-950/20">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
-                        <td className="border-2 border-orange-800 p-2 text-right text-orange-200 text-[14px] bg-orange-950/20">{abidjanVilleDistributionSubtotal.rendu}</td>
-                        <td className="border-2 border-orange-800 p-2 text-right text-orange-100 text-[20px] bg-orange-950/60">{abidjanVilleDistributionSubtotal.gross}</td>
+                      <tr className="h-14 bg-orange-600 text-white">
+                        <td colSpan={3} className="px-6 py-2 text-right uppercase tracking-widest text-[12px] italic pr-8 bg-orange-700">SOUS-TOTAL ABIDJAN VILLE</td>
+                        {SANG_GROUPS.map(g => <td key={g} className="px-1 py-2 text-center text-[14px] font-mono bg-orange-700/50">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
+                        <td className="px-4 py-2 text-right text-orange-100 text-[14px] font-mono bg-orange-700/50">{abidjanVilleDistributionSubtotal.rendu}</td>
+                        <td className="px-4 py-2 text-right text-orange-50 text-[24px] font-mono font-black bg-orange-800">{abidjanVilleDistributionSubtotal.gross}</td>
                       </tr>
                     )}
                   </tfoot>

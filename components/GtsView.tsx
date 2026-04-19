@@ -227,25 +227,25 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
-            <thead>
-              <tr className="bg-orange-600 text-white h-12">
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-left">PRES / Site</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Collectes Réalisées</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">POCHES COL. FIXE</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">POCHES COL. MOB</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Auto Transf.</th>
-                <th className="border border-orange-700 px-6 py-2 uppercase tracking-widest text-center">Total Poches</th>
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-slate-900 text-white h-14">
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-left font-black text-[10px]">PRES / Site</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">Collectes Réalisées</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">POCHES COL. FIXE</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">POCHES COL. MOB</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">Auto Transf.</th>
+                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px] bg-slate-800">Total Poches</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {Object.keys(groupedData).length > 0 ? (
                 <>
                   {Object.entries(groupedData).map(([region, regionData], regIdx) => (
                     <React.Fragment key={region}>
-                      <tr className="bg-orange-50/30">
-                        <td colSpan={6} className="border border-slate-300 px-6 py-3">
-                          <div className="flex items-center gap-2 text-orange-700 font-black text-xs uppercase tracking-widest">
-                            <Package size={14} />
+                      <tr className="bg-slate-50/50">
+                        <td colSpan={6} className="px-6 py-4 border-b border-slate-100">
+                          <div className="flex items-center gap-3 text-slate-900 font-black text-[10px] uppercase tracking-[0.2em]">
+                            <div className="w-2 h-2 rounded-full bg-orange-500" />
                             {region}
                           </div>
                         </td>
@@ -256,68 +256,58 @@ export const GtsView: React.FC<GtsViewProps> = ({ data, branding }) => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: (regIdx * 5 + siteIdx) * 0.01 }}
-                          className="h-10 hover:brightness-95 transition-all bg-white"
+                          className="h-12 hover:bg-slate-50 transition-colors group bg-white"
                         >
-                          <td className="border border-slate-300 px-6 py-2">
-                            <div className="flex items-center gap-2 text-slate-900 font-black text-[11px] pl-4 uppercase">
-                              <MapPin size={14} className="text-orange-500" />
+                          <td className="px-6 py-2">
+                            <div className="flex items-center gap-3 text-slate-700 font-bold text-[11px] pl-4 uppercase">
+                              <MapPin size={14} className="text-slate-300 group-hover:text-orange-500 transition-colors" />
                               {siteName}
                             </div>
                           </td>
-                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-slate-700">
+                          <td className="px-6 py-2 text-center font-mono font-bold text-slate-500">
                             {siteStats.collectes}
                           </td>
-                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-emerald-600">
+                          <td className="px-6 py-2 text-center font-mono font-bold text-emerald-600">
                             {siteStats.fixe}
                           </td>
-                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-orange-600">
+                          <td className="px-6 py-2 text-center font-mono font-bold text-orange-600">
                             {siteStats.mobile}
                           </td>
-                          <td className="border border-slate-300 px-6 py-2 text-center font-bold text-orange-600">
+                          <td className="px-6 py-2 text-center font-mono font-bold text-slate-400">
                             {siteStats.auto}
                           </td>
-                          <td className="border border-slate-300 px-6 py-2 text-center">
-                            <span className="text-[13px] font-black text-orange-600">{siteStats.total}</span>
+                          <td className="px-6 py-2 text-center bg-slate-50/50">
+                            <span className="text-[14px] font-mono font-black text-slate-900">{siteStats.total}</span>
                           </td>
                         </motion.tr>
                       ))}
                       {/* Sous-total PRES */}
-                      <tr className="bg-orange-100/30 font-black text-slate-900 h-10">
-                        <td className="border border-slate-300 px-6 py-2 text-[11px] uppercase tracking-widest text-right pr-6 italic text-orange-900">Sous-total {region}</td>
-                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-900">{regionData.subtotal.collectes}</td>
-                        <td className="border border-slate-300 px-6 py-2 text-center text-emerald-700">{regionData.subtotal.fixe}</td>
-                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-700">{regionData.subtotal.mobile}</td>
-                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-700">{regionData.subtotal.auto}</td>
-                        <td className="border border-slate-300 px-6 py-2 text-center text-orange-900 text-[13px]">{regionData.subtotal.total}</td>
+                      <tr className="bg-slate-900 text-white font-black h-12">
+                        <td className="px-6 py-2 text-[10px] uppercase tracking-[0.2em] text-right pr-8 italic text-slate-400 border-r border-slate-800">Sous-total {region}</td>
+                        <td className="px-6 py-2 text-center font-mono">{regionData.subtotal.collectes}</td>
+                        <td className="px-6 py-2 text-center font-mono text-emerald-400">{regionData.subtotal.fixe}</td>
+                        <td className="px-6 py-2 text-center font-mono text-orange-400">{regionData.subtotal.mobile}</td>
+                        <td className="px-6 py-2 text-center font-mono text-slate-400">{regionData.subtotal.auto}</td>
+                        <td className="px-6 py-2 text-center font-mono text-orange-400 text-[15px] bg-slate-800">{regionData.subtotal.total}</td>
                       </tr>
                     </React.Fragment>
                   ))}
                   {/* TOTAL GENERAL */}
-                  <tr className="bg-orange-950 text-white font-black h-16">
-                    <td className="border border-orange-900 px-6 py-2 text-[13px] uppercase tracking-[0.2em] pl-12">TOTAL GENERAL</td>
-                    <td className="border border-orange-900 px-6 py-2 text-center text-xl">{stats.totalRecords}</td>
-                    <td className="border border-orange-900 px-6 py-2 text-center text-xl text-emerald-400">{stats.totalFixe}</td>
-                    <td className="border border-orange-900 px-6 py-2 text-center text-xl text-orange-400">{stats.totalMobile}</td>
-                    <td className="border border-orange-900 px-6 py-2 text-center text-xl text-orange-400">{stats.totalAuto}</td>
-                    <td className="border border-orange-900 px-6 py-2 text-center text-2xl text-orange-400">{stats.totalQty}</td>
+                  <tr className="bg-orange-600 text-white font-black h-20">
+                    <td className="px-10 py-2 text-[14px] uppercase tracking-[0.3em]">TOTAL GENERAL</td>
+                    <td className="px-6 py-2 text-center text-3xl font-mono">{stats.totalRecords}</td>
+                    <td className="px-6 py-2 text-center text-3xl font-mono">{stats.totalFixe}</td>
+                    <td className="px-6 py-2 text-center text-3xl font-mono">{stats.totalMobile}</td>
+                    <td className="px-6 py-2 text-center text-3xl font-mono opacity-50">{stats.totalAuto}</td>
+                    <td className="px-6 py-2 text-center text-5xl font-mono bg-orange-700">{stats.totalQty}</td>
                   </tr>
                 </>
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-3 text-slate-400">
-                      <Truck size={48} className="opacity-20" />
-                      <p className="font-bold">Aucune donnée trouvée</p>
-                      {gtsData.length > 0 && (
-                        <p className="text-[10px] uppercase tracking-widest opacity-60">
-                          {gtsData.length} enregistrements trouvés hors filtres de date ou recherche
-                        </p>
-                      )}
-                      {gtsData.length === 0 && (
-                        <p className="text-[10px] uppercase tracking-widest opacity-60">
-                          La source GTS semble vide ou n'a pas pu être chargée
-                        </p>
-                      )}
+                  <td colSpan={6} className="px-6 py-24 text-center">
+                    <div className="flex flex-col items-center gap-4 text-slate-300">
+                      <Truck size={64} className="opacity-10" />
+                      <p className="font-black uppercase tracking-widest">Aucune donnée trouvée</p>
                     </div>
                   </td>
                 </tr>
