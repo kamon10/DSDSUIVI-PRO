@@ -26,13 +26,13 @@ const normalizeDate = (d: string): string => {
   if (!s) return "";
   
   // Format ISO YYYY-MM-DD ou YYYY/MM/DD
-  const isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  const isoMatch = s.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
   if (isoMatch) {
     return `${isoMatch[3].padStart(2, '0')}/${isoMatch[2].padStart(2, '0')}/${isoMatch[1]}`;
   }
   
   // Format DD/MM/YYYY ou MM/DD/YYYY ou DD-MM-YYYY
-  const commonMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
+  const commonMatch = s.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
   if (commonMatch) {
     let part1 = commonMatch[1].padStart(2, '0');
     let part2 = commonMatch[2].padStart(2, '0');
@@ -413,35 +413,54 @@ export const parseGts = (text: string): GtsRecord[] | null => {
     const headers = rows[0].map(h => normalizeHeader(h));
     console.log("[Parser] GTS Headers:", headers);
     
-    const idxDate = headers.findIndex(h => h.includes('CO_DCOLLECTE') || h.includes('DATE') || h.includes('JOUR') || h.includes('PERIODE') || h.includes('TIME'));
-    const idxSite = headers.findIndex(h => h.includes('SI_CODE') || h.includes('SITE') || h.includes('STRUCTURE'));
-    const idxLieu = headers.findIndex(h => h.includes('LI_NOM') || h.includes('LIEU') || h.includes('LIBELLE'));
-    const idxCaCode = headers.findIndex(h => h.includes('CA_CODE'));
-    const idxPvCode = headers.findIndex(h => h.includes('PV_CODE') || h.includes('TYPE PRELEVE'));
-    const idxQty = headers.findIndex(h => h.includes('NOMBRE') || h.includes('QTE') || h.includes('QUANTITE'));
+    const idxDate = headers.findIndex(h => h.includes('CO_DCOLLECTE') || h.includes('DATE') || h.includes('JOUR') || h.includes('PERIODE') || h.includes('TIME') || h.includes('DCOL'));
+    const idxSite = headers.findIndex(h => h.includes('SI_CODE') || h.includes('SITE') || h.includes('STRUCTURE') || h.includes('DEPARTEMENT'));
+    const idxLieu = headers.findIndex(h => h.includes('LI_NOM') || h.includes('LIEU') || h.includes('LIBELLE') || h.includes('COLLECTE'));
+    const idxCaCode = headers.findIndex(h => h.includes('CA_CODE') || h.includes('TYPE_SITE') || h.includes('CODE_CANAL'));
+    const idxPvCode = headers.findIndex(h => h.includes('PV_CODE') || h.includes('TYPE_PRELEVE') || h.includes('CODE_PV'));
+    const idxQty = headers.findIndex(h => h.includes('NOMBRE') || h.includes('QTE') || h.includes('QUANTITE') || h.includes('TOTAL'));
+
+    if (idxDate === -1 || idxSite === -1) {
+      console.warn("[Parser] GTS: Colonnes critiques non trouvées précisément, utilisation des fallbacks.", {idxDate, idxSite});
+    }
 
     const records: GtsRecord[] = [];
-    rows.slice(1).forEach(row => {
-      const date = normalizeDate(row[idxDate >= 0 ? idxDate : 6]);
-      if (!date) return;
+    rows.slice(1).forEach((row, rowIndex) => {
+      const dateRaw = row[idxDate >= 0 ? idxDate : 6];
+      const date = normalizeDate(dateRaw);
+      if (!date) {
+        if (rowIndex < 5 && dateRaw) console.log(`[Parser] GTS row ${rowIndex}: date invalide "${dateRaw}"`);
+        return;
+      }
 
       const qty = cleanNum(row[idxQty >= 0 ? idxQty : 0]);
-      const caCode = cleanStr(row[idxCaCode >= 0 ? idxCaCode : 2]).toUpperCase();
+      const caCodeStr = cleanStr(row[idxCaCode >= 0 ? idxCaCode : 2]).toUpperCase();
       const pvCode = cleanNum(row[idxPvCode >= 0 ? idxPvCode : 5]);
       const siteInput = cleanStr(row[idxSite >= 0 ? idxSite : 1]);
+      
+      if (rowIndex < 3) {
+         console.log(`[Parser] GTS row ${rowIndex}: date=${date}, site=${siteInput}, qty=${qty}, pv=${pvCode}, ca=${caCodeStr}`);
+      }
+
       const siteInfo = getSiteByInput(siteInput);
       
-      const isFixe = caCode === 'Z';
+      // Adaptation aux codes GAD (Z = Fixe, M ou autre = Mobile)
+      const isFixe = caCodeStr === 'Z' || caCodeStr.includes('FIXE');
       
       let fixe = 0;
       let mobile = 0;
       let autoTransfusion = 0;
 
-      if (pvCode === 1 || pvCode === 3) {
+      // pvCode: 1 = Sang Total, 3 = Aphérèse (on compte les deux en collecte standard)
+      if (pvCode === 1 || pvCode === 3 || pvCode === 0) { // On inclut 0 si pvCode n'est pas trouvé
         if (isFixe) fixe = qty;
         else mobile = qty;
       } else if (pvCode === 2 || pvCode === 4) {
         autoTransfusion = qty;
+      } else {
+        // Fallback si pvCode inconnu mais qu'on a une quantité
+        if (isFixe) fixe = qty;
+        else mobile = qty;
       }
 
       records.push({
@@ -449,7 +468,7 @@ export const parseGts = (text: string): GtsRecord[] | null => {
         site: siteInfo?.name || siteInput || "SITE INCONNU",
         region: siteInfo?.region || "AUTRES",
         lieu: cleanStr(row[idxLieu >= 0 ? idxLieu : 7]),
-        caCode,
+        caCode: caCodeStr,
         pvCode,
         fixe,
         mobile,
@@ -484,8 +503,8 @@ const getCachedData = (key: string): string | null => {
     const cached = localStorage.getItem(CACHE_KEY_PREFIX + key);
     if (cached) {
       const { text, timestamp } = JSON.parse(cached);
-      // Cache valide pendant 10 minutes côté client
-      if (Date.now() - timestamp < 10 * 60 * 1000) {
+      // Cache valide pendant 2 minutes côté client (réduit de 10 pour plus de fraîcheur sur les données du jour)
+      if (Date.now() - timestamp < 2 * 60 * 1000) {
         return text;
       }
     }
@@ -701,6 +720,10 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     if (col.mobile === -1) col.mobile = 7;
     if (col.total === -1) col.total = 8;
 
+    const distributions = distResult.text ? parseDistributions(distResult.text) : undefined;
+    const stock = stockResult.text ? parseStock(stockResult.text) : undefined;
+    const gts = gtsResult.text ? parseGts(gtsResult.text) : undefined;
+
     let latestDateObj = new Date(2000, 0, 1);
     const validRows: any[] = [];
 
@@ -718,21 +741,49 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
       const dateObj = new Date(y, m - 1, d);
       
       if (!isNaN(dateObj.getTime())) {
-        // On ignore les dates futures pour le calcul de la date de référence
         if (dateObj > tomorrow) return;
-        
         if (dateObj > latestDateObj) latestDateObj = dateObj;
         validRows.push({ row, dateObj, dateStr });
       }
     });
 
-    if (validRows.length === 0) throw new Error("Aucune donnée de date valide trouvée.");
+    // On regarde aussi les dates GTS pour trouver la date la plus récente
+    if (gts) {
+      gts.forEach(g => {
+        const parts = g.date.split('/');
+        if (parts.length === 3) {
+          const [d, m, y] = parts.map(Number);
+          const dateObj = new Date(y, m - 1, d);
+          if (!isNaN(dateObj.getTime()) && dateObj <= tomorrow) {
+            if (dateObj > latestDateObj) latestDateObj = dateObj;
+          }
+        }
+      });
+    }
+
+    if (validRows.length === 0 && (!gts || gts.length === 0)) {
+       throw new Error("Aucune donnée de date valide trouvée.");
+    }
 
     const targetMonth = latestDateObj.getMonth();
     const targetYear = latestDateObj.getFullYear();
     const latestDateStr = `${latestDateObj.getDate().toString().padStart(2, '0')}/${(latestDateObj.getMonth() + 1).toString().padStart(2, '0')}/${latestDateObj.getFullYear()}`;
 
     const historyMap = new Map<string, DailyHistoryRecord>();
+    
+    // On initialise l'historique avec les dates GTS si nécessaire
+    if (gts) {
+      gts.forEach(g => {
+        if (!historyMap.has(g.date)) {
+          historyMap.set(g.date, {
+            date: g.date,
+            stats: { realized: 0, fixed: 0, mobile: 0 },
+            sites: []
+          });
+        }
+      });
+    }
+
     const siteAgg = new Map<string, { f: number, m: number, t: number, mf: number, mm: number }>();
 
     validRows.forEach(({ row, dateObj, dateStr }) => {
@@ -840,10 +891,6 @@ export const fetchSheetData = async (url: string, force = false, distributionUrl
     const aRealized = validRows
       .filter(({ dateObj }) => dateObj.getFullYear() === targetYear)
       .reduce((acc, { row }) => acc + cleanNum(row[col.total]), 0);
-
-    const distributions = distResult.text ? parseDistributions(distResult.text) : undefined;
-    const stock = stockResult.text ? parseStock(stockResult.text) : undefined;
-    const gts = gtsResult.text ? parseGts(gtsResult.text) : undefined;
 
     return {
       date: latestDateStr,
