@@ -434,14 +434,14 @@ const App: React.FC = () => {
   }, [dynamicSites, dynamicSites]);
 
   return (
-    <div className="flex min-h-screen bg-magical font-sans text-slate-200">
+    <div className="flex min-h-screen bg-magical font-sans text-orange-200">
       <AnimatePresence>
         {isInitializing && (
           <motion.div 
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center justify-center p-10 overflow-hidden text-white"
+            className="fixed inset-0 z-[1000] bg-orange-950 flex flex-col items-center justify-center p-10 overflow-hidden text-white"
           >
             <div className="absolute inset-0 opacity-30">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-orange-600/20 blur-[160px] rounded-full animate-pulse-soft" />
@@ -487,7 +487,7 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex min-h-screen bg-grid-white/[0.02] overflow-hidden">
       {/* SIDEBAR DESKTOP */}
-      <aside className="hidden lg:flex flex-col w-80 neo-blur bg-slate-950/40 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/10 relative custom-scrollbar">
+      <aside className="hidden lg:flex flex-col w-80 neo-blur bg-orange-950/40 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/10 relative custom-scrollbar">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-600/10 via-transparent to-sky-600/5 pointer-events-none" />
         <div className="p-10 flex flex-col gap-8 border-b border-white/5 relative">
           <div className="flex items-center gap-5 group cursor-pointer" onClick={() => setActiveTab('pulse')}>
@@ -523,7 +523,7 @@ const App: React.FC = () => {
             <div key={group.id} className="space-y-6">
               <div className="flex items-center gap-4 px-4">
                 <div className="w-8 h-[1px] bg-white/10" />
-                <span className="text-[10px] font-display font-black uppercase tracking-[0.4em] text-slate-600">{group.label}</span>
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.4em] text-orange-400">{group.label}</span>
               </div>
               <div className="grid grid-cols-1 gap-2">
                 {group.navItems.map((item: any) => {
@@ -532,7 +532,7 @@ const App: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id as AppTab)}
-                      className={`w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white/10 text-white shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
+                      className={`w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white/10 text-white shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10' : 'text-orange-900/60 hover:bg-white/5 hover:text-white'}`}
                     >
                       {isActive && (
                         <motion.div 
@@ -541,10 +541,10 @@ const App: React.FC = () => {
                         />
                       )}
                       
-                      <span className={`transition-all duration-700 ${isActive ? (item.color || 'text-white') + ' scale-110 drop-shadow-[0_0_12px_currentColor]' : 'text-slate-600 group-hover:text-slate-300'}`}>
+                      <span className={`transition-all duration-700 ${isActive ? (item.color || 'text-white') + ' scale-110 drop-shadow-[0_0_12px_currentColor]' : 'text-orange-900/40 group-hover:text-orange-200'}`}>
                         {item.icon}
                       </span>
-                      <span className={`text-[11px] font-display font-bold uppercase tracking-[0.2em] relative z-10 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`}>
+                      <span className={`text-[11px] font-display font-bold uppercase tracking-[0.2em] relative z-10 ${isActive ? 'text-white' : 'text-orange-900/60 group-hover:text-orange-200'}`}>
                         {item.label}
                       </span>
                       
@@ -572,11 +572,11 @@ const App: React.FC = () => {
                 <Clock size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-display font-black uppercase tracking-widest text-slate-500">Flux de Données</span>
+                <span className="text-[9px] font-display font-black uppercase tracking-widest text-orange-400">Flux de Données</span>
                 <span className="text-[11px] font-mono font-bold text-white tracking-widest">{getFullSyncTime()}</span>
               </div>
             </div>
-            <p className="text-[10px] font-medium text-slate-500 leading-relaxed relative z-10">
+            <p className="text-[10px] font-medium text-orange-200/60 leading-relaxed relative z-10">
               Surveillance continue des banques de sang nationales. Intelligence prédictive activée.
             </p>
           </div>
@@ -599,7 +599,7 @@ const App: React.FC = () => {
                   />
                </div>
                <div className="flex flex-col">
-                  <span className="font-display font-black text-xl tracking-tighter uppercase text-slate-950 leading-none">HEMO-STATS</span>
+                  <span className="font-display font-black text-xl tracking-tighter uppercase text-orange-600 leading-none">HEMO-STATS</span>
                   <div className="flex items-center gap-2 mt-1.5">
                      <div className={`w-2 h-2 rounded-full ${syncStatus === 'syncing' ? 'bg-orange-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
                      <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-400">Live Status</span>
@@ -611,24 +611,24 @@ const App: React.FC = () => {
               <div className="flex items-center gap-2 mb-1">
                 <button 
                   onClick={() => setActiveTab('pulse')}
-                  className="text-[10px] font-display font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                  className="text-[10px] font-display font-black text-orange-400 uppercase tracking-widest hover:text-orange-950 transition-colors"
                 >
                   HEMO-STATS
                 </button>
-                <ChevronDown size={10} className="text-slate-300 -rotate-90" />
+                <ChevronDown size={10} className="text-orange-200 -rotate-90" />
                 <span className="text-[10px] font-display font-black text-orange-600 uppercase tracking-widest">
                   {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.label || 'Pilotage'}
                 </span>
                 {selectedSite && (
                   <>
-                    <ChevronDown size={10} className="text-slate-300 -rotate-90" />
+                    <ChevronDown size={10} className="text-orange-200 -rotate-90" />
                     <span className="text-[10px] font-display font-black text-emerald-600 uppercase tracking-widest">
                       {selectedSite}
                     </span>
                   </>
                 )}
               </div>
-              <h2 className="text-2xl font-display font-black uppercase tracking-tighter text-slate-950">
+              <h2 className="text-2xl font-display font-black uppercase tracking-tighter text-orange-600">
                 {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.navItems.find(i => i.id === activeTab)?.label || 'Cockpit'}
               </h2>
             </div>
@@ -645,29 +645,29 @@ const App: React.FC = () => {
               
               <button 
                 onClick={() => setIsCommandPaletteOpen(true)}
-                className="hidden md:flex items-center gap-4 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 transition-all group shadow-sm"
+                className="hidden md:flex items-center gap-4 px-6 py-3 bg-white hover:bg-orange-50 border border-orange-200 rounded-2xl text-orange-400 transition-all group shadow-sm"
               >
-                <Search size={18} className="group-hover:text-slate-950 transition-colors" />
+                <Search size={18} className="group-hover:text-orange-600 transition-colors" />
                 <span className="text-[11px] font-display font-black uppercase tracking-widest">Recherche Intelligente</span>
                 <div className="flex items-center gap-1.5 ml-6">
-                  <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-mono font-black text-slate-500">⌘</span>
-                  <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-mono font-black text-slate-500">K</span>
+                  <span className="px-2 py-1 bg-orange-50 border border-orange-100 rounded-lg text-[9px] font-mono font-black text-orange-400">⌘</span>
+                  <span className="px-2 py-1 bg-orange-50 border border-orange-100 rounded-lg text-[9px] font-mono font-black text-orange-400">K</span>
                 </div>
               </button>
 
-              <div className="h-10 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
+              <div className="h-10 w-[1px] bg-orange-200 mx-2 hidden sm:block" />
 
               {currentUser ? (
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:flex flex-col items-end">
-                    <span className="text-[11px] font-display font-black uppercase tracking-tight text-slate-950 leading-none">
+                    <span className="text-[11px] font-display font-black uppercase tracking-tight text-orange-600 leading-none">
                       {currentUser.prenoms} {currentUser.nom}
                     </span>
                     <span className="text-[9px] font-display font-bold uppercase tracking-widest text-orange-600 mt-1.5">
                       {currentUser.fonction}
                     </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-xl relative group">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-600 flex items-center justify-center text-white shadow-xl relative group">
                     <UserIcon size={20} />
                     <button 
                       onClick={handleLogout}
@@ -680,7 +680,7 @@ const App: React.FC = () => {
               ) : (
                 <button 
                   onClick={() => setShowLogin(true)} 
-                  className="px-8 py-3 bg-slate-950 text-white rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-95"
+                  className="px-8 py-3 bg-orange-600 text-white rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl shadow-orange-900/20 hover:bg-orange-700 transition-all active:scale-95"
                 >
                   Connexion
                 </button>
@@ -690,7 +690,7 @@ const App: React.FC = () => {
                 <NotificationManager />
                 <button 
                   onClick={() => setShowSettings(true)} 
-                  className="p-3 bg-white rounded-2xl border border-slate-200 text-slate-600 shadow-sm hover:bg-slate-50 transition-all"
+                  className="p-3 bg-white rounded-2xl border border-orange-200 text-orange-600 shadow-sm hover:bg-orange-50 transition-all"
                 >
                   <Settings size={20} />
                 </button>
@@ -724,13 +724,13 @@ const App: React.FC = () => {
           {loading && !fullData.dailyHistory.length ? (
             <div className="flex flex-col items-center justify-center py-48 gap-6">
                <Activity size={60} className="text-orange-600 animate-pulse" />
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
+               <p className="text-[10px] font-black text-orange-300 uppercase tracking-widest">Initialisation du Cockpit...</p>
             </div>
           ) : (
             <Suspense fallback={
               <div className="flex flex-col items-center justify-center py-48 gap-6">
                 <Loader2 size={48} className="text-orange-600 animate-spin" />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement du module...</p>
+                <p className="text-[10px] font-black text-orange-300 uppercase tracking-widest">Chargement du module...</p>
               </div>
             }>
               <AnimatePresence mode="wait">
@@ -792,7 +792,7 @@ const App: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsCommandPaletteOpen(true)}
-            className="w-14 h-14 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
+            className="w-14 h-14 bg-white text-orange-600 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
           >
             <Search size={24} className="group-hover:text-orange-600 transition-colors" />
           </motion.button>
@@ -800,7 +800,7 @@ const App: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => handleSync(true, true)}
-            className="w-14 h-14 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
+            className="w-14 h-14 bg-white text-orange-600 rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group"
           >
             <RefreshCw size={24} className={`${syncStatus === 'syncing' ? 'animate-spin' : ''} group-hover:text-emerald-600 transition-colors`} />
           </motion.button>
@@ -808,7 +808,7 @@ const App: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowSettings(true)}
-            className="w-14 h-14 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center justify-center group"
+            className="w-14 h-14 bg-orange-600 text-white rounded-2xl shadow-2xl flex items-center justify-center group"
           >
             <Plus size={24} className="group-hover:rotate-90 transition-transform" />
           </motion.button>
@@ -838,13 +838,13 @@ const App: React.FC = () => {
                <div key={group.id} className="flex-1">
                  <button 
                    onClick={() => setOpenGroup(isOpen ? null : group.id)}
-                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-slate-950' : 'text-slate-400'}`}
+                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-orange-600' : 'text-slate-400'}`}
                  >
-                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-slate-950 text-white shadow-xl' : 'bg-transparent'}`}>
+                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-orange-600 text-white shadow-xl' : 'bg-transparent'}`}>
                     {group.icon}
                    </div>
                    <span className={`text-[8px] font-display font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-40'}`}>{group.label}</span>
-                   {isActive && !isOpen && <motion.div layoutId="nav-indicator" className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                   {isActive && !isOpen && <motion.div layoutId="nav-indicator" className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-orange-600" />}
                  </button>
 
                  <AnimatePresence>
@@ -855,7 +855,7 @@ const App: React.FC = () => {
                          animate={{ opacity: 1 }}
                          exit={{ opacity: 0 }}
                          onClick={() => setOpenGroup(null)}
-                         className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[-1]"
+                         className="fixed inset-0 bg-orange-900/40 backdrop-blur-md z-[-1]"
                        />
                        <motion.div 
                          initial={{ opacity: 0, y: 100 }}
@@ -867,11 +867,11 @@ const App: React.FC = () => {
                          
                          <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                              <div className="w-12 h-12 bg-orange-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
                                 {group.icon}
                               </div>
                               <div>
-                                <h4 className="text-lg font-black uppercase tracking-tighter text-slate-900">{group.label}</h4>
+                                <h4 className="text-lg font-black uppercase tracking-tighter text-orange-600">{group.label}</h4>
                                 <div className="flex items-center gap-2">
                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.navItems.length} Options</p>
                                    <div className="w-1 h-1 rounded-full bg-slate-200" />
@@ -889,7 +889,7 @@ const App: React.FC = () => {
                              <button
                                key={item.id}
                                onClick={() => { setActiveTab(item.id as AppTab); setOpenGroup(null); }}
-                               className={`flex items-center justify-between px-6 py-5 rounded-[1.5rem] text-left transition-all active:scale-[0.98] ${activeTab === item.id ? 'bg-slate-900 text-white shadow-2xl shadow-slate-300' : 'bg-slate-50 text-slate-600'}`}
+                               className={`flex items-center justify-between px-6 py-5 rounded-[1.5rem] text-left transition-all active:scale-[0.98] ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-300' : 'bg-slate-50 text-slate-600'}`}
                              >
                                <div className="flex items-center gap-4">
                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${activeTab === item.id ? 'bg-white/10 text-white' : 'bg-white text-slate-400 shadow-sm'}`}>
@@ -916,7 +916,7 @@ const App: React.FC = () => {
            })}
       </nav>
       {showSettings && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] bg-orange-950/60 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-3xl">
              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-black uppercase">Paramètres</h3>
@@ -950,7 +950,7 @@ const App: React.FC = () => {
                    localStorage.setItem('gsheet_input_1', sheetInput.trim()); 
                    setShowSettings(false); 
                    handleSync(false, true); 
-                 }} className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
+                 }} className="flex-1 py-4 bg-orange-600 text-white rounded-xl font-black text-[10px] uppercase">Valider</button>
                </div>
                <button 
                  onClick={() => {
