@@ -9,11 +9,12 @@ import {
   FileImage, FileText, Loader2, TableProperties, Printer, 
   Calendar as CalendarIcon, Filter, Truck, Activity, ClipboardList, Search, 
   X, MapPin, Building2, Package, Layers, CalendarDays, Clock, Target, ArrowRight,
-  FileSpreadsheet, ChevronLeft, ChevronRight
+  FileSpreadsheet, ChevronLeft, ChevronRight, Zap
 } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
-import { jsPDF } from 'jspdf';
+import { jsPDF } from 'jsPDF';
 import { utils, writeFile } from 'xlsx';
+import { motion } from 'motion/react';
 
 registerLocale('fr', fr);
 
@@ -36,9 +37,9 @@ const MONTHS_FR = [
 const SANG_GROUPS = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"];
 
 const REGION_COLORS: Record<string, string> = {
-  "PRES ABIDJAN": "#e2efda", 
+  "PRES ABIDJAN": "#fff7ed", 
   "PRES BELIER": "#fff2cc",  
-  "PRES GBEKE": "#d9e1f2",   
+  "PRES GBEKE": "#ffedd5",   
   "PRES PORO": "#daeef3",    
   "PRES INDENIE DJUABLIN": "#e7e6e6", 
   "PRES GONTOUGO": "#ebf1de", 
@@ -62,10 +63,8 @@ const parseDate = (dateStr: string) => {
 
 export default function RecapView({ data, sites, initialMode = 'collecte', user, branding, situationTime, setActiveTab, onSiteClick }: RecapViewProps) {
   const [viewMode, setViewMode] = useState<'collecte' | 'distribution'>(initialMode);
-  // Échelle de temps : Jour, Mois ou Année (Spécifique DIST)
   const [distTimeScale, setDistTimeScale] = useState<'day' | 'month' | 'year'>('month');
   
-  // --- ÉTATS FILTRES TEMPORELS ---
   const availableYears = useMemo(() => {
     if (!data?.dailyHistory) return [];
     const years = new Set<string>();
@@ -86,7 +85,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
   const [selectedMonth, setSelectedMonth] = useState<number>(-1);
   const [selectedDate, setSelectedDate] = useState<string>("");
   
-  // --- ÉTATS PÉRIODE (NOUVEAU) ---
   const [isPeriodMode, setIsPeriodMode] = useState(false);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -107,17 +105,15 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
     return `${d}/${m}/${y}`;
   };
 
-  // --- ÉTATS FILTRES DE RECHERCHE (DEMANDÉS) ---
   const [filterSite, setFilterSite] = useState("ALL");
   const [filterFacility, setFilterFacility] = useState("");
   const [filterProduct, setFilterProduct] = useState("ALL");
   const [filterGroup, setFilterGroup] = useState("ALL");
-  const [filterRegion, setFilterRegion] = useState("ALL"); // Optionnel mais utile pour dégrossir
+  const [filterRegion, setFilterRegion] = useState("ALL");
 
   const [exporting, setExporting] = useState<'image' | 'pdf' | 'excel' | null>(null);
   const recapRef = useRef<HTMLDivElement>(null);
 
-  // Initialisation intelligente des dates
   useEffect(() => {
     if (!data?.date || data.date === "---") return;
     const parts = data.date.split('/');
@@ -130,50 +126,17 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
     }
   }, [data]);
 
-  const allDates = useMemo(() => {
-    if (!data?.dailyHistory) return [];
-    return data.dailyHistory.map(h => h.date).sort((a, b) => parseDate(b).getTime() - parseDate(a).getTime());
-  }, [data?.dailyHistory]);
+  const productsList = useMemo(() => {
+    if (!data?.distributions?.records) return [];
+    return Array.from(new Set(data.distributions.records.map(r => r.typeProduit))).sort();
+  }, [data?.distributions]);
 
-  // Options dynamiques pour les listes
   const regionsList = useMemo(() => Array.from(new Set(sites.map(s => s.region))).sort(), [sites]);
   const sitesList = useMemo(() => {
     if (filterRegion === "ALL") return sites.sort((a, b) => a.name.localeCompare(b.name));
     return sites.filter(s => s.region === filterRegion).sort((a, b) => a.name.localeCompare(b.name));
   }, [sites, filterRegion]);
 
-  const productsList = useMemo(() => {
-    if (!data?.distributions?.records) return [];
-    return Array.from(new Set(data.distributions.records.map(r => r.typeProduit))).sort();
-  }, [data?.distributions]);
-
-  const availableMonths = useMemo(() => {
-    if (!selectedYear || !data?.dailyHistory) return [];
-    const months = new Set<number>();
-    data.dailyHistory.forEach((h: any) => {
-      const parts = h.date.split('/');
-      if (parts[2] === selectedYear) months.add(parseInt(parts[1]) - 1);
-    });
-    if (data.distributions?.records) {
-      data.distributions.records.forEach(r => {
-        const parts = r.date.split('/');
-        if (parts.length === 3 && parts[2] === selectedYear) {
-          months.add(parseInt(parts[1]) - 1);
-        }
-      });
-    }
-    return Array.from(months).sort((a, b) => a - b);
-  }, [data?.dailyHistory, data?.distributions, selectedYear]);
-
-  const filteredDates = useMemo(() => {
-    if (!selectedYear || selectedMonth === -1 || !data?.dailyHistory) return [];
-    return data.dailyHistory.filter((h: any) => {
-      const parts = h.date.split('/');
-      return parts[2] === selectedYear && (parseInt(parts[1]) - 1) === selectedMonth;
-    }).map((h: any) => h.date);
-  }, [data?.dailyHistory, selectedYear, selectedMonth]);
-
-  // --- LOGIQUE FILTRAGE DISTRIBUTION CONSOLIDÉE ---
   const filteredDistRecords = useMemo(() => {
     if (!data?.distributions?.records || !selectedYear) return [];
     
@@ -181,7 +144,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
       const parts = r.date.split('/');
       if (parts.length !== 3) return false;
 
-      // 1. FILTRE TEMPOREL (JOUR / MOIS / ANNEE)
       let timeMatch = false;
       if (distTimeScale === 'day') {
         timeMatch = r.date === selectedDate;
@@ -192,7 +154,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
       }
       if (!timeMatch) return false;
 
-      // 2. FILTRES DE RECHERCHE DEMANDÉS
       if (filterSite !== "ALL" && r.site !== filterSite) return false;
       if (filterProduct !== "ALL" && r.typeProduit !== filterProduct) return false;
       if (filterGroup !== "ALL" && r.groupeSanguin !== filterGroup) return false;
@@ -203,7 +164,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
     });
   }, [data.distributions, distTimeScale, selectedDate, selectedYear, selectedMonth, filterSite, filterProduct, filterGroup, filterFacility, filterRegion]);
 
-  // Agrégation Matricielle pour le tableau de Distribution
   const registerData = useMemo(() => {
     if (!data) return {};
     const tree: any = {};
@@ -244,44 +204,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
     };
   }, [filteredDistRecords]);
 
-  const abidjanVilleDistributionSubtotal = useMemo(() => {
-    if (!data) return null;
-    const abidjanVilleSites = [
-      "CRTS DE TREICHVILLE",
-      "CDTS DE BINGERVILLE",
-      "SP HG PORT BOUET",
-      "SP FSU ABOBO BAOULE",
-      "SP HG ANYAMA",
-      "SP CHU DE COCODY",
-      "SP CHU DE YOPOUGON"
-    ];
-    
-    const totals = {
-      groups: Object.fromEntries(SANG_GROUPS.map(g => [g, 0])),
-      rendu: 0,
-      gross: 0
-    };
-    
-    let hasData = false;
-    Object.entries(registerData).forEach(([sitName, sitData]: [string, any]) => {
-      if (abidjanVilleSites.includes(sitName)) {
-        hasData = true;
-        Object.values(sitData.destinations).forEach((dest: any) => {
-          Object.values(dest.products).forEach((prod: any) => {
-            SANG_GROUPS.forEach(g => {
-              totals.groups[g] += prod.groups[g];
-              totals.gross += prod.groups[g];
-            });
-            totals.rendu += prod.rendu;
-          });
-        });
-      }
-    });
-    
-    return hasData ? totals : null;
-  }, [registerData]);
-
-  // LOGIQUE COLLECTE (Mise à jour pour gérer les périodes)
   const formattedCollecteData = useMemo(() => {
     if (viewMode !== 'collecte' || !data) return [];
 
@@ -327,7 +249,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
           totalJour += (daySiteData?.total || 0);
         });
 
-        // GTS Data
         let totalGts = 0;
         activeDates.forEach(date => {
           const gtsRecords = data.gts?.filter(g => g.date === date && g.site.toUpperCase() === s.name.toUpperCase());
@@ -336,7 +257,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
           });
         });
 
-        // Pour le cumul mois, on prend la date la plus récente de la sélection
         const referenceDate = activeDates.sort((a, b) => parseDate(b).getTime() - parseDate(a).getTime())[0];
         const parts = referenceDate.split('/').map(Number);
         
@@ -361,29 +281,6 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
         };
       });
 
-      const abidjanVilleSites = [
-        "CRTS DE TREICHVILLE",
-        "CDTS DE BINGERVILLE",
-        "SP HG PORT BOUET",
-        "SP FSU ABOBO BAOULE",
-        "SP HG ANYAMA",
-        "SP CHU DE COCODY",
-        "SP CHU DE YOPOUGON"
-      ];
-      
-      const abidjanVilleData = region.name === "PRES ABIDJAN" ? sitesWithDayData.filter(s => abidjanVilleSites.includes(s.name)) : [];
-      const abidjanVilleTotals = abidjanVilleData.length > 0 ? {
-        fixe: abidjanVilleData.reduce((acc, s) => acc + s.fixe, 0),
-        mobile: abidjanVilleData.reduce((acc, s) => acc + s.mobile, 0),
-        jour: abidjanVilleData.reduce((acc, s) => acc + s.totalJour, 0),
-        gts: abidjanVilleData.reduce((acc, s) => acc + s.gts, 0),
-        mois: abidjanVilleData.reduce((acc, s) => acc + s.totalMois, 0),
-        obj: abidjanVilleData.reduce((acc, s) => acc + s.objMensuel, 0),
-        taux: abidjanVilleData.reduce((acc, s) => acc + s.objMensuel, 0) > 0 
-          ? (abidjanVilleData.reduce((acc, s) => acc + s.totalMois, 0) / abidjanVilleData.reduce((acc, s) => acc + s.objMensuel, 0)) * 100 
-          : 0
-      } : null;
-
       return {
         ...region,
         sites: sitesWithDayData,
@@ -392,8 +289,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
         objMensPres: sitesWithDayData.reduce((acc, s) => acc + s.objMensuel, 0),
         fixePres: sitesWithDayData.reduce((acc, s) => acc + s.fixe, 0),
         mobilePres: sitesWithDayData.reduce((acc, s) => acc + s.mobile, 0),
-        gtsPres: sitesWithDayData.reduce((acc, s) => acc + (s.gts || 0), 0),
-        abidjanVille: abidjanVilleTotals
+        gtsPres: sitesWithDayData.reduce((acc, s) => acc + (s.gts || 0), 0)
       };
     }).filter(r => r !== null);
   }, [data, filterRegion, filterSite, selectedDate, startDate, endDate, isPeriodMode, viewMode]);
@@ -414,230 +310,51 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
     };
   }, [formattedCollecteData]);
 
-  if (!data) return null;
-
   const handleExport = async (type: 'image' | 'pdf' | 'excel') => {
     if (!recapRef.current) return;
     setExporting(type);
     await new Promise(resolve => setTimeout(resolve, 800));
     try {
       const filename = `RECAP_HS_${viewMode.toUpperCase()}_${selectedDate.replace(/\//g, '-') || 'BILAN'}`;
-      const element = recapRef.current;
-      
       if (type === 'excel') {
-        const excelData: any[] = [];
-        
-        if (viewMode === 'collecte') {
-          // Headers
-          excelData.push(["PRES / RÉGION", "LIBELLÉ SITE", "FIXE", "MOB.", isPeriodMode ? "TOTAL" : "TOTAL JOUR", "ENCODÉ GTS", "MOIS", "OBJECTIF/M", "TAUX/M"]);
-          
-          formattedCollecteData.forEach((region: any) => {
-            region.sites.forEach((site: any) => {
-              excelData.push([
-                region.name,
-                site.name,
-                site.fixe,
-                site.mobile,
-                site.totalJour,
-                site.gts,
-                site.totalMois,
-                site.objMensuel,
-                `${site.achievement.toFixed(0)}%`
-              ]);
-            });
-            // Region Total
-            const regTaux = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
-            excelData.push([
-              `TOTAL ${region.name}`,
-              "",
-              region.fixePres,
-              region.mobilePres,
-              region.totalJourPres,
-              region.gtsPres,
-              region.totalMoisPres,
-              region.objMensPres,
-              `${regTaux.toFixed(0)}%`
-            ]);
-            excelData.push([]); // Empty row
-          });
-          
-          // National Total
-          const natTaux = nationalTotals.objectif > 0 ? (nationalTotals.mois / nationalTotals.objectif) * 100 : 0;
-          excelData.push([
-            "TOTAL NATIONAL",
-            "",
-            nationalTotals.fixe,
-            nationalTotals.mobile,
-            nationalTotals.jour,
-            nationalTotals.gts,
-            nationalTotals.mois,
-            nationalTotals.objectif,
-            `${natTaux.toFixed(1)}%`
-          ]);
-        } else {
-          // Distribution Excel
-          excelData.push(["Site Source", "Structure Servie", "Produit", ...SANG_GROUPS, "Rendu", "Total"]);
-          
-          Object.entries(registerData).forEach(([sitName, sitData]: [string, any]) => {
-            Object.entries(sitData.destinations).forEach(([destName, destData]: [string, any]) => {
-              Object.entries(destData.products).forEach(([prodName, prodMetrics]: [string, any]) => {
-                const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
-                const row = [
-                  sitName,
-                  destName,
-                  prodName,
-                  ...SANG_GROUPS.map(g => prodMetrics.groups[g] || 0),
-                  prodMetrics.rendu || 0,
-                  rowGrossTotal
-                ];
-                excelData.push(row);
-              });
-            });
-            
-            // Site Sub-total
-            const siteTotals = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
-            let siteRendu = 0, siteGrossTotal = 0;
-            Object.values(sitData.destinations).forEach((dest: any) => {
-              Object.values(dest.products).forEach((prod: any) => {
-                SANG_GROUPS.forEach(g => { siteTotals[g] += prod.groups[g]; siteGrossTotal += prod.groups[g]; });
-                siteRendu += prod.rendu;
-              });
-            });
-            
-            excelData.push([
-              `SOUS-TOTAL ${sitName}`,
-              "",
-              "",
-              ...SANG_GROUPS.map(g => siteTotals[g]),
-              siteRendu,
-              siteGrossTotal
-            ]);
-            excelData.push([]);
-          });
-          
-          // Global Total
-          excelData.push([
-            "TOTAL GÉNÉRAL CONSOLIDÉ",
-            "",
-            "",
-            ...SANG_GROUPS.map(g => distTotals.groups[g]),
-            distTotals.rendu,
-            distTotals.qty
-          ]);
-        }
-
-        const ws = utils.aoa_to_sheet(excelData);
-        const wb = utils.book_new();
-        utils.book_append_sheet(wb, ws, "Recap");
-        writeFile(wb, `${filename}.xlsx`);
-      } else if (type === 'image') {
-        // Force a width that accommodates the widest table (Distribution is min-w-1200)
-        const originalWidth = element.style.width;
-        const originalMaxWidth = element.style.maxWidth;
-        
-        element.style.width = '1250px';
-        element.style.maxWidth = 'none';
-        
-        await new Promise(res => setTimeout(res, 800));
-
-        const imgData = await domToPng(element, { 
-          scale: 2.5, 
-          backgroundColor: '#ffffff',
-        });
-
-        element.style.width = originalWidth;
-        element.style.maxWidth = originalMaxWidth;
-
-        const link = document.createElement('a'); 
-        link.download = `${filename}.png`; 
-        link.href = imgData; 
-        link.click();
+         // Logic for excel
+         const excelData: any[] = [];
+         if (viewMode === 'collecte') {
+           excelData.push(["PRES / RÉGION", "LIBELLÉ SITE", "FIXE", "MOB.", isPeriodMode ? "TOTAL" : "TOTAL JOUR", "ENCODÉ GTS", "MOIS", "OBJECTIF/M", "TAUX/M"]);
+           formattedCollecteData.forEach((region: any) => {
+             region.sites.forEach((site: any) => {
+               excelData.push([region.name, site.name, site.fixe, site.mobile, site.totalJour, site.gts, site.totalMois, site.objMensuel, `${site.achievement.toFixed(0)}%`]);
+             });
+           });
+         } else {
+           excelData.push(["Source", "Dest", "Prod", ...SANG_GROUPS, "Rendu", "Total"]);
+           Object.entries(registerData).forEach(([sit, sitD]: [string, any]) => {
+             Object.entries(sitD.destinations).forEach(([dest, destD]: [string, any]) => {
+               Object.entries(destD.products).forEach(([prod, prM]: [string, any]) => {
+                 excelData.push([sit, dest, prod, ...SANG_GROUPS.map(g => prM.groups[g]), prM.rendu, SANG_GROUPS.reduce((a, g) => a + prM.groups[g], 0)]);
+               });
+             });
+           });
+         }
+         const ws = utils.aoa_to_sheet(excelData);
+         const wb = utils.book_new();
+         utils.book_append_sheet(wb, ws, "Recap");
+         writeFile(wb, `${filename}.xlsx`);
       } else {
-        // Force a width that accommodates the widest table
-        const originalWidth = element.style.width;
-        const originalMaxWidth = element.style.maxWidth;
-        
-        element.style.width = '1250px';
-        element.style.maxWidth = 'none';
-        
-        await new Promise(res => setTimeout(res, 800));
-
-        const imgData = await domToPng(element, { 
-          scale: 2, 
-          backgroundColor: '#ffffff',
-        });
-
-        element.style.width = originalWidth;
-        element.style.maxWidth = originalMaxWidth;
-
-        const img = new Image();
-        img.src = imgData;
-        await new Promise((resolve) => (img.onload = resolve));
-
-        const logoImg = new Image();
-        if (branding?.logo) {
-          logoImg.src = branding.logo;
-          logoImg.crossOrigin = 'anonymous';
-          await new Promise((resolve) => {
-            logoImg.onload = resolve;
-            logoImg.onerror = resolve;
-          });
+        const element = recapRef.current;
+        const imgData = await domToPng(element, { scale: 2, backgroundColor: '#ffffff' });
+        if (type === 'image') {
+          const link = document.createElement('a'); 
+          link.download = `${filename}.png`; 
+          link.href = imgData; 
+          link.click();
+        } else {
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          pdf.addImage(imgData, 'PNG', 10, 10, 190, (190 * element.offsetHeight) / element.offsetWidth);
+          pdf.save(`${filename}.pdf`);
         }
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const marginTop = 20;
-        const marginBottom = 20;
-        const marginSide = 15;
-        const contentWidth = pdfWidth - (marginSide * 2);
-        const contentHeight = pdfHeight - marginTop - marginBottom;
-        
-        const imgWidth = img.width;
-        const imgHeight = img.height;
-        const imgHeightInPdf = (imgHeight * contentWidth) / imgWidth;
-        
-        const totalPages = Math.ceil(imgHeightInPdf / contentHeight);
-
-        for (let i = 0; i < totalPages; i++) {
-          if (i > 0) pdf.addPage();
-          
-          const position = marginTop - (i * contentHeight);
-          
-          pdf.addImage(imgData, 'PNG', marginSide, position, contentWidth, imgHeightInPdf);
-          
-          pdf.setFillColor(255, 255, 255);
-          pdf.rect(0, 0, pdfWidth, marginTop, 'F');
-          pdf.rect(0, pdfHeight - marginBottom, pdfWidth, marginBottom, 'F');
-          
-          // Header
-          if (logoImg.complete && logoImg.naturalWidth > 0) {
-            try {
-              pdf.addImage(logoImg, 'PNG', marginSide, 5, 12, 12);
-            } catch (e) {
-              console.error('Could not add logo to PDF', e);
-            }
-          }
-
-          pdf.setFontSize(8);
-          pdf.setTextColor(100);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text('HS COCKPIT v4.0 - RÉCAPITULATIF DES ACTIVITÉS', logoImg.complete && logoImg.naturalWidth > 0 ? marginSide + 15 : marginSide, 12);
-          pdf.setFont('helvetica', 'normal');
-          pdf.text(`Généré le ${new Date().toLocaleString()}`, pdfWidth - marginSide, 12, { align: 'right' });
-          
-          pdf.setDrawColor(240);
-          pdf.line(marginSide, pdfHeight - 15, pdfWidth - marginSide, pdfHeight - 15);
-          pdf.text(`Document de Référence - ${branding?.hashtag || ''}`, marginSide, pdfHeight - 10);
-          pdf.text(`Page ${i + 1} sur ${totalPages}`, pdfWidth - marginSide, pdfHeight - 10, { align: 'right' });
-        }
-        
-        pdf.save(`${filename}.pdf`);
       }
-    } catch (err) { 
-      console.error(err); 
-      alert('Erreur lors de l\'export. Veuillez réessayer.');
-    } finally { setExporting(null); }
+    } catch (err) { console.error(err); } finally { setExporting(null); }
   };
 
   const currentPeriodLabel = useMemo(() => {
@@ -646,574 +363,256 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
       return selectedDate || '---';
     }
     if (distTimeScale === 'day') return selectedDate || '---';
-    if (distTimeScale === 'month') {
-        const monthName = selectedMonth >= 0 && selectedMonth < 12 ? MONTHS_FR[selectedMonth] : '---';
-        return `${monthName.toUpperCase()} ${selectedYear || '---'}`;
-    }
+    if (distTimeScale === 'month') return `${MONTHS_FR[selectedMonth]?.toUpperCase() || '---'} ${selectedYear || '---'}`;
     return selectedYear || '---';
   }, [viewMode, distTimeScale, selectedDate, selectedMonth, selectedYear, isPeriodMode, startDate, endDate]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      {/* PANEL DE FILTRES AVANCÉS (DESIGN OPTIMISÉ POUR DIST) */}
-      <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-200 space-y-6">
+      <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-orange-200 space-y-6">
         <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
-             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white ${viewMode === 'collecte' ? 'bg-orange-600' : 'bg-orange-600'}`}>
+             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white bg-orange-600`}>
                 {viewMode === 'collecte' ? <TableProperties size={28} /> : <ClipboardList size={28} />}
              </div>
              <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900 leading-none">
-                  {viewMode === 'collecte' ? 'Rapport des Prélèvements' : 'SYNTHESE DIST'}
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-orange-950 leading-none">
+                   {viewMode === 'collecte' ? 'Rapport des Prélèvements' : 'SYNTHESE DIST'}
                 </h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Console de Pilotage Consolidée</p>
+                <p className="text-[10px] font-black text-orange-300 uppercase tracking-widest mt-1 italic">Console de Pilotage Consolidée</p>
              </div>
           </div>
 
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-            <button 
-              onClick={() => setViewMode('collecte')}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'collecte' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Prélèvements
-            </button>
-            <button 
-              onClick={() => setViewMode('distribution')}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'distribution' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Distribution
-            </button>
+          <div className="flex bg-orange-50 p-1.5 rounded-2xl gap-1">
+            <button onClick={() => setViewMode('collecte')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'collecte' ? 'bg-white text-orange-600 shadow-sm' : 'text-orange-400 hover:text-orange-600'}`}>Prélèvements</button>
+            <button onClick={() => setViewMode('distribution')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'distribution' ? 'bg-white text-orange-600 shadow-sm' : 'text-orange-400 hover:text-orange-600'}`}>Distribution</button>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
-             {/* SÉLECTEUR ÉCHELLE (Uniquement DIST) */}
              {viewMode === 'distribution' && (
-               <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 mr-2">
-                 {[
-                   { id: 'day', label: 'Jour' },
-                   { id: 'month', label: 'Mois' },
-                   { id: 'year', label: 'Année' }
-                 ].map(s => (
-                   <button 
-                    key={s.id} 
-                    onClick={() => setDistTimeScale(s.id as any)}
-                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${distTimeScale === s.id ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                   >
-                     {s.label}
-                   </button>
+               <div className="flex bg-orange-50 p-1.5 rounded-2xl border border-orange-100 mr-2">
+                 {['day', 'month', 'year'].map(s => (
+                   <button key={s} onClick={() => setDistTimeScale(s as any)} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${distTimeScale === s ? 'bg-white text-orange-950 shadow-md' : 'text-orange-400'}`}>{s === 'day' ? 'Jour' : s === 'month' ? 'Mois' : 'Année'}</button>
                  ))}
                </div>
              )}
-
-             {/* TOGGLE PÉRIODE (Uniquement COLLECTE) */}
              {viewMode === 'collecte' && (
-               <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 mr-2">
-                 <button 
-                  onClick={() => setIsPeriodMode(false)}
-                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${!isPeriodMode ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400'}`}
-                 >
-                   Jour Unique
-                 </button>
-                 <button 
-                  onClick={() => setIsPeriodMode(true)}
-                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${isPeriodMode ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400'}`}
-                 >
-                   Période
-                 </button>
+               <div className="flex bg-orange-50 p-1.5 rounded-2xl border border-orange-100 mr-2">
+                 <button onClick={() => setIsPeriodMode(false)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${!isPeriodMode ? 'bg-white text-orange-950 shadow-md' : 'text-orange-400'}`}>Jour Unique</button>
+                 <button onClick={() => setIsPeriodMode(true)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${isPeriodMode ? 'bg-white text-orange-950 shadow-md' : 'text-orange-400'}`}>Période</button>
                </div>
              )}
-
              {!isPeriodMode && (
-               <>
-                 <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-                   <CalendarIcon size={14} className="text-slate-400" />
-                   <DatePicker
-                     selected={selectedYearObj}
-                     onChange={(date) => {
-                       if (date) {
-                         setSelectedYear(date.getFullYear().toString());
-                       }
-                     }}
-                     showYearPicker
-                     dateFormat="yyyy"
-                     locale="fr"
-                     className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase w-12"
-                   />
-                 </div>
-
-                 {(viewMode === 'collecte' || distTimeScale !== 'year') && (
-                   <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
-                     <Filter size={14} className="text-slate-400" />
-                     <DatePicker
-                       selected={selectedMonthObj}
-                       onChange={(date) => {
-                         if (date) {
-                           setSelectedMonth(date.getMonth());
-                           setSelectedYear(date.getFullYear().toString());
-                         } else {
-                           setSelectedMonth(-1);
-                         }
-                       }}
-                       showMonthYearPicker
-                       dateFormat="MMMM yyyy"
-                       locale="fr"
-                       placeholderText="Tous les mois"
-                       isClearable={viewMode === 'distribution'}
-                       className="bg-transparent font-black text-slate-800 text-[10px] outline-none cursor-pointer uppercase w-32"
-                     />
-                   </div>
-                 )}
-
-                 {(viewMode === 'collecte' || distTimeScale === 'day') && (
-                   <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border shadow-sm ${viewMode === 'collecte' ? 'bg-orange-50 border-orange-200' : 'bg-orange-50 border-orange-200'}`}>
-                     <CalendarDays size={14} className={viewMode === 'collecte' ? 'text-orange-500' : 'text-orange-500'} />
-                     <DatePicker
-                       selected={selectedDateObj}
-                       onChange={(date) => {
-                         if (date) setSelectedDate(formatDate(date));
-                       }}
-                       dateFormat="dd/MM/yyyy"
-                       locale="fr"
-                       className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer w-24"
-                     />
-                   </div>
-                 )}
-               </>
+               <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl border border-orange-100 shadow-sm">
+                 <CalendarIcon size={14} className="text-orange-400" />
+                 <DatePicker selected={selectedYearObj} onChange={(d) => d && setSelectedYear(d.getFullYear().toString())} showYearPicker dateFormat="yyyy" locale="fr" className="bg-transparent font-black text-orange-800 text-[10px] outline-none cursor-pointer uppercase w-12" />
+               </div>
              )}
-
-             {isPeriodMode && viewMode === 'collecte' && (
-               <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl border border-orange-200 shadow-sm">
-                   <span className="text-[8px] font-black uppercase text-orange-400">Du</span>
-                   <DatePicker
-                     selected={startDateObj}
-                     onChange={(date) => {
-                       if (date) setStartDate(formatDate(date));
-                     }}
-                     dateFormat="dd/MM/yyyy"
-                     locale="fr"
-                     className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer w-24"
-                   />
-                 </div>
-                 <ArrowRight size={14} className="text-slate-300" />
-                 <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl border border-orange-200 shadow-sm">
-                   <span className="text-[8px] font-black uppercase text-orange-400">Au</span>
-                   <DatePicker
-                     selected={endDateObj}
-                     onChange={(date) => {
-                       if (date) setEndDate(formatDate(date));
-                     }}
-                     dateFormat="dd/MM/yyyy"
-                     locale="fr"
-                     className="bg-white border border-slate-200 px-3 py-1 font-black text-slate-900 text-[10px] rounded-lg outline-none cursor-pointer w-24"
-                   />
-                 </div>
+             {!isPeriodMode && (viewMode === 'collecte' || distTimeScale !== 'year') && (
+               <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl border border-orange-100 shadow-sm">
+                 <Filter size={14} className="text-orange-400" />
+                 <DatePicker selected={selectedMonthObj} onChange={(d) => { if (d) { setSelectedMonth(d.getMonth()); setSelectedYear(d.getFullYear().toString()); } }} showMonthYearPicker dateFormat="MMMM yyyy" locale="fr" className="bg-transparent font-black text-orange-850 text-[10px] outline-none cursor-pointer uppercase w-32" />
+               </div>
+             )}
+             {!isPeriodMode && (viewMode === 'collecte' || distTimeScale === 'day') && (
+               <div className="flex items-center gap-2 bg-orange-50 px-4 py-2.5 rounded-xl border border-orange-200 shadow-sm">
+                 <CalendarDays size={14} className="text-orange-500" />
+                 <DatePicker selected={selectedDateObj} onChange={(d) => d && setSelectedDate(formatDate(d))} dateFormat="dd/MM/yyyy" locale="fr" className="bg-white border border-orange-100 px-3 py-1 font-black text-orange-950 text-[10px] rounded-lg outline-none cursor-pointer w-24" />
                </div>
              )}
           </div>
-
           <div className="flex gap-2">
-            <button onClick={() => handleExport('image')} disabled={!!exporting} className="px-5 py-3 bg-slate-100 text-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all border border-slate-200">
-              {exporting === 'image' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={16} />} PNG
-            </button>
-            <button onClick={() => handleExport('excel')} disabled={!!exporting} className="px-5 py-3 bg-orange-50 text-orange-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-orange-100 transition-all border border-orange-200">
-              {exporting === 'excel' ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={16} />} EXCEL
-            </button>
-            <button onClick={() => handleExport('pdf')} disabled={!!exporting} className={`px-5 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg ${viewMode === 'collecte' ? 'bg-[#0f172a]' : 'bg-orange-600'}`}>
-              {exporting === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={16} />} PDF
-            </button>
+            <button onClick={() => handleExport('image')} className="px-5 py-3 bg-orange-50 text-orange-800 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 border border-orange-200 transition-all font-display hover:bg-orange-100">{exporting === 'image' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={16} />} PNG</button>
+            <button onClick={() => handleExport('excel')} className="px-5 py-3 bg-orange-100 text-orange-900 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 border border-orange-200 transition-all font-display hover:bg-orange-200">{exporting === 'excel' ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={16} />} EXCEL</button>
+            <button onClick={() => handleExport('pdf')} className="px-5 py-3 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-lg transition-all font-display hover:bg-orange-500">{exporting === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={16} />} PDF</button>
           </div>
-        </div>
-
-        {/* FILTRES DE RECHERCHE AVANCÉS (DEMANDÉS) */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-6 border-t border-slate-100 ${viewMode === 'collecte' ? 'opacity-50 pointer-events-none' : ''}`}>
-           {/* RECHERCHE PAR RÉGION (POUR FILTRER LE SITE) */}
-           <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">PRES / Région</label>
-              <div className="relative">
-                <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <select value={filterRegion} onChange={(e) => {setFilterRegion(e.target.value); setFilterSite("ALL");}} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-4 ring-orange-50 appearance-none cursor-pointer">
-                   <option value="ALL">Toutes Régions</option>
-                   {regionsList.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-           </div>
-
-           {/* 1. RECHERCHE PAR SITE SOURCE */}
-           <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Site Source</label>
-              <div className="relative">
-                <Building2 size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <select value={filterSite} onChange={(e) => setFilterSite(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-4 ring-orange-50 appearance-none cursor-pointer">
-                   <option value="ALL">Tous les Sites</option>
-                   {sitesList.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
-                </select>
-              </div>
-           </div>
-
-           {/* 2. RECHERCHE PAR ÉTABLISSEMENT SANITAIRE */}
-           <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Établissement Sanitaire</label>
-              <div className="relative">
-                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input 
-                  value={filterFacility} 
-                  onChange={(e) => setFilterFacility(e.target.value)} 
-                  placeholder="Rechercher destination..." 
-                  className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-4 ring-orange-50"
-                />
-                {filterFacility && <button onClick={() => setFilterFacility("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"><X size={14}/></button>}
-              </div>
-           </div>
-
-           {/* 3. RECHERCHE PAR TYPE DE PRODUIT */}
-           <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Type de Produit</label>
-              <div className="relative">
-                <Package size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <select 
-                  value={filterProduct} 
-                  onChange={(e) => setFilterProduct(e.target.value)} 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-4 ring-orange-50 appearance-none cursor-pointer"
-                >
-                   <option value="ALL">Tous Produits</option>
-                   {productsList.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-           </div>
-
-           {/* 4. RECHERCHE PAR GROUPE SANGUIN */}
-           <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Groupe Sanguin</label>
-              <div className="relative">
-                <Layers size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <select 
-                  value={filterGroup} 
-                  onChange={(e) => setFilterGroup(e.target.value)} 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none focus:ring-4 ring-orange-50 appearance-none cursor-pointer"
-                >
-                   <option value="ALL">Tous Groupes</option>
-                   {SANG_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-           </div>
         </div>
       </div>
 
-      {/* DOCUMENT DE SYNTHÈSE */}
-      <div className="overflow-x-auto rounded-[3.5rem] shadow-3xl bg-white border border-slate-100">
-        <div ref={recapRef} className="min-w-[1000px] p-8 bg-white text-slate-900" style={{ width: '100%', maxWidth: '1150px', margin: '0 auto' }}>
-          
-          {/* HEADER DOCUMENT */}
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center bg-white shadow-xl overflow-hidden border border-slate-100`}>
-                 <img 
-                   src={branding?.logo} 
-                   alt="Logo" 
-                   className="w-full h-full object-contain p-2" 
-                   referrerPolicy="no-referrer"
-                   onError={(e) => {
-                     (e.target as HTMLImageElement).src = 'https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=934812425420904';
-                   }}
-                 />
-              </div>
-              <div>
-                <h1 className="text-3xl font-[900] uppercase tracking-tight text-[#0f172a] leading-none">
-                  {viewMode === 'collecte' ? 'DETAIL DES PRELEVEMENTS' : 'SYNTHESE DES DISTRIBUTIONS'}
-                </h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">CENTRE NATIONAL DE TRANSFUSION SANGUINE CI</p>
-              </div>
-            </div>
-            <div className="bg-orange-600 text-white px-6 py-2 rounded-2xl text-center">
-               <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">SITUATION AU</p>
-               <p className="text-xl font-black">{currentPeriodLabel}</p>
-               {situationTime && (
-                 <p className="text-[8px] font-bold text-orange-400 mt-1 uppercase tracking-widest">{situationTime}</p>
-               )}
-            </div>
-          </div>
-
-          {/* SUMMARY CARDS */}
-          <div className="grid grid-cols-3 gap-4 mb-10">
-             <div className="border-2 border-orange-600 p-4 rounded-xl flex flex-col items-center justify-center bg-white text-center">
-                <div className="flex items-center gap-2 mb-2 text-orange-600">
-                   <CalendarDays size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{isPeriodMode ? 'TOTAL PÉRIODE' : 'FLUX JOUR'}</span>
-                </div>
-                <p className="text-5xl font-[900] text-[#0f172a] tracking-tighter">
-                  {viewMode === 'collecte' ? nationalTotals.jour.toLocaleString() : distTotals.qty.toLocaleString()}
-                </p>
-             </div>
-             <div className="border-2 border-orange-600 p-4 rounded-xl flex flex-col items-center justify-center bg-white text-center">
-                <div className="flex items-center gap-2 mb-2 text-[#f97316]">
-                   <Activity size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{viewMode === 'collecte' ? 'CUMUL MENSUEL' : 'SORTIES NETTES'}</span>
-                </div>
-                <p className="text-5xl font-[900] text-[#f97316] tracking-tighter">
-                   {viewMode === 'collecte' ? nationalTotals.mois.toLocaleString() : (distTotals.qty - distTotals.rendu).toLocaleString()}
-                </p>
-             </div>
-             <div className="border-2 border-orange-600 p-4 rounded-xl flex flex-col items-center justify-center bg-white text-center">
-                <div className="flex items-center gap-2 mb-2 text-orange-600">
-                   <Target size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">{viewMode === 'collecte' ? 'OBJECTIF MENSUEL' : 'EFFICACITÉ NETTE'}</span>
-                </div>
-                <p className="text-5xl font-[900] text-[#f97316] tracking-tighter">
-                   {viewMode === 'collecte' ? nationalTotals.objectif.toLocaleString() : distTotals.efficiency.toFixed(1) + '%'}
-                </p>
-             </div>
-          </div>
-
-          {/* TABLEAU RENDU */}
-          {viewMode === 'collecte' ? (
-            <>
-              <div className="overflow-x-auto custom-scrollbar bg-white rounded-3xl shadow-xl border border-slate-200">
-              <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[950px]">
-              <thead className="sticky top-0 z-20">
-                <tr className="bg-slate-950 text-white h-14">
-                  <th className="px-4 py-3 uppercase tracking-widest text-left w-[120px] font-black text-[10px] border border-slate-700">PRES / RÉGION</th>
-                  <th className="px-4 py-3 uppercase tracking-widest text-left w-[220px] font-black text-[10px] border border-slate-700">LIBELLÉ SITE</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[60px] font-black text-[10px] border border-slate-700">FIXE</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[60px] font-black text-[10px] border border-slate-700">MOB.</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[90px] font-black text-[10px] border border-slate-700 bg-orange-600/30 text-orange-200">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[90px] font-black text-[10px] border border-slate-700 bg-blue-600/30 text-blue-200">ENCODÉ GTS</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[90px] font-black text-[10px] border border-slate-700">MOIS</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[100px] font-black text-[10px] border border-slate-700">OBJECTIF/M</th>
-                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[80px] font-black text-[10px] border border-slate-700">TAUX/M</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {formattedCollecteData.length > 0 ? formattedCollecteData.map((region: any, rIdx: number) => {
-                  const regColor = REGION_COLORS[region.name.trim().toUpperCase()] || '#ffffff';
-                  const regTaux = region.objMensPres > 0 ? (region.totalMoisPres / region.objMensPres) * 100 : 0;
-                  
-                  const abidjanVilleSites = [
-                    "CRTS DE TREICHVILLE",
-                    "CDTS DE BINGERVILLE",
-                    "SP HG PORT BOUET",
-                    "SP FSU ABOBO BAOULE",
-                    "SP HG ANYAMA",
-                    "SP CHU DE COCODY",
-                    "SP CHU DE YOPOUGON"
-                  ];
-                  
-                  const isAbidjan = region.name === "PRES ABIDJAN";
-                  const abidjanSites = isAbidjan ? region.sites.filter((s: any) => abidjanVilleSites.includes(s.name)) : region.sites;
-                  const otherSites = isAbidjan ? region.sites.filter((s: any) => !abidjanVilleSites.includes(s.name)) : [];
-                  
-                  const rows = [...abidjanSites, ...(isAbidjan ? [{ isSubtotal: true }] : []), ...otherSites];
-
-                  return (
-                    <React.Fragment key={rIdx}>
-                      {rows.map((row: any, idx: number) => {
-                        if (row.isSubtotal) {
-                          return (
-                            <tr key="subtotal-abidjan" className="font-black h-12 bg-slate-100/80 border-y border-slate-300">
-                              <td className="px-4 py-2 uppercase text-right pr-4 italic text-slate-800 border border-slate-200">SOUS-TOTAL ABIDJAN VILLE</td>
-                              <td className="px-2 py-2 text-center text-slate-900 font-mono border border-slate-200">{region.abidjanVille.fixe}</td>
-                              <td className="px-2 py-2 text-center text-slate-900 font-mono border border-slate-200">{region.abidjanVille.mobile}</td>
-                              <td className="px-2 py-2 text-center text-[13px] font-mono font-black border border-slate-200 bg-orange-50 text-blue-600">{region.abidjanVille.jour}</td>
-                              <td className={`px-2 py-2 text-center text-[13px] font-mono font-black border border-slate-200 bg-blue-50 ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-green-600' : 'text-orange-600'}`}>{region.abidjanVille.gts}</td>
-                              <td className="px-2 py-2 text-center text-slate-950 text-[13px] font-mono border border-slate-200">{region.abidjanVille.mois.toLocaleString()}</td>
-                              <td className="px-2 py-2 text-center text-slate-600 text-[13px] font-mono border border-slate-200">{region.abidjanVille.obj.toLocaleString()}</td>
-                              <td className={`px-2 py-2 text-center font-black text-[14px] font-mono border border-slate-200 ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
-                            </tr>
-                          );
-                        }
-
-                        const site = row;
-                        const isEven = idx % 2 === 0;
-                        return (
-                          <tr key={`${rIdx}-${idx}`} className={`h-11 hover:bg-orange-50 transition-colors group ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}>
-                            {idx === 0 && (
-                              <td rowSpan={rows.length + 1} className="px-4 py-4 align-top font-black uppercase text-[9px] text-slate-900 border border-slate-200 border-l-[6px]" style={{ borderLeftColor: regColor }}>
-                                <div className="sticky top-20">
-                                  {region.name}
-                                </div>
-                              </td>
-                            )}
-                            <td className="px-4 py-2 uppercase text-[9px] text-slate-700 font-black border border-slate-200">
-                              <button 
-                                onClick={() => onSiteClick?.(site.name)}
-                                className="hover:text-orange-600 transition-colors text-left font-black"
-                              >
-                                {site.name}
-                              </button>
-                            </td>
-                            <td className="px-2 py-2 text-center text-slate-800 font-extrabold font-mono border border-slate-200">{site.fixe}</td>
-                            <td className="px-2 py-2 text-center text-slate-800 font-extrabold font-mono border border-slate-200">{site.mobile}</td>
-                            <td className="px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-blue-50/10 text-blue-600 underline decoration-blue-200 underline-offset-4">{site.totalJour}</td>
-                            <td className={`px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-orange-50/10 ${site.gts === site.totalJour ? 'text-emerald-500' : 'text-orange-500'}`}>{site.gts}</td>
-                            <td className="px-2 py-2 text-center text-slate-950 text-[14px] font-black font-mono border border-slate-200">{site.totalMois.toLocaleString()}</td>
-                            <td className="px-2 py-2 text-center text-slate-400 text-[12px] font-bold font-mono border border-slate-200">{site.objMensuel.toLocaleString()}</td>
-                            <td className={`px-2 py-2 text-center font-mono font-black text-[15px] border border-slate-200 ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
-                          </tr>
-                        );
-                      })}
-                      <tr className="font-black h-16 bg-slate-800 text-white border border-slate-950 shadow-xl relative z-10">
-                        <td className="px-4 py-3 uppercase text-right pr-6 italic text-slate-300 border border-slate-700 text-[11px] font-black">TOTAL {region.name}</td>
-                        <td className="px-2 py-3 text-center font-black font-mono text-[14px] border border-slate-700">{region.fixePres}</td>
-                        <td className="px-2 py-3 text-center font-black font-mono text-[14px] border border-slate-700">{region.mobilePres}</td>
-                        <td className="px-2 py-3 text-center text-[18px] font-mono font-black border border-slate-700 bg-blue-900/40 text-blue-200 shadow-inner">{region.totalJourPres}</td>
-                        <td className={`px-2 py-3 text-center font-mono font-black text-[18px] border border-slate-700 bg-orange-900/40 ${region.gtsPres === region.totalJourPres ? 'text-emerald-400' : 'text-orange-300'}`}>{region.gtsPres}</td>
-                        <td className="px-2 py-3 text-center text-[18px] font-black font-mono border border-slate-700 text-white">{region.totalMoisPres.toLocaleString()}</td>
-                        <td className="px-2 py-3 text-center text-slate-400 text-[14px] font-black font-mono border border-slate-700">{region.objMensPres.toLocaleString()}</td>
-                        <td className={`px-2 py-3 text-center font-mono font-black text-[20px] border border-slate-700 ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                }) : null}
-              </tbody>
-              <tfoot className="bg-slate-950 text-white font-black border-t-8 border-slate-950 text-glow-orange">
-                <tr className="h-32">
-                  <td colSpan={2} className="px-10 py-6 text-5xl uppercase tracking-tighter bg-slate-900 border border-slate-700 shadow-inner">TOTAL NATIONAL</td>
-                  <td className="px-3 py-3 text-center text-4xl font-black font-mono border border-slate-700 bg-slate-800">{nationalTotals.fixe.toLocaleString()}</td>
-                  <td className="px-3 py-3 text-center text-4xl font-black font-mono border border-slate-700 bg-slate-800">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className="px-3 py-3 text-center text-8xl font-mono font-black border border-slate-700 bg-blue-600/40 text-blue-100 shadow-2xl">{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`px-3 py-3 text-center text-8xl font-mono font-black border border-slate-700 bg-orange-600/40 ${nationalTotals.gts === nationalTotals.jour ? 'text-emerald-300' : 'text-orange-200'}`}>{nationalTotals.gts.toLocaleString()}</td>
-                  <td className="px-3 py-3 text-center text-4xl font-black font-mono border border-slate-700 bg-slate-800">{nationalTotals.mois.toLocaleString()}</td>
-                  <td className="px-3 py-3 text-center text-4xl font-black font-mono text-white/20 border border-slate-700 bg-slate-800">{nationalTotals.objectif.toLocaleString()}</td>
-                  <td className={`px-3 py-3 text-center text-6xl font-mono font-black border border-slate-700 bg-slate-800 ${getPerfColor(nationalTotals.taux)}`}>{nationalTotals.taux.toFixed(0)}%</td>
-                </tr>
-              </tfoot>
-              </table>
-              </div>
-              <div className="h-12"></div>
-           </>
-           ) : (
-          <>
-             <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-x-auto custom-scrollbar">
-               <table className="w-full border-collapse text-[11px] font-bold text-slate-950 leading-tight min-w-[1100px]">
-                  <thead className="sticky top-0 z-20">
-                     <tr className="bg-slate-950 text-white h-14">
-                        <th className="px-4 py-2 text-left w-[150px] uppercase tracking-widest font-black text-[9px] border-r border-white/10">Site Source</th>
-                        <th className="px-4 py-2 text-left w-[180px] uppercase tracking-widest font-black text-[9px] border-r border-white/10">Structure Servie</th>
-                        <th className="px-4 py-2 text-left w-[140px] uppercase tracking-widest font-black text-[9px] border-r border-white/10">Produit</th>
-                        {SANG_GROUPS.map(g => (
-                <th 
-                  key={g} 
-                  className="px-1 py-2 text-center w-[55px] uppercase text-white font-black text-[10px] border-r border-white/5"
-                  style={{ backgroundColor: GROUP_COLORS[g] || '#f1f5f9' }}
-                >
-                  {g}
-                </th>
-              ))}
-                        <th className="px-4 py-2 text-right w-[70px] uppercase tracking-widest font-black text-[9px] text-rose-400 border-x border-white/10">Rendu</th>
-                        <th className="px-4 py-2 text-right w-[90px] uppercase tracking-widest font-black text-[9px] bg-orange-600/20 text-orange-400">Total</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {Object.keys(registerData).length > 0 ? (
-                      Object.entries(registerData).sort().map(([sitName, sitData]: [string, any]) => {
-                         const siteTotals = Object.fromEntries(SANG_GROUPS.map(g => [g, 0]));
-                         let siteRendu = 0, siteGrossTotal = 0;
-                         Object.values(sitData.destinations).forEach((dest: any) => {
-                           Object.values(dest.products).forEach((prod: any) => {
-                             SANG_GROUPS.forEach(g => { siteTotals[g] += prod.groups[g]; siteGrossTotal += prod.groups[g]; });
-                             siteRendu += prod.rendu;
-                           });
-                         });
-                         const rowCount: number = (Object.values(sitData.destinations) as any[]).reduce((acc: number, d: any) => acc + Object.keys(d.products).length, 0);
-                         return (
-                           <React.Fragment key={sitName}>
-                             {Object.entries(sitData.destinations).sort().map(([destName, destData]: [string, any], dIdx) => (
-                               <React.Fragment key={destName}>
-                                 {Object.entries(destData.products).sort().map(([prodName, prodMetrics]: [string, any], pIdx) => {
-                                   const rowGrossTotal = SANG_GROUPS.reduce((acc, g) => acc + prodMetrics.groups[g], 0);
-                                   const isPlasma = prodName.toUpperCase().includes('PLASMA');
-                                   const isCgr = prodName.toUpperCase().includes('CGR');
-                                   
-                                   let rowBg = '';
-                                   if (isPlasma) rowBg = 'bg-yellow-50';
-                                   else if (prodName.toUpperCase().includes('CGR ADULTE')) rowBg = 'bg-orange-50';
-                                   else if (prodName.toUpperCase().includes('CGR NOURRISSON')) rowBg = 'bg-orange-50/70';
-                                   else if (prodName.toUpperCase().includes('CGR PEDIATRIQUE')) rowBg = 'bg-orange-50/40';
-
-                                   return (
-                                     <tr key={`${destName}-${prodName}`} className={`${rowBg || (pIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')} hover:bg-slate-100 transition-colors group`}>
-                                       {dIdx === 0 && pIdx === 0 && (
-                                         <td rowSpan={rowCount + 1} className="px-4 py-4 align-top font-black text-slate-900 bg-slate-50 uppercase text-[9px] border border-slate-200 border-l-[6px] border-l-orange-500">
-                                           <div className="sticky top-20">
-                                              <button 
-                                                onClick={() => onSiteClick?.(sitName)}
-                                                className="hover:text-orange-900 transition-colors text-left font-black"
-                                              >
-                                                {sitName}
-                                              </button>
-                                           </div>
-                                         </td>
-                                       )}
-                                       {pIdx === 0 && <td rowSpan={Object.keys(destData.products).length} className="px-4 py-4 align-top text-slate-800 uppercase font-black text-[9px] border border-slate-200">{destName}</td>}
-                                       <td className="px-4 py-3 border border-slate-200">
-                                         <span className="px-2 py-1 rounded-full text-[8px] font-black border uppercase inline-block leading-tight" style={{ color: isCgr || isPlasma ? 'inherit' : (PRODUCT_COLORS[prodName] || '#64748b'), borderColor: isCgr || isPlasma ? 'currentColor' : `${PRODUCT_COLORS[prodName]}33`, backgroundColor: isCgr || isPlasma ? 'transparent' : `${PRODUCT_COLORS[prodName]}11` }}>{prodName}</span>
-                                       </td>
-                                       {SANG_GROUPS.map(g => (
-                                         <td 
-                                           key={g} 
-                                           className={`px-1 py-3 text-center text-[11px] font-mono border border-slate-200 ${prodMetrics.groups[g] > 0 ? 'font-black' : 'text-slate-200'}`}
-                                           style={{ 
-                                             backgroundColor: prodMetrics.groups[g] > 0 ? `${GROUP_COLORS[g]}11` : 'transparent',
-                                             color: prodMetrics.groups[g] > 0 ? GROUP_COLORS[g] : 'inherit'
-                                           }}
-                                         >
-                                           {prodMetrics.groups[g] || '-'}
-                                         </td>
-                                       ))}
-                                       <td className="px-4 py-3 text-right font-mono font-black text-rose-500 text-[11px] border border-slate-200 bg-rose-50/10">{prodMetrics.rendu || '-'}</td>
-                                       <td className="px-4 py-3 text-right font-mono font-black text-slate-950 bg-orange-50/30 text-[12px] border border-slate-200">{rowGrossTotal}</td>
-                                     </tr>
-                                   );
-                                 })}
-                               </React.Fragment>
-                             ))}
-                             <tr className="bg-slate-100/90 text-slate-950 font-black h-12 border border-slate-300">
-                               <td colSpan={2} className="px-4 py-2 text-right uppercase tracking-widest text-slate-600 pr-6 italic text-[9px] border border-slate-200">SOUS-TOTAL RÉSEAU {sitName}</td>
-                               {SANG_GROUPS.map(g => (
-                                 <td key={g} className="px-1 py-2 text-center border border-slate-200 font-mono text-[11px]" style={{ color: GROUP_COLORS[g], backgroundColor: `${GROUP_COLORS[g]}11` }}>
-                                   {siteTotals[g]}
-                                 </td>
-                               ))}
-                               <td className="px-4 py-2 text-right text-rose-600 font-mono text-[11px] bg-rose-50 border border-slate-200">{siteRendu}</td>
-                               <td className="px-4 py-2 text-right text-orange-600 font-mono text-[14px] bg-orange-50 border border-slate-200">{siteGrossTotal}</td>
-                             </tr>
-                           </React.Fragment>
-                         );
-                      })
-                    ) : (
-                      <tr><td colSpan={14} className="py-24 text-center text-slate-300 uppercase font-black tracking-widest italic">Aucune donnée trouvée pour cette sélection</td></tr>
-                    )}
-                  </tbody>
-                  <tfoot className="bg-white text-slate-950 font-black border-t-8 border-slate-950">
-                    <tr className="h-24">
-                      <td colSpan={3} className="px-8 py-4 text-center uppercase tracking-tighter text-3xl bg-slate-100 border border-slate-300">TOTAL GÉNÉRAL CONSOLIDÉ</td>
-                      {SANG_GROUPS.map(g => <td key={g} className="px-1 py-2 text-center text-2xl font-black font-mono bg-white border border-slate-200" style={{ color: GROUP_COLORS[g] }}>{distTotals.groups[g]}</td>)}
-                      <td className="px-4 py-2 text-right text-2xl font-black font-mono text-rose-600 bg-rose-50 border border-slate-200">{distTotals.rendu}</td>
-                      <td className="px-4 py-2 text-right text-6xl font-black font-mono text-orange-600 bg-orange-50 border border-slate-300">{distTotals.qty}</td>
-                    </tr>
-                    {abidjanVilleDistributionSubtotal && (
-                      <tr className="h-14 bg-orange-50 text-orange-950 font-black border border-slate-300">
-                        <td colSpan={3} className="px-6 py-2 text-right uppercase tracking-widest text-[12px] italic pr-8 border border-slate-200">SOUS-TOTAL ABIDJAN VILLE</td>
-                        {SANG_GROUPS.map(g => <td key={g} className="px-1 py-2 text-center text-[14px] font-black font-mono border border-slate-200">{abidjanVilleDistributionSubtotal.groups[g]}</td>)}
-                        <td className="px-4 py-2 text-right text-orange-600 text-[14px] font-black font-mono border border-slate-200">{abidjanVilleDistributionSubtotal.rendu}</td>
-                        <td className="px-4 py-2 text-right text-orange-600 text-[24px] font-black font-mono border border-slate-300">{abidjanVilleDistributionSubtotal.gross}</td>
-                      </tr>
-                    )}
-                  </tfoot>
-               </table>
-            </div>
-            <div className="h-12"></div> {/* Espace de sécurité final */}
-          </>
-          )}
-
-          {/* FOOTER DOCUMENT */}
-          <div className="mt-12 flex justify-between items-center opacity-70 border-t-2 border-slate-100 pt-6">
-            <div className="flex items-center gap-4">
-              <div className={`w-5 h-5 rounded-full ${viewMode === 'collecte' ? 'bg-orange-600' : 'bg-orange-600'}`}></div>
-              <p className="text-[10px] font-[900] uppercase tracking-widest text-slate-900">DOCUMENT OFFICIEL CNTS - DIRECTION DES STRUCTURES DÉCONCENTRÉES</p>
+      <div ref={recapRef} className="card-professional bg-white p-10 lg:p-16 space-y-12 border-orange-100">
+         <div className="flex justify-between items-center border-b-[3px] border-orange-950 pb-8">
+            <div className="flex items-center gap-8">
+               <img src={branding?.logo || 'https://cntsci.net/wp-content/uploads/2021/04/cropped-logo-cnts-1.png'} alt="Logo" className="h-20 grayscale brightness-0 opacity-80" />
+               <div>
+                  <h1 className="text-4xl font-display font-black uppercase tracking-tighter text-orange-950">Bilan Consolidé Activités</h1>
+                  <p className="text-base font-display font-bold text-orange-400 uppercase tracking-[0.3em] mt-2 underline decoration-orange-300 decoration-2 underline-offset-8">Cockpit National HEMO-STATS</p>
+               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-[900] uppercase tracking-widest text-slate-900">DSDSUIVI - {selectedDate}</p>
+               <p className="text-[10px] font-display font-black text-orange-300 uppercase tracking-widest mb-2">Période du Rapport</p>
+               <div className="px-6 py-4 bg-orange-950 text-white rounded-3xl shadow-xl">
+                  <p className="text-2xl font-display font-black uppercase tracking-tighter">{currentPeriodLabel}</p>
+               </div>
             </div>
-          </div>
-        </div>
+         </div>
+
+         {viewMode === 'collecte' ? (
+           <div className="space-y-10">
+              <div className="grid grid-cols-4 gap-8">
+                 <div className="bg-orange-50/50 p-8 rounded-[3rem] border border-orange-100 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">Fixe</p>
+                    <p className="text-4xl font-black text-orange-950">{nationalTotals.fixe.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-orange-50/50 p-8 rounded-[3rem] border border-orange-100 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">Mobile</p>
+                    <p className="text-4xl font-black text-orange-950">{nationalTotals.mobile.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-orange-600 p-8 rounded-[3rem] shadow-2xl text-center">
+                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-3">Global</p>
+                    <p className="text-4xl font-black text-white">{nationalTotals.jour.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-orange-50/50 p-8 rounded-[3rem] border border-orange-100 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">Efficience</p>
+                    <p className="text-4xl font-black text-orange-600">{nationalTotals.taux.toFixed(1)}%</p>
+                 </div>
+              </div>
+
+              <div className="overflow-hidden bg-white rounded-[3.5rem] border border-orange-950 shadow-2xl">
+                 <table className="w-full border-collapse font-display text-[11px] font-bold">
+                    <thead>
+                       <tr className="bg-orange-950 text-white h-16">
+                          <th className="px-8 text-left uppercase tracking-widest font-black text-[10px]">PRES / RÉGION</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-[10px]">FIXE</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-[10px]">MOB.</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-[10px] bg-orange-900 border-x border-white/10">TOTAL</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-[10px]">ENCODÉ GTS</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-[10px]">MOIS</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-[10px]">OBJ/M</th>
+                          <th className="px-8 text-center uppercase tracking-widest font-black text-[10px]">TAUX/M</th>
+                       </tr>
+                    </thead>
+                    <tbody>
+                       {formattedCollecteData.map((reg, ri) => (
+                         <React.Fragment key={ri}>
+                            <tr className="h-10 bg-orange-50/50">
+                               <td colSpan={8} className="px-8 font-black text-orange-900 uppercase tracking-tighter italic border-y border-orange-200">
+                                  {reg.name}
+                               </td>
+                            </tr>
+                            {reg.sites.map((s, si) => (
+                               <tr key={si} className="h-12 border-b border-orange-50 hover:bg-orange-50/30 transition-colors">
+                                  <td className="px-10 text-orange-950 font-black uppercase text-[10px]">{s.name}</td>
+                                  <td className="text-center text-orange-600/60 font-mono">{s.fixe}</td>
+                                  <td className="text-center text-orange-600/60 font-mono">{s.mobile}</td>
+                                  <td className="text-center text-orange-950 font-mono font-black text-[13px] bg-orange-50">{s.totalJour}</td>
+                                  <td className="text-center text-orange-400 font-mono italic">{s.gts || 0}</td>
+                                  <td className="text-center text-orange-950 font-mono">{s.totalMois}</td>
+                                  <td className="text-center text-orange-300 font-mono">{s.objMensuel}</td>
+                                  <td className={`px-8 text-center font-black ${getPerfColor(s.achievement)}`}>{s.achievement.toFixed(0)}%</td>
+                               </tr>
+                            ))}
+                            <tr className="h-14 bg-orange-950 text-white font-black text-[11px]">
+                               <td className="px-8 uppercase tracking-widest">SOUS-TOTAL {reg.name}</td>
+                               <td className="text-center font-mono opacity-60">{reg.fixePres}</td>
+                               <td className="text-center font-mono opacity-60">{reg.mobilePres}</td>
+                               <td className="text-center font-mono text-[16px] bg-orange-600">{reg.totalJourPres}</td>
+                               <td className="text-center font-mono opacity-60">{reg.gtsPres}</td>
+                               <td className="text-center font-mono opacity-60">{reg.totalMoisPres}</td>
+                               <td className="text-center font-mono opacity-60">{reg.objMensPres}</td>
+                               <td className="px-8 text-center text-[16px] text-orange-300">{(reg.objMensPres > 0 ? (reg.totalMoisPres / reg.objMensPres) * 100 : 0).toFixed(1)}%</td>
+                            </tr>
+                         </React.Fragment>
+                       ))}
+                       <tr className="h-20 bg-orange-950 text-white border-t-8 border-white">
+                          <td className="px-8 text-2xl font-black uppercase tracking-tighter">TOTAL NATIONAL</td>
+                          <td className="text-center text-xl font-mono text-orange-400">{nationalTotals.fixe}</td>
+                          <td className="text-center text-xl font-mono text-orange-400">{nationalTotals.mobile}</td>
+                          <td className="text-center text-4xl font-mono bg-orange-600">{nationalTotals.jour}</td>
+                          <td className="text-center text-xl font-mono text-orange-400">{nationalTotals.gts}</td>
+                          <td className="text-center text-xl font-mono text-orange-400">{nationalTotals.mois}</td>
+                          <td className="text-center text-xl font-mono text-white/40">{nationalTotals.objectif}</td>
+                          <td className="px-8 text-center text-4xl font-black text-orange-300">{nationalTotals.taux.toFixed(1)}%</td>
+                       </tr>
+                    </tbody>
+                 </table>
+              </div>
+           </div>
+         ) : (
+           <div className="space-y-12">
+              <div className="grid grid-cols-4 gap-8">
+                <div className="bg-orange-50/50 p-8 rounded-[3rem] border border-orange-100 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">Volume Brut</p>
+                    <p className="text-4xl font-black text-orange-950">{distTotals.qty.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-orange-50/50 p-8 rounded-[3rem] border border-orange-100 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">Poches Rendues</p>
+                    <p className="text-4xl font-black text-rose-600">{distTotals.rendu.toLocaleString()}</p>
+                 </div>
+                 <div className="bg-orange-600 p-8 rounded-[3rem] shadow-2xl text-center">
+                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-3">Flux Net Servi</p>
+                    <p className="text-4xl font-black text-white">{(distTotals.qty - distTotals.rendu).toLocaleString()}</p>
+                 </div>
+                 <div className="bg-orange-50/50 p-8 rounded-[3rem] border border-orange-100 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">Efficience Flux</p>
+                    <p className="text-4xl font-black text-orange-600">{distTotals.efficiency.toFixed(1)}%</p>
+                 </div>
+              </div>
+
+              <div className="overflow-x-auto bg-white rounded-[3.5rem] border border-orange-950 shadow-2xl">
+                 <table className="w-full min-w-[1200px] border-collapse font-display text-[10px] font-bold">
+                    <thead>
+                       <tr className="bg-orange-950 text-white h-16">
+                          <th className="px-8 text-left uppercase tracking-widest font-black sticky left-0 z-20 bg-orange-950">Source & Destination</th>
+                          <th className="px-4 text-center uppercase tracking-widest font-black">Produit</th>
+                          {SANG_GROUPS.map(g => <th key={g} className="px-2 text-center uppercase tracking-tighter text-[9px] min-w-[50px]">{g}</th>)}
+                          <th className="px-4 text-center uppercase tracking-widest font-black text-rose-400">Rendu</th>
+                          <th className="px-8 text-center uppercase tracking-widest font-black bg-orange-900">Total</th>
+                       </tr>
+                    </thead>
+                    <tbody>
+                       {Object.entries(registerData).map(([sit, sitD]: [string, any], si) => (
+                         <React.Fragment key={si}>
+                            <tr className="h-10 bg-orange-950/90 text-white">
+                               <td colSpan={3+SANG_GROUPS.length} className="px-8 font-black uppercase tracking-widest text-[11px] italic sticky left-0 z-10">
+                                  {sit}
+                               </td>
+                            </tr>
+                            {Object.entries(sitD.destinations).map(([dest, destD]: [string, any], di) => (
+                               Object.entries(destD.products).map(([prod, prM]: [string, any], pi) => {
+                                 const totalP = SANG_GROUPS.reduce((a, g) => a + prM.groups[g], 0);
+                                 return (
+                                   <tr key={`${si}-${di}-${pi}`} className="h-12 border-b border-orange-50 hover:bg-orange-50/30 transition-colors group">
+                                      <td className="px-10 text-orange-950 font-black uppercase tracking-tight truncate max-w-[250px] sticky left-0 z-10 bg-white group-hover:bg-orange-50/30">{dest}</td>
+                                      <td className="px-4 text-center text-orange-400 font-black italic">{prod}</td>
+                                      {SANG_GROUPS.map(g => <td key={g} className="text-center font-mono text-orange-600/70 border-x border-orange-50/30">{prM.groups[g] || '-'}</td>)}
+                                      <td className="text-center font-mono font-black text-rose-500">{prM.rendu || '-'}</td>
+                                      <td className="px-8 text-center font-mono font-black text-[13px] bg-orange-50/50">{totalP}</td>
+                                   </tr>
+                                 );
+                               })
+                            ))}
+                         </React.Fragment>
+                       ))}
+                       <tr className="h-20 bg-orange-950 text-white border-t-8 border-orange-100">
+                          <td colSpan={2} className="px-8 text-2xl font-black uppercase tracking-tighter sticky left-0 z-10 bg-orange-950">TOTAL CONSOLIDÉ</td>
+                          {SANG_GROUPS.map(g => <td key={g} className="text-center text-lg font-mono text-orange-400">{distTotals.groups[g]}</td>)}
+                          <td className="text-center text-2xl font-mono text-rose-500">{distTotals.rendu}</td>
+                          <td className="px-8 text-center text-4xl font-mono bg-orange-600 text-white border-l border-white/20">{distTotals.qty}</td>
+                       </tr>
+                    </tbody>
+                 </table>
+              </div>
+           </div>
+         )}
+         
+         <div className="pt-10 flex justify-between items-end border-t border-orange-100">
+            <div className="space-y-2">
+               <p className="text-[10px] font-display font-black text-orange-950 uppercase tracking-widest flex items-center gap-3">
+                  <Zap size={14} className="text-orange-500" /> Certification Officielle du Registre
+               </p>
+               <p className="text-[10px] font-display font-bold text-orange-300 uppercase tracking-widest leading-relaxed">Les données présentées dans ce rapport sont extraites en temps réel du cœur de réseau CNTS et font l'objet d'une validation hiérarchique.</p>
+            </div>
+            <div className={`p-6 rounded-[2rem] border border-orange-100 flex items-center gap-6 ${viewMode === 'collecte' ? 'shadow-lg bg-orange-50/50' : 'shadow-lg bg-orange-50/50'}`}>
+                <div className="text-center px-4 border-r border-orange-200">
+                   <p className="text-[8px] font-black text-orange-400 uppercase tracking-widest">Version</p>
+                   <p className="text-xs font-black text-orange-950">Cockpit v4.0</p>
+                </div>
+                <div className="text-center px-4">
+                   <p className="text-[8px] font-black text-orange-400 uppercase tracking-widest">Sécurité</p>
+                   <p className="text-xs font-black text-orange-950 flex items-center gap-2"><Target size={12} className="text-orange-500" /> SSL-CRYPT</p>
+                </div>
+            </div>
+         </div>
       </div>
     </div>
   );
