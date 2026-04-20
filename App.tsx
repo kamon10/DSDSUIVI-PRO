@@ -44,9 +44,10 @@ import { InstallPrompt } from './components/InstallPrompt.tsx';
 import { SyncStatus } from './components/SyncStatus.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
-import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2, Maximize2 } from 'lucide-react';
+import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2, Maximize2, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CommandPalette } from './components/CommandPalette.tsx';
+import { AIAssistantOverlay } from './components/AIAssistantOverlay.tsx';
 
 const App: React.FC = () => {
   const [fullData, setFullData] = useState<DashboardData>(() => {
@@ -95,6 +96,14 @@ const App: React.FC = () => {
     if (!saved) return null;
     try { return JSON.parse(saved); } catch (e) { return null; }
   });
+  const [selectedSite, setSelectedSite] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitializing(false), 2400);
+    return () => clearTimeout(timer);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
@@ -345,39 +354,17 @@ const App: React.FC = () => {
   }, [fullData, currentUser]);
 
   const navItems = [
-    { id: 'pulse', icon: <HeartPulse size={18} />, label: 'Pulse', public: true },
-    { id: 'goal-pulse', icon: <Target size={18} />, label: 'Objectifs', public: true },
-    { id: 'pres-slideshow', icon: <Maximize2 size={18} />, label: 'Présentation PRES', public: false },
-    { id: 'summary', icon: <Layout size={18} />, label: 'Résumé', public: false },
-    { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Cockpit', public: false },
-    { id: 'map', icon: <MapIcon size={18} />, label: 'Carte', public: false },
-    { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie', public: false },
-    { id: 'recap', icon: <FileText size={18} />, label: 'Récap Coll.', public: false },
-    { id: 'recap-dist', icon: <ClipboardList size={18} />, label: 'Synthèse Dist', public: false },
-    { id: 'distribution-detailed', icon: <ClipboardList size={18} />, label: 'Détail Dist', public: false },
-    { id: 'distribution-stock', icon: <Database size={18} />, label: 'Stock & Dist', public: false },
-    { id: 'gts', icon: <Truck size={18} />, label: 'GTS', public: false },
-    { id: 'gts-synthesis', icon: <PieChart size={18} />, label: 'Synthèse GTS', public: false },
-    { id: 'gts-comparison', icon: <RefreshCw size={18} />, label: 'Comparaison GTS', public: false },
-    { id: 'collection-planning', icon: <Calendar size={18} />, label: 'Planning Mobiles', public: false },
-    { id: 'stock-summary', icon: <Layout size={18} />, label: 'Résumé Stock', public: false },
-    { id: 'stock', icon: <Package size={18} />, label: 'Stock', public: false },
-    { id: 'stock-focus', icon: <Zap size={18} />, label: 'Focus Analyse', public: false },
-    { id: 'stock-detailed', icon: <ClipboardList size={18} />, label: 'Détail Stock', public: false },
-    { id: 'stock-synthesis', icon: <TrendingUp size={18} />, label: 'Synthèse Stock', public: false },
-    { id: 'stock-planning', icon: <ShieldCheck size={18} />, label: 'Planning Stock', public: false },
-    { id: 'capacity-planning', icon: <Zap size={18} />, label: 'Capacité', public: false },
-    { id: 'forecasting', icon: <TrendingUp size={18} />, label: 'Estimation', public: false },
-    { id: 'site-focus', icon: <UserCheck size={18} />, label: 'Focus', public: false },
-    { id: 'history', icon: <History size={18} />, label: 'Historique', public: false },
-    { id: 'weekly', icon: <Clock size={18} />, label: 'Mensuel', public: false },
-    { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
-    { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
-    { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
-    { id: 'ebook', icon: <Book size={18} />, label: 'E-Book Hebdo', public: false },
-    { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
-    { id: 'personnel', icon: <UserCheck size={18} />, label: 'Personnel', public: false, superOnly: true },
-    { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
+    { id: 'pulse', icon: <HeartPulse size={18} />, label: 'Pulse Center', public: true, color: 'text-rose-500' },
+    { id: 'goal-pulse', icon: <Target size={18} />, label: 'Objectifs', public: true, color: 'text-orange-500' },
+    { id: 'cockpit', icon: <LayoutDashboard size={18} />, label: 'Analytics Cockpit', public: false, color: 'text-emerald-500' },
+    { id: 'map', icon: <MapIcon size={18} />, label: 'Cartographie Flux', public: false, color: 'text-sky-500' },
+    { id: 'entry', icon: <PlusSquare size={18} />, label: 'Saisie Directe', public: false, color: 'text-indigo-500' },
+    { id: 'stock-summary', icon: <Database size={18} />, label: 'Status des Stocks', public: false, color: 'text-amber-500' },
+    { id: 'recap', icon: <FileText size={18} />, label: 'Récapitulatif', public: false, color: 'text-slate-500' },
+    { id: 'gts', icon: <Truck size={18} />, label: 'Flux GTS', public: false, color: 'text-emerald-400' },
+    { id: 'history', icon: <History size={18} />, label: 'Historique', public: false, color: 'text-slate-400' },
+    { id: 'pres-slideshow', icon: <Maximize2 size={18} />, label: 'Slideshow PRES', public: false, color: 'text-white' },
+    { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Global Admin', public: false, superOnly: true, color: 'text-red-500' }
   ];
 
   const visibleNavItems = navItems.filter(item => {
@@ -389,12 +376,9 @@ const App: React.FC = () => {
 
   const groupedNavItems = useMemo(() => {
     const groups = [
-      { id: 'pilotage', label: 'Pilotage & Monitoring', icon: <LayoutDashboard size={18} />, items: ['pulse', 'goal-pulse', 'pres-slideshow', 'summary', 'cockpit', 'map'] },
-      { id: 'prelevement', label: 'Collecte & Prélèvement', icon: <Activity size={18} />, items: ['entry', 'recap', 'collection-planning', 'capacity-planning', 'forecasting', 'site-focus', 'history', 'weekly', 'evolution', 'performance'] },
-      { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
-      { id: 'gts', label: 'GTS', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison'] },
-      { id: 'stock', label: 'Gestion des Stocks', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'administration', label: 'Rapports & Admin', icon: <ShieldCheck size={18} />, items: ['ebook', 'global-report', 'contact', 'personnel', 'administration'] }
+      { id: 'pilotage', label: 'Intelligence & Pilotage', icon: <Brain size={18} />, items: ['pulse', 'goal-pulse', 'cockpit'] },
+      { id: 'prelevement', label: 'Centre d\'Opérations', icon: <Activity size={18} />, items: ['entry', 'recap', 'gts', 'stock-summary', 'history', 'map'] },
+      { id: 'systeme', label: 'Système & Admin', icon: <ShieldCheck size={18} />, items: ['administration', 'pres-slideshow'] }
     ];
 
     return groups.map(group => ({
@@ -431,6 +415,11 @@ const App: React.FC = () => {
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
+  const navigateToSite = (siteName: string) => {
+    setSelectedSite(siteName);
+    setActiveTab('site-focus');
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('dsd_user');
     setCurrentUser(null);
@@ -442,43 +431,127 @@ const App: React.FC = () => {
       const dyn = dynamicSites.find(ds => ds.code === s.code);
       return dyn ? { ...s, manager: dyn.manager, email: dyn.email, phone: dyn.phone } : s;
     });
-  }, [dynamicSites]);
+  }, [dynamicSites, dynamicSites]);
 
   return (
-    <div className="flex min-h-screen bg-[#F1F5F9] bg-grid-slate-100">
+    <div className="flex min-h-screen bg-magical font-sans text-slate-200">
+      <AnimatePresence>
+        {isInitializing && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center justify-center p-10 overflow-hidden text-white"
+          >
+            <div className="absolute inset-0 opacity-30">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-orange-600/20 blur-[160px] rounded-full animate-pulse-soft" />
+              <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-sky-600/10 blur-[140px] rounded-full animate-pulse-soft" style={{ animationDelay: '1s' }} />
+            </div>
+            
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 1, ease: "backOut" }}
+              className="relative z-10 flex flex-col items-center gap-10 text-white"
+            >
+              <div className="w-28 h-28 bg-gradient-to-br from-orange-500 to-red-700 rounded-[2.5rem] flex items-center justify-center shadow-[0_0_80px_rgba(249,115,22,0.4)] animate-float border border-white/20">
+                <Activity className="text-white" size={56} />
+              </div>
+              <div className="text-center space-y-4">
+                <h1 className="text-5xl font-display font-black tracking-tighter uppercase text-white leading-none tracking-[-0.05em]">HEMO-STATS</h1>
+                <div className="flex items-center justify-center gap-6">
+                   <div className="h-[1px] w-16 bg-white/10" />
+                   <span className="text-[11px] font-black uppercase tracking-[0.8em] text-orange-500 whitespace-nowrap">v5.0 MAGICAL INTELLIGENCE</span>
+                   <div className="h-[1px] w-16 bg-white/10" />
+                </div>
+              </div>
+              
+              <div className="mt-16 flex flex-col items-center gap-6">
+                 <div className="w-64 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 2.5, ease: "easeInOut" }}
+                      className="h-full bg-gradient-to-r from-orange-600 to-amber-400"
+                    />
+                 </div>
+                 <div className="flex flex-col items-center gap-2">
+                    <span className="text-[9px] font-black uppercase tracking-[0.5em] text-white/40 animate-pulse">Éveil de l'intelligence artificielle...</span>
+                    <span className="text-[7px] font-mono text-white/20 uppercase tracking-widest">Connectivité satellite établie</span>
+                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex-1 flex min-h-screen bg-grid-white/[0.02] overflow-hidden">
       {/* SIDEBAR DESKTOP */}
-      <aside className="hidden lg:flex flex-col w-80 bg-slate-950 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/5">
-        <div className="p-10 flex items-center gap-5 border-b border-white/5">
-          <div className="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-float">
-            <Activity className="text-white" size={28} />
+      <aside className="hidden lg:flex flex-col w-80 neo-blur bg-slate-950/40 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/10 relative custom-scrollbar">
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-600/10 via-transparent to-sky-600/5 pointer-events-none" />
+        <div className="p-10 flex flex-col gap-8 border-b border-white/5 relative">
+          <div className="flex items-center gap-5 group cursor-pointer" onClick={() => setActiveTab('pulse')}>
+            <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-700 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.3)] group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 border border-white/20">
+              <Activity className="text-white text-glow-orange" size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-display font-black tracking-tighter uppercase text-white leading-none">HEMO-STATS</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-orange-500/80">Magical v5.0</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-display font-black tracking-tighter uppercase text-white leading-none">HEMO-STATS</h1>
-          </div>
+          
+          <button 
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="w-full flex items-center justify-between px-5 py-4 glass-card rounded-2xl transition-all duration-300 group hover:border-orange-500/30"
+          >
+            <div className="flex items-center gap-4">
+              <Search size={16} className="text-slate-500 group-hover:text-orange-400 transition-colors" />
+              <span className="text-[10px] font-display font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-200">Recherche</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+               <span className="px-1.5 py-0.5 bg-white/5 rounded-md text-[8px] font-mono text-slate-600 border border-white/5">⌘</span>
+               <span className="px-1.5 py-0.5 bg-white/5 rounded-md text-[8px] font-mono text-slate-600 border border-white/5">K</span>
+            </div>
+          </button>
         </div>
 
-        <nav className="flex-1 p-8 space-y-10">
+        <nav className="flex-1 p-8 space-y-12 relative">
           {groupedNavItems.map((group) => (
-            <div key={group.id} className="space-y-4">
-              <div className="flex items-center justify-between px-4">
-                <span className="text-[10px] font-display font-black uppercase tracking-[0.25em] text-slate-500">{group.label}</span>
-                <div className="w-10 h-[1px] bg-white/10" />
+            <div key={group.id} className="space-y-6">
+              <div className="flex items-center gap-4 px-4">
+                <div className="w-8 h-[1px] bg-white/10" />
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.4em] text-slate-600">{group.label}</span>
               </div>
-              <div className="space-y-1.5">
-                {group.navItems.map((item) => {
+              <div className="grid grid-cols-1 gap-2">
+                {group.navItems.map((item: any) => {
                   const isActive = activeTab === item.id;
                   return (
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id as AppTab)}
-                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white text-slate-950 shadow-2xl shadow-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                      className={`w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white/10 text-white shadow-[0_0_40px_rgba(0,0,0,0.3)] ring-1 ring-white/10' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
                     >
-                      <span className={`${isActive ? 'text-slate-950' : 'text-slate-500 group-hover:text-white transition-colors'}`}>{item.icon}</span>
-                      <span className="text-[11px] font-display font-bold uppercase tracking-widest">{item.label}</span>
                       {isActive && (
                         <motion.div 
-                          layoutId="sidebar-active" 
-                          className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                          layoutId="active-bg"
+                          className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent pointer-events-none"
+                        />
+                      )}
+                      
+                      <span className={`transition-all duration-700 ${isActive ? (item.color || 'text-white') + ' scale-110 drop-shadow-[0_0_12px_currentColor]' : 'text-slate-600 group-hover:text-slate-300'}`}>
+                        {item.icon}
+                      </span>
+                      <span className={`text-[11px] font-display font-bold uppercase tracking-[0.2em] relative z-10 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`}>
+                        {item.label}
+                      </span>
+                      
+                      {isActive && (
+                        <motion.div 
+                          layoutId="sidebar-active-indicator" 
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_20px_rgba(249,115,22,1)]" 
                         />
                       )}
                     </button>
@@ -489,19 +562,22 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        <div className="p-8 border-t border-white/5">
-          <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 backdrop-blur-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-orange-400">
-                <Clock size={16} />
+        <div className="p-10 border-t border-white/5">
+          <div className="glass-card rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden group">
+            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:opacity-10 transition-opacity rotate-12 group-hover:rotate-0 duration-700">
+               <Zap size={80} className="text-orange-500" />
+            </div>
+            <div className="flex items-center gap-5 mb-6 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 border border-orange-500/20">
+                <Clock size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-500">Dernière Synchronisation</span>
-                <span className="text-[10px] font-mono font-bold text-white">{getFullSyncTime()}</span>
+                <span className="text-[9px] font-display font-black uppercase tracking-widest text-slate-500">Flux de Données</span>
+                <span className="text-[11px] font-mono font-bold text-white tracking-widest">{getFullSyncTime()}</span>
               </div>
             </div>
-            <p className="text-[9px] font-medium text-slate-500 leading-relaxed">
-              Système de monitoring en temps réel connecté aux flux nationaux.
+            <p className="text-[10px] font-medium text-slate-500 leading-relaxed relative z-10">
+              Surveillance continue des banques de sang nationales. Intelligence prédictive activée.
             </p>
           </div>
         </div>
@@ -532,18 +608,29 @@ const App: React.FC = () => {
             </div>
 
             <div className="hidden lg:flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <button 
+                  onClick={() => setActiveTab('pulse')}
+                  className="text-[10px] font-display font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                >
+                  HEMO-STATS
+                </button>
+                <ChevronDown size={10} className="text-slate-300 -rotate-90" />
+                <span className="text-[10px] font-display font-black text-orange-600 uppercase tracking-widest">
+                  {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.label || 'Pilotage'}
+                </span>
+                {selectedSite && (
+                  <>
+                    <ChevronDown size={10} className="text-slate-300 -rotate-90" />
+                    <span className="text-[10px] font-display font-black text-emerald-600 uppercase tracking-widest">
+                      {selectedSite}
+                    </span>
+                  </>
+                )}
+              </div>
               <h2 className="text-2xl font-display font-black uppercase tracking-tighter text-slate-950">
                 {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.navItems.find(i => i.id === activeTab)?.label || 'Cockpit'}
               </h2>
-              <div className="flex items-center gap-3 mt-1.5">
-                <p className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-widest">
-                  {getRelativeSyncTime()}
-                </p>
-                <div className="w-1 h-1 rounded-full bg-slate-300" />
-                <p className="text-[11px] font-mono font-medium text-orange-500">
-                  {getFullSyncTime()}
-                </p>
-              </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -655,7 +742,7 @@ const App: React.FC = () => {
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="page-transition"
                 >
-                  {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} setActiveTab={setActiveTab} />}
+                  {activeTab === 'pulse' && <PulsePerformance data={filteredData} user={currentUser} onLoginClick={() => setShowLogin(true)} isConnected={!!currentUser} branding={branding} setActiveTab={setActiveTab} onSiteSelect={setSelectedSite} />}
                   {activeTab === 'goal-pulse' && <GoalPulseView data={filteredData} branding={branding} />}
                   {activeTab === 'contact' && <ContactsView sites={effectiveSitesList} />}
                   {currentUser && (
@@ -665,12 +752,12 @@ const App: React.FC = () => {
                       {activeTab === 'cockpit' && <VisualDashboard data={filteredData} setActiveTab={setActiveTab} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'map' && <DistributionMapView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'entry' && <DataEntryForm scriptUrl={scriptUrl} data={filteredData} user={currentUser} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} onOptimisticUpdate={injectOptimisticData} onCloudSyncChange={setIsCloudSyncing} />}
-                      {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} />}
-                      {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'site-focus' && <SiteSynthesisView data={filteredData} user={currentUser} sites={effectiveSitesList} branding={branding} selectedSite={selectedSite} onSiteSelect={setSelectedSite} />}
+                      {activeTab === 'history' && <DetailedHistoryView data={filteredData} user={currentUser} sites={effectiveSitesList} onSiteClick={navigateToSite} />}
                       {activeTab === 'weekly' && <WeeklyView data={filteredData} user={currentUser} branding={branding} />}
                       {activeTab === 'evolution' && <EvolutionView data={filteredData} user={currentUser} branding={branding} />}
-                      {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
-                      {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} />}
+                      {activeTab === 'recap' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="collecte" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} onSiteClick={navigateToSite} />}
+                      {activeTab === 'recap-dist' && <RecapView data={filteredData} user={currentUser} sites={effectiveSitesList} initialMode="distribution" branding={branding} situationTime={getSituationTime()} setActiveTab={setActiveTab} onSiteClick={navigateToSite} />}
                       {activeTab === 'distribution-detailed' && <DistributionDetailedSynthesisView data={filteredData} branding={branding} />}
                       {activeTab === 'distribution-stock' && <DistributionStockView data={filteredData} user={currentUser} />}
                       {activeTab === 'gts' && <GtsView data={filteredData} branding={branding} />}
@@ -678,14 +765,14 @@ const App: React.FC = () => {
                       {activeTab === 'gts-comparison' && <GtsComparisonView data={filteredData} branding={branding} />}
                       {activeTab === 'collection-planning' && <CollectionPlanningView data={filteredData} branding={branding} />}
                       {activeTab === 'stock-summary' && <StockSummaryView data={filteredData} setActiveTab={setActiveTab} branding={branding} situationTime={getSituationTime()} />}
-                      {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} />}
+                      {activeTab === 'stock' && <StockView data={filteredData} user={currentUser} lastSync={lastSync} onSyncRequest={() => handleSync(true, true)} situationTime={getSituationTime()} onSiteClick={navigateToSite} />}
                       {activeTab === 'stock-focus' && <StockAnalysisFocusView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
                       {activeTab === 'stock-detailed' && <StockDetailedSynthesisView data={filteredData} branding={branding} situationTime={getSituationTime()} />}
                       {activeTab === 'stock-synthesis' && <StockSynthesisView data={filteredData} user={currentUser} situationTime={getSituationTime()} />}
                       {activeTab === 'stock-planning' && <StockPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} situationTime={getSituationTime()} />}
                       {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'forecasting' && <ForecastingView data={filteredData} user={currentUser} />}
-                      {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
+                      {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} onSiteClick={navigateToSite} />}
                       {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                       {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                       {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
@@ -735,6 +822,11 @@ const App: React.FC = () => {
         sites={effectiveSitesList}
         onSiteSelect={handleSiteSelect}
         syncTime={getFullSyncTime()}
+      />
+      <AIAssistantOverlay 
+        data={filteredData} 
+        activeTab={activeTab} 
+        onNavigate={setActiveTab} 
       />
       <InstallPrompt />
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] glass-nav rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
@@ -876,6 +968,7 @@ const App: React.FC = () => {
         </div>
       )}
       {showLogin && <LoginView onClose={() => setShowLogin(false)} onLogin={setCurrentUser} scriptUrl={scriptUrl} sheetUrl={sheetInput} sites={effectiveSitesList} />}
+      </div>
     </div>
   );
 };
