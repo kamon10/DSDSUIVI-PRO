@@ -969,15 +969,15 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
               <table className="w-full border-collapse text-[11px] font-bold text-slate-950 min-w-[950px]">
               <thead className="sticky top-0 z-20">
                 <tr className="bg-slate-950 text-white h-14">
-                  <th className="px-4 py-2 uppercase tracking-widest text-left w-[120px] font-black text-[9px] border border-white/20">PRES / RÉGION</th>
-                  <th className="px-4 py-2 uppercase tracking-widest text-left w-[220px] font-black text-[9px] border border-white/20">LIBELLÉ SITE</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[60px] font-black text-[9px] border border-white/20">FIXE</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[60px] font-black text-[9px] border border-white/20">MOB.</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[90px] font-black text-[9px] border border-white/20 bg-orange-600/20">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[90px] font-black text-[9px] border border-white/20 bg-blue-600/20">ENCODÉ GTS</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[90px] font-black text-[9px] border border-white/20">MOIS</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[100px] font-black text-[9px] border border-white/20">OBJECTIF/M</th>
-                  <th className="px-2 py-2 uppercase tracking-widest text-center w-[80px] font-black text-[9px] border border-white/20">TAUX/M</th>
+                  <th className="px-4 py-3 uppercase tracking-widest text-left w-[120px] font-black text-[10px] border border-slate-700">PRES / RÉGION</th>
+                  <th className="px-4 py-3 uppercase tracking-widest text-left w-[220px] font-black text-[10px] border border-slate-700">LIBELLÉ SITE</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[60px] font-black text-[10px] border border-slate-700">FIXE</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[60px] font-black text-[10px] border border-slate-700">MOB.</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[90px] font-black text-[10px] border border-slate-700 bg-orange-600/30 text-orange-200">{isPeriodMode ? 'TOTAL' : 'TOTAL JOUR'}</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[90px] font-black text-[10px] border border-slate-700 bg-blue-600/30 text-blue-200">ENCODÉ GTS</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[90px] font-black text-[10px] border border-slate-700">MOIS</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[100px] font-black text-[10px] border border-slate-700">OBJECTIF/M</th>
+                  <th className="px-2 py-3 uppercase tracking-widest text-center w-[80px] font-black text-[10px] border border-slate-700">TAUX/M</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1038,40 +1038,40 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                                 {site.name}
                               </button>
                             </td>
-                            <td className="px-2 py-2 text-center text-slate-600 font-black font-mono border border-slate-200">{site.fixe}</td>
-                            <td className="px-2 py-2 text-center text-slate-600 font-black font-mono border border-slate-200">{site.mobile}</td>
-                            <td className="px-2 py-2 text-center font-mono font-black text-[12px] border border-slate-200 bg-orange-50/10 text-blue-600">{site.totalJour}</td>
-                            <td className={`px-2 py-2 text-center font-mono font-black text-[12px] border border-slate-200 bg-blue-50/20 ${site.gts === site.totalJour ? 'text-green-600' : 'text-orange-600'}`}>{site.gts}</td>
-                            <td className="px-2 py-2 text-center text-slate-950 text-[12px] font-black font-mono border border-slate-200">{site.totalMois.toLocaleString()}</td>
-                            <td className="px-2 py-2 text-center text-slate-400 text-[12px] font-black font-mono border border-slate-200">{site.objMensuel.toLocaleString()}</td>
-                            <td className={`px-2 py-2 text-center font-mono font-black text-[13px] border border-slate-200 ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
+                            <td className="px-2 py-2 text-center text-slate-800 font-extrabold font-mono border border-slate-200">{site.fixe}</td>
+                            <td className="px-2 py-2 text-center text-slate-800 font-extrabold font-mono border border-slate-200">{site.mobile}</td>
+                            <td className="px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-blue-50/10 text-blue-600 underline decoration-blue-200 underline-offset-4">{site.totalJour}</td>
+                            <td className={`px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-orange-50/10 ${site.gts === site.totalJour ? 'text-emerald-500' : 'text-orange-500'}`}>{site.gts}</td>
+                            <td className="px-2 py-2 text-center text-slate-950 text-[14px] font-black font-mono border border-slate-200">{site.totalMois.toLocaleString()}</td>
+                            <td className="px-2 py-2 text-center text-slate-400 text-[12px] font-bold font-mono border border-slate-200">{site.objMensuel.toLocaleString()}</td>
+                            <td className={`px-2 py-2 text-center font-mono font-black text-[15px] border border-slate-200 ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
                           </tr>
                         );
                       })}
-                      <tr className="font-black h-12 bg-slate-50 text-slate-950 border border-slate-300 shadow-sm relative z-10">
-                        <td className="px-4 py-2 uppercase text-right pr-4 italic text-slate-600 border border-slate-200 text-[10px] font-black">TOTAL {region.name}</td>
-                        <td className="px-2 py-2 text-center font-black font-mono text-[12px] border border-slate-200">{region.fixePres}</td>
-                        <td className="px-2 py-2 text-center font-black font-mono text-[12px] border border-slate-200">{region.mobilePres}</td>
-                        <td className="px-2 py-2 text-center text-[14px] font-mono font-black border border-slate-200 bg-orange-50 text-blue-600">{region.totalJourPres}</td>
-                        <td className={`px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-blue-50 ${region.gtsPres === region.totalJourPres ? 'text-green-600' : 'text-orange-600'}`}>{region.gtsPres}</td>
-                        <td className="px-2 py-2 text-center text-[14px] font-black font-mono border border-slate-200">{region.totalMoisPres.toLocaleString()}</td>
-                        <td className="px-2 py-2 text-center text-slate-500 text-[12px] font-black font-mono border border-slate-200">{region.objMensPres.toLocaleString()}</td>
-                        <td className={`px-2 py-2 text-center font-mono font-black text-[16px] border border-slate-200 ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
+                      <tr className="font-black h-16 bg-slate-800 text-white border border-slate-950 shadow-xl relative z-10">
+                        <td className="px-4 py-3 uppercase text-right pr-6 italic text-slate-300 border border-slate-700 text-[11px] font-black">TOTAL {region.name}</td>
+                        <td className="px-2 py-3 text-center font-black font-mono text-[14px] border border-slate-700">{region.fixePres}</td>
+                        <td className="px-2 py-3 text-center font-black font-mono text-[14px] border border-slate-700">{region.mobilePres}</td>
+                        <td className="px-2 py-3 text-center text-[18px] font-mono font-black border border-slate-700 bg-blue-900/40 text-blue-200 shadow-inner">{region.totalJourPres}</td>
+                        <td className={`px-2 py-3 text-center font-mono font-black text-[18px] border border-slate-700 bg-orange-900/40 ${region.gtsPres === region.totalJourPres ? 'text-emerald-400' : 'text-orange-300'}`}>{region.gtsPres}</td>
+                        <td className="px-2 py-3 text-center text-[18px] font-black font-mono border border-slate-700 text-white">{region.totalMoisPres.toLocaleString()}</td>
+                        <td className="px-2 py-3 text-center text-slate-400 text-[14px] font-black font-mono border border-slate-700">{region.objMensPres.toLocaleString()}</td>
+                        <td className={`px-2 py-3 text-center font-mono font-black text-[20px] border border-slate-700 ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
                       </tr>
                     </React.Fragment>
                   );
                 }) : null}
               </tbody>
-              <tfoot className="bg-white text-slate-950 font-black border-t-8 border-slate-950">
-                <tr className="h-24">
-                  <td colSpan={2} className="px-8 py-4 text-4xl uppercase tracking-tighter bg-slate-100 border border-slate-300">TOTAL NATIONAL</td>
-                  <td className="px-2 py-2 text-center text-3xl font-black font-mono bg-white border border-slate-200">{nationalTotals.fixe.toLocaleString()}</td>
-                  <td className="px-2 py-2 text-center text-3xl font-black font-mono bg-white border border-slate-200">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className="px-2 py-2 text-center text-6xl font-mono font-black border border-slate-300 bg-orange-50 text-blue-600">{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`px-2 py-2 text-center text-6xl font-mono font-black border border-slate-300 bg-blue-50 ${nationalTotals.gts === nationalTotals.jour ? 'text-green-600' : 'text-orange-600'}`}>{nationalTotals.gts.toLocaleString()}</td>
-                  <td className="px-2 py-2 text-center text-3xl font-black font-mono bg-white border border-slate-200">{nationalTotals.mois.toLocaleString()}</td>
-                  <td className="px-2 py-2 text-center text-3xl font-black font-mono text-slate-300 bg-white border border-slate-200">{nationalTotals.objectif.toLocaleString()}</td>
-                  <td className={`px-2 py-2 text-center text-4xl font-mono font-black border border-slate-200 ${getPerfColor(nationalTotals.taux)}`}>{nationalTotals.taux.toFixed(0)}%</td>
+              <tfoot className="bg-slate-950 text-white font-black border-t-8 border-slate-950 text-glow-orange">
+                <tr className="h-32">
+                  <td colSpan={2} className="px-10 py-6 text-5xl uppercase tracking-tighter bg-slate-900 border border-slate-700 shadow-inner">TOTAL NATIONAL</td>
+                  <td className="px-3 py-3 text-center text-4xl font-black font-mono border border-slate-700 bg-slate-800">{nationalTotals.fixe.toLocaleString()}</td>
+                  <td className="px-3 py-3 text-center text-4xl font-black font-mono border border-slate-700 bg-slate-800">{nationalTotals.mobile.toLocaleString()}</td>
+                  <td className="px-3 py-3 text-center text-8xl font-mono font-black border border-slate-700 bg-blue-600/40 text-blue-100 shadow-2xl">{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`px-3 py-3 text-center text-8xl font-mono font-black border border-slate-700 bg-orange-600/40 ${nationalTotals.gts === nationalTotals.jour ? 'text-emerald-300' : 'text-orange-200'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className="px-3 py-3 text-center text-4xl font-black font-mono border border-slate-700 bg-slate-800">{nationalTotals.mois.toLocaleString()}</td>
+                  <td className="px-3 py-3 text-center text-4xl font-black font-mono text-white/20 border border-slate-700 bg-slate-800">{nationalTotals.objectif.toLocaleString()}</td>
+                  <td className={`px-3 py-3 text-center text-6xl font-mono font-black border border-slate-700 bg-slate-800 ${getPerfColor(nationalTotals.taux)}`}>{nationalTotals.taux.toFixed(0)}%</td>
                 </tr>
               </tfoot>
               </table>
