@@ -1010,8 +1010,8 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                               <td className="px-4 py-2 uppercase text-right pr-4 italic text-slate-800 border border-slate-200">SOUS-TOTAL ABIDJAN VILLE</td>
                               <td className="px-2 py-2 text-center text-slate-900 font-mono border border-slate-200">{region.abidjanVille.fixe}</td>
                               <td className="px-2 py-2 text-center text-slate-900 font-mono border border-slate-200">{region.abidjanVille.mobile}</td>
-                              <td className={`px-2 py-2 text-center text-[13px] font-mono font-black border border-slate-200 bg-orange-50 ${region.abidjanVille.jour === region.abidjanVille.gts ? 'text-orange-600' : 'text-red-600'}`}>{region.abidjanVille.jour}</td>
-                              <td className={`px-2 py-2 text-center text-[13px] font-mono font-black border border-slate-200 bg-blue-50 ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-blue-600' : 'text-red-600'}`}>{region.abidjanVille.gts}</td>
+                              <td className="px-2 py-2 text-center text-[13px] font-mono font-black border border-slate-200 bg-orange-50 text-blue-600">{region.abidjanVille.jour}</td>
+                              <td className={`px-2 py-2 text-center text-[13px] font-mono font-black border border-slate-200 bg-blue-50 ${region.abidjanVille.gts === region.abidjanVille.jour ? 'text-green-600' : 'text-orange-600'}`}>{region.abidjanVille.gts}</td>
                               <td className="px-2 py-2 text-center text-slate-950 text-[13px] font-mono border border-slate-200">{region.abidjanVille.mois.toLocaleString()}</td>
                               <td className="px-2 py-2 text-center text-slate-600 text-[13px] font-mono border border-slate-200">{region.abidjanVille.obj.toLocaleString()}</td>
                               <td className={`px-2 py-2 text-center font-black text-[14px] font-mono border border-slate-200 ${getPerfColor(region.abidjanVille.taux)}`}>{region.abidjanVille.taux.toFixed(0)}%</td>
@@ -1040,8 +1040,8 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                             </td>
                             <td className="px-2 py-2 text-center text-slate-600 font-black font-mono border border-slate-200">{site.fixe}</td>
                             <td className="px-2 py-2 text-center text-slate-600 font-black font-mono border border-slate-200">{site.mobile}</td>
-                            <td className={`px-2 py-2 text-center font-mono font-black text-[12px] border border-slate-200 bg-orange-50/10 ${site.totalJour === site.gts ? 'text-orange-600' : 'text-red-600'}`}>{site.totalJour}</td>
-                            <td className={`px-2 py-2 text-center font-mono font-black text-[12px] border border-slate-200 bg-blue-50/20 ${site.gts === site.totalJour ? 'text-blue-600' : 'text-red-600'}`}>{site.gts}</td>
+                            <td className="px-2 py-2 text-center font-mono font-black text-[12px] border border-slate-200 bg-orange-50/10 text-blue-600">{site.totalJour}</td>
+                            <td className={`px-2 py-2 text-center font-mono font-black text-[12px] border border-slate-200 bg-blue-50/20 ${site.gts === site.totalJour ? 'text-green-600' : 'text-orange-600'}`}>{site.gts}</td>
                             <td className="px-2 py-2 text-center text-slate-950 text-[12px] font-black font-mono border border-slate-200">{site.totalMois.toLocaleString()}</td>
                             <td className="px-2 py-2 text-center text-slate-400 text-[12px] font-black font-mono border border-slate-200">{site.objMensuel.toLocaleString()}</td>
                             <td className={`px-2 py-2 text-center font-mono font-black text-[13px] border border-slate-200 ${getPerfColor(site.achievement)}`}>{site.achievement.toFixed(0)}%</td>
@@ -1052,8 +1052,8 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                         <td className="px-4 py-2 uppercase text-right pr-4 italic text-slate-600 border border-slate-200 text-[10px] font-black">TOTAL {region.name}</td>
                         <td className="px-2 py-2 text-center font-black font-mono text-[12px] border border-slate-200">{region.fixePres}</td>
                         <td className="px-2 py-2 text-center font-black font-mono text-[12px] border border-slate-200">{region.mobilePres}</td>
-                        <td className={`px-2 py-2 text-center text-[14px] font-mono font-black border border-slate-200 bg-orange-50 ${region.totalJourPres === region.gtsPres ? 'text-orange-600' : 'text-rose-600'}`}>{region.totalJourPres}</td>
-                        <td className={`px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-blue-50 ${region.gtsPres === region.totalJourPres ? 'text-blue-600' : 'text-rose-600'}`}>{region.gtsPres}</td>
+                        <td className="px-2 py-2 text-center text-[14px] font-mono font-black border border-slate-200 bg-orange-50 text-blue-600">{region.totalJourPres}</td>
+                        <td className={`px-2 py-2 text-center font-mono font-black text-[14px] border border-slate-200 bg-blue-50 ${region.gtsPres === region.totalJourPres ? 'text-green-600' : 'text-orange-600'}`}>{region.gtsPres}</td>
                         <td className="px-2 py-2 text-center text-[14px] font-black font-mono border border-slate-200">{region.totalMoisPres.toLocaleString()}</td>
                         <td className="px-2 py-2 text-center text-slate-500 text-[12px] font-black font-mono border border-slate-200">{region.objMensPres.toLocaleString()}</td>
                         <td className={`px-2 py-2 text-center font-mono font-black text-[16px] border border-slate-200 ${getPerfColor(regTaux)}`}>{regTaux.toFixed(0)}%</td>
@@ -1067,8 +1067,8 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                   <td colSpan={2} className="px-8 py-4 text-4xl uppercase tracking-tighter bg-slate-100 border border-slate-300">TOTAL NATIONAL</td>
                   <td className="px-2 py-2 text-center text-3xl font-black font-mono bg-white border border-slate-200">{nationalTotals.fixe.toLocaleString()}</td>
                   <td className="px-2 py-2 text-center text-3xl font-black font-mono bg-white border border-slate-200">{nationalTotals.mobile.toLocaleString()}</td>
-                  <td className={`px-2 py-2 text-center text-6xl font-mono font-black border border-slate-300 bg-orange-50 ${nationalTotals.jour === nationalTotals.gts ? 'text-orange-600' : 'text-red-600'}`}>{nationalTotals.jour.toLocaleString()}</td>
-                  <td className={`px-2 py-2 text-center text-6xl font-mono font-black border border-slate-300 bg-blue-50 ${nationalTotals.gts === nationalTotals.jour ? 'text-blue-600' : 'text-red-600'}`}>{nationalTotals.gts.toLocaleString()}</td>
+                  <td className="px-2 py-2 text-center text-6xl font-mono font-black border border-slate-300 bg-orange-50 text-blue-600">{nationalTotals.jour.toLocaleString()}</td>
+                  <td className={`px-2 py-2 text-center text-6xl font-mono font-black border border-slate-300 bg-blue-50 ${nationalTotals.gts === nationalTotals.jour ? 'text-green-600' : 'text-orange-600'}`}>{nationalTotals.gts.toLocaleString()}</td>
                   <td className="px-2 py-2 text-center text-3xl font-black font-mono bg-white border border-slate-200">{nationalTotals.mois.toLocaleString()}</td>
                   <td className="px-2 py-2 text-center text-3xl font-black font-mono text-slate-300 bg-white border border-slate-200">{nationalTotals.objectif.toLocaleString()}</td>
                   <td className={`px-2 py-2 text-center text-4xl font-mono font-black border border-slate-200 ${getPerfColor(nationalTotals.taux)}`}>{nationalTotals.taux.toFixed(0)}%</td>
