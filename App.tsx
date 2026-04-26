@@ -32,7 +32,6 @@ const GtsView = lazy(() => import('./components/GtsView.tsx').then(m => ({ defau
 const GtsSynthesis = lazy(() => import('./components/GtsSynthesis.tsx').then(m => ({ default: m.GtsSynthesis })));
 const GtsComparisonView = lazy(() => import('./components/GtsComparisonView.tsx').then(m => ({ default: m.GtsComparisonView })));
 const CollectionPlanningView = lazy(() => import('./components/CollectionPlanningView.tsx').then(m => ({ default: m.CollectionPlanningView })));
-const EbookView = lazy(() => import('./components/EbookView.tsx').then(m => ({ default: m.EbookView })));
 const PersonnelManagement = lazy(() => import('./components/PersonnelManagement.tsx').then(m => ({ default: m.PersonnelManagement })));
 const PresSlideshow = lazy(() => import('./components/PresSlideshow.tsx'));
 
@@ -375,7 +374,6 @@ const App: React.FC = () => {
     { id: 'evolution', icon: <LineChart size={18} />, label: 'Évol.', public: false },
     { id: 'performance', icon: <BarChart3 size={18} />, label: 'Rang', public: false },
     { id: 'contact', icon: <BookOpen size={18} />, label: 'Contact', public: true },
-    { id: 'ebook', icon: <Book size={18} />, label: 'E-Book Hebdo', public: false },
     { id: 'global-report', icon: <FileText size={18} />, label: 'Rapport Global', public: false },
     { id: 'personnel', icon: <UserCheck size={18} />, label: 'Personnel', public: false, superOnly: true },
     { id: 'administration', icon: <ShieldCheck size={18} />, label: 'Admin', public: false, superOnly: true }
@@ -395,7 +393,7 @@ const App: React.FC = () => {
       { id: 'distribution', label: 'Distribution', icon: <Truck size={18} />, items: ['recap-dist', 'distribution-detailed', 'distribution-stock'] },
       { id: 'gts', label: 'GTS', icon: <Truck size={18} />, items: ['gts', 'gts-synthesis', 'gts-comparison'] },
       { id: 'stock', label: 'Gestion des Stocks', icon: <Package size={18} />, items: ['stock-summary', 'stock', 'stock-focus', 'stock-detailed', 'stock-synthesis', 'stock-planning'] },
-      { id: 'administration', label: 'Rapports & Admin', icon: <ShieldCheck size={18} />, items: ['ebook', 'global-report', 'contact', 'personnel', 'administration'] }
+      { id: 'administration', label: 'Rapports & Admin', icon: <ShieldCheck size={18} />, items: ['global-report', 'contact', 'personnel', 'administration'] }
     ];
 
     return groups.map(group => ({
@@ -702,7 +700,6 @@ const App: React.FC = () => {
                       {activeTab === 'capacity-planning' && <CapacityPlanningView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
                       {activeTab === 'forecasting' && <ForecastingView data={filteredData} user={currentUser} />}
                       {activeTab === 'performance' && <PerformanceView data={filteredData} user={currentUser} sites={effectiveSitesList} />}
-                      {activeTab === 'ebook' && <EbookView data={filteredData} user={currentUser} branding={branding} sites={effectiveSitesList} />}
                       {activeTab === 'global-report' && <GlobalSynthesisReportView data={filteredData} user={currentUser} branding={branding} situationTime={getSituationTime()} />}
                       {activeTab === 'personnel' && <PersonnelManagement user={currentUser} />}
                       {activeTab === 'administration' && <AdminUserManagement scriptUrl={scriptUrl} onBrandingChange={updateBranding} currentBranding={branding} sites={effectiveSitesList} onSyncRequest={() => handleSync(true, true)} user={currentUser} />}
