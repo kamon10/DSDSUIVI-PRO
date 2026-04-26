@@ -448,10 +448,10 @@ const App: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-[#F1F5F9] bg-grid-slate-100">
       {/* SIDEBAR DESKTOP */}
-      <aside className="hidden lg:flex flex-col w-80 bg-slate-950 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/5">
-        <div className="p-10 flex items-center gap-5 border-b border-white/5">
-          <div className="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-float">
-            <Activity className="text-white" size={28} />
+      <aside className="hidden lg:flex flex-col w-80 bg-orange-600 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/10">
+        <div className="p-10 flex items-center gap-5 border-b border-white/10">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-white/20 animate-float text-orange-600">
+            <Activity size={28} />
           </div>
           <div>
             <h1 className="text-2xl font-display font-black tracking-tighter uppercase text-white leading-none">HEMO-STATS</h1>
@@ -462,7 +462,7 @@ const App: React.FC = () => {
           {groupedNavItems.map((group) => (
             <div key={group.id} className="space-y-4">
               <div className="flex items-center justify-between px-4">
-                <span className="text-[10px] font-display font-black uppercase tracking-[0.25em] text-slate-500">{group.label}</span>
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.25em] text-orange-100/60">{group.label}</span>
                 <div className="w-10 h-[1px] bg-white/10" />
               </div>
               <div className="space-y-1.5">
@@ -472,14 +472,14 @@ const App: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id as AppTab)}
-                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white text-slate-950 shadow-2xl shadow-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white text-orange-600 shadow-2xl shadow-white/20' : 'text-orange-50 hover:bg-white/10 hover:text-white'}`}
                     >
-                      <span className={`${isActive ? 'text-slate-950' : 'text-slate-500 group-hover:text-white transition-colors'}`}>{item.icon}</span>
+                      <span className={`${isActive ? 'text-orange-600' : 'text-orange-200 group-hover:text-white transition-colors'}`}>{item.icon}</span>
                       <span className="text-[11px] font-display font-bold uppercase tracking-widest">{item.label}</span>
                       {isActive && (
                         <motion.div 
                           layoutId="sidebar-active" 
-                          className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-600 shadow-[0_0_10px_rgba(255,255,255,0.8)]" 
                         />
                       )}
                     </button>
@@ -490,18 +490,18 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        <div className="p-8 border-t border-white/5">
-          <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 backdrop-blur-sm">
+        <div className="p-8 border-t border-white/10">
+          <div className="bg-white/10 rounded-[2rem] p-6 border border-white/10 backdrop-blur-sm">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-orange-400">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
                 <Clock size={16} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-500">Dernière Synchronisation</span>
+                <span className="text-[8px] font-display font-black uppercase tracking-widest text-orange-200">Dernière Synchronisation</span>
                 <span className="text-[10px] font-mono font-bold text-white">{getFullSyncTime()}</span>
               </div>
             </div>
-            <p className="text-[9px] font-medium text-slate-500 leading-relaxed">
+            <p className="text-[9px] font-medium text-orange-100/60 leading-relaxed">
               Système de monitoring en temps réel connecté aux flux nationaux.
             </p>
           </div>
@@ -510,7 +510,7 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-[100] px-4 py-4 lg:px-10 lg:py-6">
-          <div className="max-w-full mx-auto glass-nav rounded-[3rem] px-8 py-5 flex items-center justify-between shadow-3xl min-h-[5.5rem]">
+          <div className="max-w-full mx-auto bg-orange-600 rounded-[3rem] px-8 py-5 flex items-center justify-between shadow-3xl min-h-[5.5rem] border border-white/10">
             <div className="flex items-center gap-5 cursor-pointer lg:hidden" onClick={() => setActiveTab('pulse')}>
                <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center shadow-sm">
                   <img 
@@ -524,68 +524,70 @@ const App: React.FC = () => {
                   />
                </div>
                <div className="flex flex-col">
-                  <span className="font-display font-black text-xl tracking-tighter uppercase text-slate-950 leading-none">HEMO-STATS</span>
+                  <span className="font-display font-black text-xl tracking-tighter uppercase text-white leading-none">HEMO-STATS</span>
                   <div className="flex items-center gap-2 mt-1.5">
-                     <div className={`w-2 h-2 rounded-full ${syncStatus === 'syncing' ? 'bg-orange-500 animate-ping' : syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                     <span className="text-[8px] font-display font-black uppercase tracking-widest text-slate-400">Live Status</span>
+                     <div className={`w-2 h-2 rounded-full bg-white animate-pulse`}></div>
+                     <span className="text-[8px] font-display font-black uppercase tracking-widest text-orange-100">Live Status</span>
                   </div>
                </div>
             </div>
 
             <div className="hidden lg:flex flex-col">
-              <h2 className="text-2xl font-display font-black uppercase tracking-tighter text-slate-950">
+              <h2 className="text-2xl font-display font-black uppercase tracking-tighter text-white">
                 {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.navItems.find(i => i.id === activeTab)?.label || 'Cockpit'}
               </h2>
               <div className="flex items-center gap-3 mt-1.5">
-                <p className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-widest">
+                <p className="text-[11px] font-display font-bold text-orange-100 uppercase tracking-widest">
                   {getRelativeSyncTime()}
                 </p>
-                <div className="w-1 h-1 rounded-full bg-slate-300" />
-                <p className="text-[11px] font-mono font-medium text-orange-500">
+                <div className="w-1 h-1 rounded-full bg-white/20" />
+                <p className="text-[11px] font-mono font-medium text-white font-bold text-glow-orange">
                   {getFullSyncTime()}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <SyncStatus 
-                status={syncStatus}
-                isCloudSyncing={isCloudSyncing}
-                lastSync={lastSync}
-                onSync={(force) => handleSync(true, force)}
-                autoRefresh={autoRefresh}
-                onToggleAutoRefresh={setAutoRefresh}
-              />
+              <div className="bg-white/10 p-1 rounded-2xl border border-white/10">
+                <SyncStatus 
+                  status={syncStatus}
+                  isCloudSyncing={isCloudSyncing}
+                  lastSync={lastSync}
+                  onSync={(force) => handleSync(true, force)}
+                  autoRefresh={autoRefresh}
+                  onToggleAutoRefresh={setAutoRefresh}
+                />
+              </div>
               
               <button 
                 onClick={() => setIsCommandPaletteOpen(true)}
-                className="hidden md:flex items-center gap-4 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 transition-all group shadow-sm"
+                className="hidden md:flex items-center gap-4 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white transition-all group backdrop-blur-sm"
               >
-                <Search size={18} className="group-hover:text-slate-950 transition-colors" />
-                <span className="text-[11px] font-display font-black uppercase tracking-widest">Recherche Intelligente</span>
+                <Search size={18} className="group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-display font-black uppercase tracking-widest">Recherche</span>
                 <div className="flex items-center gap-1.5 ml-6">
-                  <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-mono font-black text-slate-500">⌘</span>
-                  <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-mono font-black text-slate-500">K</span>
+                  <span className="px-2 py-1 bg-white/10 rounded-lg text-[9px] font-mono font-black text-white border border-white/10">⌘</span>
+                  <span className="px-2 py-1 bg-white/10 rounded-lg text-[9px] font-mono font-black text-white border border-white/10">K</span>
                 </div>
               </button>
 
-              <div className="h-10 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
+              <div className="h-10 w-[1px] bg-white/10 mx-2 hidden sm:block" />
 
               {currentUser ? (
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:flex flex-col items-end">
-                    <span className="text-[11px] font-display font-black uppercase tracking-tight text-slate-950 leading-none">
+                    <span className="text-[11px] font-display font-black uppercase tracking-tight text-white leading-none">
                       {currentUser.prenoms} {currentUser.nom}
                     </span>
-                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-orange-600 mt-1.5">
+                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-orange-100 mt-1.5">
                       {currentUser.fonction}
                     </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-xl relative group">
+                  <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-orange-600 shadow-xl relative group">
                     <UserIcon size={20} />
                     <button 
                       onClick={handleLogout}
-                      className="absolute -top-2 -right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
+                      className="absolute -top-2 -right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity active:scale-90 border-2 border-white"
                     >
                       <LogOut size={12} />
                     </button>
@@ -594,17 +596,19 @@ const App: React.FC = () => {
               ) : (
                 <button 
                   onClick={() => setShowLogin(true)} 
-                  className="px-8 py-3 bg-slate-950 text-white rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-95"
+                  className="px-8 py-3 bg-white text-orange-600 rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl hover:bg-orange-50 transition-all active:scale-95"
                 >
                   Connexion
                 </button>
               )}
               
               <div className="hidden sm:flex items-center gap-3">
-                <NotificationManager />
+                <div className="bg-white/10 p-1.5 rounded-2xl border border-white/10">
+                   <NotificationManager />
+                </div>
                 <button 
                   onClick={() => setShowSettings(true)} 
-                  className="p-3 bg-white rounded-2xl border border-slate-200 text-slate-600 shadow-sm hover:bg-slate-50 transition-all"
+                  className="p-3 bg-white/10 rounded-2xl border border-white/10 text-white hover:bg-white/20 transition-all"
                 >
                   <Settings size={20} />
                 </button>
@@ -749,7 +753,7 @@ const App: React.FC = () => {
         syncTime={getFullSyncTime()}
       />
       <InstallPrompt />
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] glass-nav rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-orange-600 rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
              const isOpen = openGroup === group.id;
@@ -758,13 +762,13 @@ const App: React.FC = () => {
                <div key={group.id} className="flex-1">
                  <button 
                    onClick={() => setOpenGroup(isOpen ? null : group.id)}
-                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-slate-950' : 'text-slate-400'}`}
+                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-white' : 'text-orange-100/60'}`}
                  >
-                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-slate-950 text-white shadow-xl' : 'bg-transparent'}`}>
+                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-white text-orange-600 shadow-xl' : 'bg-transparent'}`}>
                     {group.icon}
                    </div>
-                   <span className={`text-[8px] font-display font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-40'}`}>{group.label}</span>
-                   {isActive && !isOpen && <motion.div layoutId="nav-indicator" className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                   <span className={`text-[8px] font-display font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-60'}`}>{group.label}</span>
+                   {isActive && !isOpen && <motion.div layoutId="nav-indicator" className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-white" />}
                  </button>
 
                  <AnimatePresence>
