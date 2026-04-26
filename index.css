@@ -36,6 +36,15 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@keyframes scanline {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(100vh); }
+}
+
+@utility animate-scanline {
+  animation: scanline 4s linear infinite;
+}
+
 @layer base {
   body {
     @apply bg-[#F1F5F9] text-slate-900 font-sans antialiased selection:bg-orange-100 selection:text-orange-900;
