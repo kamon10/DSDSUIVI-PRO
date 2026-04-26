@@ -357,64 +357,44 @@ async function fetchWithTimeout(url: string, options: any = {}, timeout = 60000)
   }
 }
 
-async function fetchTextWithRetry(url: string, options: any = {}, maxRetries = 2) {
-  let lastError = null;
-  for (let i = 0; i <= maxRetries; i++) {
-    try {
-      const response = await fetchWithTimeout(url, options);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return await response.text();
-    } catch (err: any) {
-      lastError = err;
-      if (i < maxRetries) {
-        const delay = 1000 * (i + 1);
-        console.warn(`[SERVER] Fetch attempt ${i+1} failed (${err.message}). Retrying in ${delay}ms...`);
-        await new Promise(r => setTimeout(r, delay));
-      }
-    }
-  }
-  throw lastError;
-}
-
 async function checkDataChanges() {
   try {
     const fetchOptions = {
       headers: { 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/csv,text/plain,application/json,*/*',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Cache-Control': 'no-cache'
       }
     };
 
     console.log("[SERVER] Checking for data changes...");
 
     // Check Collecte
-    try {
-      const collecteText = await fetchTextWithRetry(COLLECTE_URL + "&_t=" + Date.now(), fetchOptions);
-      if (collecteText.trim() && !collecteText.trim().startsWith("<!DOCTYPE")) {
-        if (lastCollecteHash && collecteText !== lastCollecteHash) {
+    const collecteRes = await fetchWithTimeout(COLLECTE_URL + "&_t=" + Date.now(), fetchOptions);
+    if (collecteRes.ok) {
+      const text = await collecteRes.text();
+      if (text.trim() && !text.trim().startsWith("<!DOCTYPE")) {
+        if (lastCollecteHash && text !== lastCollecteHash) {
           console.log("[SERVER] Change detected in Collecte!");
           sendNotificationToAll("Nouvelle entrée : Prélèvements mis à jour", "Les données de collecte ont été actualisées.");
         }
-        lastCollecteHash = collecteText;
+        lastCollecteHash = text;
       }
-    } catch (err: any) {
-      console.warn(`[SERVER] Change check: Failed to fetch Collecte: ${err.message}`);
+    } else {
+      console.warn(`[SERVER] Failed to fetch Collecte: ${collecteRes.status}`);
     }
 
     // Wait 2 seconds before next fetch
     await new Promise(r => setTimeout(r, 2000));
 
     // Check Stock
-    try {
-      const stockText = await fetchTextWithRetry(STOCK_URL + "&_t=" + Date.now(), fetchOptions);
-      if (stockText.trim() && !stockText.trim().startsWith("<!DOCTYPE")) {
+    const stockRes = await fetchWithTimeout(STOCK_URL + "&_t=" + Date.now(), fetchOptions);
+    if (stockRes.ok) {
+      const text = await stockRes.text();
+      if (text.trim() && !text.trim().startsWith("<!DOCTYPE")) {
         // WhatsApp Alert Logic
         const config = getWhatsAppConfig();
-        const totalStock = calculateTotalStock(stockText);
+        const totalStock = calculateTotalStock(text);
         console.log(`[SERVER] Current Total Stock: ${totalStock}`);
 
         if (totalStock > 0 && totalStock < config.alertThreshold) {
@@ -438,17 +418,17 @@ async function checkDataChanges() {
           }
         }
 
-        if (lastStockHash && stockText !== lastStockHash) {
+        if (lastStockHash && text !== lastStockHash) {
           console.log("[SERVER] Change detected in Stock!");
           sendNotificationToAll("Alerte Stock : Changement détecté", "Le niveau des stocks a été mis à jour.");
         }
-        lastStockHash = stockText;
+        lastStockHash = text;
       }
-    } catch (err: any) {
-      console.warn(`[SERVER] Change check: Failed to fetch Stock: ${err.message}`);
+    } else {
+      console.warn(`[SERVER] Failed to fetch Stock: ${stockRes.status}`);
     }
   } catch (err) {
-    console.error("[SERVER] Fatal error in checkDataChanges loop:", err);
+    console.error("[SERVER] Error checking data changes:", err);
   }
 }
 

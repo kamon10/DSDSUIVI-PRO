@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @layer utilities {
@@ -9,79 +9,40 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #fed7aa;
+    background: #e2e8f0;
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #fb923c;
+    background: #cbd5e1;
   }
 
   .text-glow-red {
-    text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+    text-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
   }
   
   .text-glow-orange {
-    text-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
+    text-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
   }
 
-  .text-glow-emerald {
-    text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
-  }
-
-  .bg-grid-orange-100 {
-    background-image: radial-gradient(circle, #fff7ed 1px, transparent 1px);
+  .bg-grid-slate-100 {
+    background-image: radial-gradient(circle, #f1f5f9 1px, transparent 1px);
     background-size: 24px 24px;
-  }
-
-  .mask-fade-b {
-    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-  }
-
-  .bg-magical {
-    background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 0% 100%, rgba(251, 146, 60, 0.2) 0%, transparent 50%),
-                #7c2d12;
-  }
-
-  .glass-card {
-    @apply bg-white/5 border border-white/10 backdrop-blur-3xl;
-    box-shadow: 0 8px 32px 0 rgba(124, 45, 18, 0.37);
-  }
-
-  .text-glow-orange {
-    text-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
-  }
-
-  .neo-blur {
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
   }
 }
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
-  --font-serif: "Playfair Display", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
-    body {
-        font-family: 'Inter', sans-serif;
-        background: radial-gradient(circle at 50% 50%, #9a3412 0%, #7c2d12 100%);
-        background-attachment: fixed;
-        color: #fff7ed;
-        min-height: 100vh;
-        margin: 0;
-        @apply antialiased selection:bg-white/30 selection:text-white;
-    }
+  body {
+    @apply bg-[#F1F5F9] text-slate-900 font-sans antialiased selection:bg-orange-100 selection:text-orange-900;
+  }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
-  }
-
-  .serif {
-    @apply font-serif italic;
   }
 }
 
@@ -93,7 +54,7 @@
   }
 
   .bg-glass-dark {
-    @apply bg-orange-950/85 border border-white/10 shadow-2xl;
+    @apply bg-slate-950/85 border border-white/10 shadow-2xl;
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
   }
@@ -109,11 +70,11 @@
   }
 
   .card-professional {
-    @apply bg-white rounded-[2.5rem] border border-orange-200/60 shadow-[0_4px_20px_rgba(124,45,18,0.03)] hover:shadow-[0_40px_100px_rgba(124,45,18,0.12)] hover:-translate-y-2 transition-all duration-700 overflow-hidden;
+    @apply bg-white rounded-[2.5rem] border border-slate-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 overflow-hidden;
   }
 
   .btn-primary {
-    @apply bg-orange-600 text-white px-8 py-4 rounded-2xl font-display font-black text-[11px] uppercase tracking-[0.2em] hover:bg-orange-700 active:scale-95 transition-all shadow-2xl shadow-orange-900/20;
+    @apply bg-slate-950 text-white px-8 py-4 rounded-2xl font-display font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-800 active:scale-95 transition-all shadow-2xl shadow-slate-900/20;
   }
 
   .page-transition {
@@ -126,13 +87,6 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  }
-
-  .grid-pattern {
-    background-size: 40px 40px;
-    background-image: 
-      linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
   }
 }
 
@@ -155,15 +109,6 @@
   animation: float 6s ease-in-out infinite;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 /* Custom shadow for extra depth */
 .shadow-3xl {
   box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.1);
@@ -180,13 +125,13 @@ table {
 }
 
 th {
-  @apply sticky top-0 z-10 bg-white/90 font-display font-bold text-[11px] uppercase tracking-widest text-orange-400 py-4 px-6 border-b border-orange-100;
+  @apply sticky top-0 z-10 bg-white/90 font-display font-bold text-[11px] uppercase tracking-widest text-slate-400 py-4 px-6 border-b border-slate-100;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 td {
-  @apply py-4 px-6 border-b border-orange-50 text-sm font-medium text-orange-950;
+  @apply py-4 px-6 border-b border-slate-50 text-sm font-medium text-slate-600;
 }
 
 /* Custom Scrollbar for Chrome/Safari */
@@ -200,12 +145,12 @@ td {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(251, 146, 60, 0.2);
+  background: rgba(15, 23, 42, 0.1);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(251, 146, 60, 0.4);
+  background: rgba(15, 23, 42, 0.2);
 }
 
 /* Fix for iOS Safari bottom bar */
