@@ -44,9 +44,9 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
       <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-2xl px-2 sm:px-4 py-2 shadow-sm">
         <div className="flex items-center gap-2 pr-2 sm:pr-3 border-r border-slate-200">
           <div className={`w-2 h-2 rounded-full ${
-            status === 'syncing' || isCloudSyncing ? 'bg-orange-500 animate-pulse' : 
+            status === 'syncing' || isCloudSyncing ? 'bg-emerald-500 animate-pulse' : 
             status === 'error' ? 'bg-rose-500' : 
-            autoRefresh ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]' : 'bg-slate-300'
+            autoRefresh ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'
           }`} />
           <span className="text-[9px] sm:text-[10px] font-display font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
             {isCloudSyncing ? 'Cloud...' : status === 'syncing' ? 'MàJ...' : status === 'error' ? 'Erreur' : autoRefresh ? 'Live' : 'Man.'}
@@ -63,7 +63,7 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
             onClick={() => onSync(true)}
             disabled={status === 'syncing'}
             className={`p-2 rounded-xl transition-all active:scale-90 ${
-              status === 'syncing' ? 'text-orange-500 animate-spin' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
+              status === 'syncing' ? 'text-emerald-500 animate-spin' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
             }`}
             title="Forcer la mise à jour"
           >
@@ -73,7 +73,7 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
           <button
             onClick={() => onToggleAutoRefresh(!autoRefresh)}
             className={`p-2 rounded-xl transition-all active:scale-90 ${
-              autoRefresh ? 'text-orange-500 bg-orange-50' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
+              autoRefresh ? 'text-emerald-500 bg-emerald-50' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
             }`}
             title={autoRefresh ? "Désactiver l'auto-refresh" : "Activer l'auto-refresh (30s)"}
           >
