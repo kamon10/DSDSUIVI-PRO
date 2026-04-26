@@ -149,50 +149,48 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-12">
-      <div className="bg-slate-900 rounded-[2.5rem] p-6 lg:p-10 shadow-2xl text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/10 rounded-full blur-[80px]"></div>
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner ${selectionInfo.isConsolidated ? 'bg-orange-600' : 'bg-white/10'}`}>
-               {selectionInfo.isConsolidated ? <BarChart3 size={24} className="text-white" /> : <Search size={24} className="text-orange-500" />}
+      <div className="bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-6 lg:p-10 shadow-2xl text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 rounded-full blur-[80px]"></div>
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+          <div className="flex items-center gap-4 sm:gap-6 self-start lg:self-center">
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner ${selectionInfo.isConsolidated ? 'bg-emerald-600' : 'bg-white/10'}`}>
+               {selectionInfo.isConsolidated ? <BarChart3 size={24} className="text-white" /> : <Search size={22} className="text-emerald-500" />}
             </div>
             <div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter">
+              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">
                 {selectionInfo.isConsolidated ? "Cockpit de Consolidation" : "Historique de Site"}
               </h2>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Registre Temporel des Activités</p>
+              <p className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Registre Temporel des Activités</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center lg:justify-end gap-3 w-full lg:w-auto">
-            {/* SÉLECTEUR ANNÉE */}
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Calendar size={14} className="text-slate-400" />
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
+          <div className="flex flex-wrap justify-start lg:justify-end gap-2 sm:gap-3 w-full lg:w-auto">
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 sm:px-4 py-2 flex items-center gap-2">
+              <Calendar size={13} className="text-emerald-400" />
+              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="bg-transparent outline-none text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer text-white">
                 {availableYears.map(y => <option key={y} value={y} className="text-slate-900">{y}</option>)}
               </select>
             </div>
             
-            {/* SÉLECTEUR MOIS */}
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2">
-              <Clock size={14} className="text-slate-400" />
-              <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 sm:px-4 py-2 flex items-center gap-2">
+              <Clock size={13} className="text-emerald-400" />
+              <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-transparent outline-none text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer text-white">
                 {availableMonths.map(m => <option key={m} value={m} className="text-slate-900">{MONTHS_FR[m]}</option>)}
               </select>
             </div>
 
             {user?.role !== 'AGENT' && (
-              <div className={`border rounded-xl px-4 py-2 flex items-center gap-2 transition-all ${selectedRegion === "TOUS LES SITES" ? 'bg-orange-600 border-orange-500 shadow-lg shadow-orange-900/20' : 'bg-white/5 border-white/10'}`}>
-                <MapPin size={14} className={selectedRegion === "TOUS LES SITES" ? "text-white" : "text-slate-400"} />
-                <select value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)} disabled={user?.role === 'PRES'} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white">
+              <div className={`border rounded-xl px-3 sm:px-4 py-2 flex items-center gap-2 transition-all ${selectedRegion === "TOUS LES SITES" ? 'bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-white/5 border-white/10'}`}>
+                <MapPin size={13} className={selectedRegion === "TOUS LES SITES" ? "text-white" : "text-slate-400"} />
+                <select value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)} disabled={user?.role === 'PRES'} className="bg-transparent outline-none text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer text-white">
                   {regions.map(r => <option key={r} value={r} className="text-slate-900">{r}</option>)}
                 </select>
               </div>
             )}
 
-            <div className="bg-orange-600 border border-orange-500 rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg shadow-orange-900/40">
-              <Building2 size={14} className="text-white" />
-              <select value={selectedSiteCode} onChange={(e) => setSelectedSiteCode(e.target.value)} disabled={user?.role === 'AGENT'} className="bg-transparent outline-none text-xs font-black uppercase tracking-widest cursor-pointer text-white max-w-[150px] lg:max-w-none">
+            <div className="bg-emerald-600 border border-emerald-500 rounded-xl px-3 sm:px-4 py-2 flex items-center gap-2 shadow-lg shadow-emerald-900/40">
+              <Building2 size={13} className="text-white" />
+              <select value={selectedSiteCode} onChange={(e) => setSelectedSiteCode(e.target.value)} disabled={user?.role === 'AGENT'} className="bg-transparent outline-none text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer text-white max-w-[120px] lg:max-w-none">
                 {sitesInRegion.map(s => <option key={s.code} value={s.code} className="text-slate-900">{s.name}</option>)}
               </select>
             </div>
@@ -200,35 +198,35 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
         </div>
       </div>
 
-      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-        <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-           <h3 className="font-black text-lg uppercase tracking-tight text-slate-800">
+      <div className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="px-5 sm:px-10 py-6 sm:py-8 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+           <h3 className="font-black text-base sm:text-lg uppercase tracking-tight text-slate-800">
              Journal de collecte : {MONTHS_FR[selectedMonth]} {selectedYear}
            </h3>
            <div className="flex items-center gap-4">
-              <div className="text-center px-6 py-2 bg-white rounded-xl border shadow-sm">
-                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Période</p>
-                 <p className="text-lg font-black text-slate-900">{historyData.reduce((acc, curr) => acc + curr.total, 0).toLocaleString()}</p>
+              <div className="text-center px-4 sm:px-6 py-2 bg-white rounded-xl border shadow-sm">
+                 <p className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Période</p>
+                 <p className="text-base sm:text-lg font-black text-slate-900">{historyData.reduce((acc, curr) => acc + curr.total, 0).toLocaleString()}</p>
               </div>
            </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[11px] font-bold text-slate-950">
+        <div className="overflow-x-auto scrollbar-hide">
+          <table className="w-full border-collapse text-[10px] sm:text-[11px] font-bold text-slate-950 min-w-[320px]">
             <thead className="sticky top-0 z-10">
-              <tr className="bg-slate-900 text-white h-14">
-                <th className="px-10 py-2 uppercase tracking-[0.2em] text-left font-black text-[10px]">Date</th>
-                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">FIXE</th>
-                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px]">MOBILE</th>
-                <th className="px-6 py-2 uppercase tracking-[0.2em] text-center font-black text-[10px] bg-slate-800">Total</th>
+              <tr className="bg-slate-900 text-white h-12 sm:h-14">
+                <th className="px-4 sm:px-10 py-2 uppercase tracking-[0.1em] sm:tracking-[0.2em] text-left font-black text-[9px] sm:text-[10px]">Date</th>
+                <th className="px-3 sm:px-6 py-2 uppercase tracking-[0.1em] sm:tracking-[0.2em] text-center font-black text-[9px] sm:text-[10px]">FIXE</th>
+                <th className="px-3 sm:px-6 py-2 uppercase tracking-[0.1em] sm:tracking-[0.2em] text-center font-black text-[9px] sm:text-[10px]">MOBILE</th>
+                <th className="px-3 sm:px-6 py-2 uppercase tracking-[0.1em] sm:tracking-[0.2em] text-center font-black text-[9px] sm:text-[10px] bg-slate-800">Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {historyData.length > 0 ? historyData.map((row, idx) => (
-                <tr key={idx} className="h-12 hover:bg-slate-50 transition-colors group">
-                  <td className="px-10 py-2 font-black text-slate-800 border-r border-slate-100">{row.date}</td>
-                  <td className="px-6 py-2 text-center text-orange-600 font-mono font-bold">{row.fixe}</td>
-                  <td className="px-6 py-2 text-center text-orange-600 font-mono font-bold">{row.mobile}</td>
-                  <td className="px-6 py-2 text-center text-slate-900 font-mono font-black text-[13px] bg-slate-50/50">{row.total}</td>
+                <tr key={idx} className="h-10 sm:h-12 hover:bg-slate-50 transition-colors group">
+                  <td className="px-4 sm:px-10 py-2 font-black text-slate-800 border-r border-slate-100">{row.date}</td>
+                  <td className="px-3 sm:px-6 py-2 text-center text-emerald-600 font-mono font-bold">{row.fixe}</td>
+                  <td className="px-3 sm:px-6 py-2 text-center text-emerald-600 font-mono font-bold">{row.mobile}</td>
+                  <td className="px-3 sm:px-6 py-2 text-center text-slate-900 font-mono font-black text-xs sm:text-[13px] bg-slate-50/50">{row.total}</td>
                 </tr>
               )) : (
                 <tr>
