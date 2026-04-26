@@ -17,19 +17,17 @@ const MONTHS_FR = [
 
 export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, user, sites }) => {
   const availableYears = useMemo(() => {
-    if (!data?.dailyHistory) return [];
     const years = new Set<string>();
     data.dailyHistory.forEach(h => {
       const year = h.date.split('/')[2];
       if (year) years.add(year);
     });
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [data?.dailyHistory]);
+  }, [data.dailyHistory]);
 
   const [selectedYear, setSelectedYear] = useState(availableYears[0] || "2026");
 
   const availableMonths = useMemo(() => {
-    if (!data?.dailyHistory) return [];
     const months = new Set<number>();
     data.dailyHistory.forEach(h => {
       const parts = h.date.split('/');
@@ -38,7 +36,7 @@ export const DetailedHistoryView: React.FC<DetailedHistoryViewProps> = ({ data, 
       }
     });
     return Array.from(months).sort((a, b) => a - b);
-  }, [data?.dailyHistory, selectedYear]);
+  }, [data.dailyHistory, selectedYear]);
 
   const [selectedMonth, setSelectedMonth] = useState<number>(
     availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().getMonth()

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardData, AppTab, User } from '../types.ts';
-import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package, ChevronRight, ArrowUpRight, ArrowDownRight, Smartphone, UserCheck, ChevronDown, Plus, Brain, Sparkles } from 'lucide-react';
+import { TrendingUp, Calendar, Building2, Truck, Award, Target, Zap, Activity, Filter, Clock, MessageSquare, CheckCircle2, PieChart, ArrowRight, Package, ChevronRight, ArrowUpRight, ArrowDownRight, Smartphone, UserCheck, ChevronDown, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { COLORS } from '../constants.tsx';
 
@@ -110,100 +110,35 @@ export const VisualDashboard: React.FC<{
     window.open(`https://wa.me/225${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const dayAchievement = useMemo(() => {
-    if (!currentDailyRecord) return 0;
-    const objective = currentDailyRecord.sites.reduce((acc: number, s: any) => acc + (s.objective || 0), 0) || 1137;
-    return (currentDailyRecord.stats.realized / objective) * 100;
-  }, [currentDailyRecord]);
-
-  const achievementColor = useMemo(() => {
-    if (dayAchievement >= 100) return 'text-orange-400';
-    if (dayAchievement >= 75) return 'text-amber-400';
-    return 'text-rose-400';
-  }, [dayAchievement]);
+  const dayAchievement = currentDailyRecord ? (currentDailyRecord.stats.realized / (currentDailyRecord.sites.reduce((acc: number, s: any) => acc + (s.objective || 0), 0) || 1137)) * 100 : 0;
 
   return (
     <div className="space-y-12 pb-24 animate-in fade-in duration-1000">
-      {/* MAGICAL AI HUB */}
-      <div className="max-w-7xl mx-auto w-full">
-        <motion.div 
-          initial={{ y: -30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, ease: "backOut" }}
-          className="relative group"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-600/30 via-red-600/20 to-sky-600/30 blur-[100px] opacity-40 group-hover:opacity-60 transition-opacity duration-1000" />
-          <div className="relative glass-card rounded-[3.5rem] p-10 lg:p-12 border-white/15 flex flex-col lg:flex-row items-center gap-10">
-            <div className="flex items-center gap-8 lg:border-r border-white/10 lg:pr-12">
-               <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-700 rounded-[2rem] flex items-center justify-center text-white shadow-[0_0_50px_rgba(249,115,22,0.4)] border border-white/20 animate-float shrink-0">
-                  <Brain size={40} />
-               </div>
-               <div>
-                 <div className="flex items-center gap-3 mb-2">
-                    <Sparkles size={14} className="text-orange-400" />
-                    <p className="text-[11px] font-black text-white/50 uppercase tracking-[0.4em]">Intelligence Artificielle Cockpit</p>
-                 </div>
-                 <h2 className="text-3xl font-display font-black text-white tracking-tighter uppercase leading-none">Analyse Prédictive Live</h2>
-                 <p className="text-[11px] font-display font-medium text-white/20 uppercase tracking-[0.5em] mt-3 italic">Moteur Gemini 3.0 Flash</p>
-               </div>
-            </div>
-
-            <div className="flex-1 space-y-4">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
-                 <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                   <Zap size={14} /> Recommandation Stratégique
-                 </p>
-                 <p className="text-base font-bold text-white leading-relaxed">
-                   {dayAchievement < 75 
-                     ? "Impact critique identifié sur les réserves de CGR. Priorisez les sites mobiles à fort potentiel pour combler le déficit de 25%." 
-                     : dayAchievement >= 100 
-                     ? "Objectif pulvérisé. Redirigez les flux logistiques vers les zones de stockage secondaire pour éviter la saturation."
-                     : "Flux stable mais vigilance requise sur les groupes rares (O-). Maintenez la cadence actuelle sur les sites fixes."}
-                 </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 min-w-[200px]">
-               <div className="flex items-center justify-between px-6 py-3 bg-white/5 border border-white/10 rounded-xl">
-                  <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Confiance IA</span>
-                  <span className="text-sm font-black text-emerald-400">98.4%</span>
-               </div>
-               <button 
-                 onClick={() => setActiveTab?.('forecasting')}
-                 className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-3"
-               >
-                 Voir Prévisions v5 <ArrowRight size={14} />
-               </button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
       <div className="flex justify-center mb-8">
-        <div className="bg-white/5 backdrop-blur-3xl p-3 rounded-[3rem] shadow-4xl border border-white/10 flex gap-3">
-           <button onClick={() => setViewMode('donations')} className={`px-14 py-6 rounded-[2.5rem] text-[12px] font-black uppercase tracking-[0.3em] transition-all duration-700 active:scale-95 flex items-center gap-5 ${viewMode === 'donations' ? 'bg-orange-600 text-white shadow-[0_0_60px_rgba(249,115,22,0.4)] scale-105' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-             <Activity size={22} className={viewMode === 'donations' ? 'animate-pulse' : ''}/> Prélèvements
+        <div className="bg-white/80 backdrop-blur-xl p-2 rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-2">
+           <button onClick={() => setViewMode('donations')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Activity size={18} className={viewMode === 'donations' ? 'text-orange-400' : ''}/> Prélèvements
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-14 py-6 rounded-[2.5rem] text-[12px] font-black uppercase tracking-[0.3em] transition-all duration-700 active:scale-95 flex items-center gap-5 ${viewMode === 'distribution' ? 'bg-slate-900 text-white shadow-[0_0_60px_rgba(0,0,0,0.5)] scale-105' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-             <Truck size={22} className={viewMode === 'distribution' ? 'animate-float' : ''}/> Distribution
+           <button onClick={() => setViewMode('distribution')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Truck size={18} className={viewMode === 'distribution' ? 'text-orange-400' : ''}/> Distribution
            </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className={`lg:col-span-2 rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl relative overflow-hidden transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-slate-900'}`}>
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 to-transparent opacity-30" />
+        <div className={`lg:col-span-2 rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl relative overflow-hidden transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-orange-950'}`}>
+          <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full -mr-48 -mt-48 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-orange-600/20' : 'bg-orange-600/30'}`}></div>
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-12">
               <div className="flex items-center gap-6">
-                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all duration-700 shadow-2xl border border-white/15 ${viewMode === 'donations' ? 'bg-orange-600 shadow-orange-500/40 text-white' : 'bg-orange-600 shadow-orange-500/40 text-white'}`}>
-                  {viewMode === 'donations' ? <Calendar size={36} /> : <Package size={36} />}
+                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl ${viewMode === 'donations' ? 'bg-orange-600 shadow-orange-500/40' : 'bg-orange-600 shadow-orange-500/40'}`}>
+                  {viewMode === 'donations' ? <Calendar size={28} /> : <Package size={28} />}
                 </div>
                 <div>
-                  <h2 className="text-4xl font-display font-black uppercase tracking-tighter leading-none">{viewMode === 'donations' ? 'Pulse du Jour' : 'Sorties Live'}</h2>
-                  <div className="flex items-center gap-3 mt-4 px-4 py-2 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm group cursor-pointer hover:bg-white/10 transition-all">
-                    <Filter size={16} className="text-orange-400 group-hover:rotate-180 transition-transform duration-500" />
-                    <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[12px] font-display font-black uppercase tracking-[0.25em] cursor-pointer text-white/60 hover:text-white transition-colors">
+                  <h2 className="text-3xl font-display font-black uppercase tracking-tighter leading-none">{viewMode === 'donations' ? 'Cockpit du Jour' : 'Sorties du Jour'}</h2>
+                  <div className="flex items-center gap-3 mt-3">
+                    <Filter size={16} className={viewMode === 'donations' ? "text-orange-400" : "text-orange-400"} />
+                    <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[11px] font-display font-black uppercase tracking-[0.2em] cursor-pointer text-white/60 hover:text-white transition-colors">
                       {data.dailyHistory.map((h: any) => <option key={h.date} value={h.date} className="text-slate-900">{h.date}</option>)}
                     </select>
                   </div>
@@ -212,13 +147,13 @@ export const VisualDashboard: React.FC<{
               <div className="text-right">
                  {viewMode === 'donations' ? (
                     <React.Fragment>
-                      <p className={`text-6xl font-display font-black leading-none tracking-tighter text-glow-orange ${achievementColor}`}>{dayAchievement.toFixed(1)}%</p>
-                      <p className="text-[11px] font-display font-black uppercase tracking-[0.4em] text-white/30 mt-4 underline decoration-orange-500 decoration-2 underline-offset-8">Objectif Atteint</p>
+                      <p className={`text-5xl font-display font-black leading-none tracking-tighter ${getPerfColor(dayAchievement)}`}>{dayAchievement.toFixed(1)}%</p>
+                      <p className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-white/30 mt-3">Objectif atteint</p>
                     </React.Fragment>
                  ) : (
                     <React.Fragment>
-                      <p className="text-6xl font-display font-black text-orange-400 leading-none tracking-tighter text-glow-orange">{dailyDistStats?.efficiency.toFixed(1)}%</p>
-                      <p className="text-[11px] font-display font-black uppercase tracking-[0.4em] text-white/30 mt-4 underline decoration-orange-500 decoration-2 underline-offset-8">Efficience Flux</p>
+                      <p className="text-5xl font-display font-black text-orange-400 leading-none tracking-tighter">{dailyDistStats?.efficiency.toFixed(1)}%</p>
+                      <p className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-white/30 mt-3">Utilisation Nette</p>
                     </React.Fragment>
                  )}
               </div>

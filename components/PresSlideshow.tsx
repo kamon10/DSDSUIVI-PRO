@@ -25,27 +25,23 @@ const PresSlideshow: React.FC<PresSlideshowProps> = ({ data }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [startDate, setStartDate] = useState(data?.date || "");
-  const [endDate, setEndDate] = useState(data?.date || "");
+  const [startDate, setStartDate] = useState(data.date);
+  const [endDate, setEndDate] = useState(data.date);
 
   const parseDate = (dateStr: string) => {
-    if (!dateStr || dateStr === "---") return 0;
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return 0;
-    const [d, m, y] = parts.map(Number);
+    const [d, m, y] = dateStr.split('/').map(Number);
     return new Date(y, m - 1, d).getTime();
   };
 
   // Reconstruct slides based on selected period and region data
   const slides = useMemo(() => {
-    if (!data?.regions) return [];
     const regions = data.regions.filter(r => r.sites.length > 0);
     
     const startTs = parseDate(startDate);
     const endTs = parseDate(endDate);
     
     // Filter history for the selected period
-    const periodRecords = (data.dailyHistory || []).filter(h => {
+    const periodRecords = data.dailyHistory.filter(h => {
       const hTs = parseDate(h.date);
       return hTs >= Math.min(startTs, endTs) && hTs <= Math.max(startTs, endTs);
     });

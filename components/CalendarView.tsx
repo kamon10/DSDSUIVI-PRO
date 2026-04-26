@@ -1,7 +1,18 @@
 
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+interface CalendarEvent {
+  date: string;
+  site: string;
+  lieu: string;
+  region: string;
+  type: 'realized' | 'planned';
+  value?: number;
+  reason?: string;
+  priority?: 'HAUTE' | 'MOYENNE' | 'BASSE';
+}
 
 interface CalendarViewProps {
   planning: {
@@ -13,13 +24,27 @@ interface CalendarViewProps {
     reason: string;
     priority: 'HAUTE' | 'MOYENNE' | 'BASSE';
   }[];
+  history?: CalendarEvent[];
 }
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ planning, history = [] }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const monthYear = currentDate.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+
+  const allEvents = useMemo(() => {
+    const plannedEvents: CalendarEvent[] = planning.map(p => ({
+      date: p.date,
+      site: p.site,
+      lieu: p.lieu,
+      region: p.region,
+      type: 'planned',
+      reason: p.reason,
+      priority: p.priority
+    }));
+    return [...history, ...plannedEvents];
+  }, [planning, history]);
 
   const daysInMonth = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -29,7 +54,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
     
     const days = [];
     
-    // Padding for the start of the week (Monday start)
     const startPadding = (firstDay.getDay() + 6) % 7;
     for (let i = 0; i < startPadding; i++) {
       days.push(null);
@@ -50,24 +74,35 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const getDayPlanning = (date: Date) => {
+  const getDayEvents = (date: Date) => {
     const dateStr = date.toLocaleDateString('fr-FR');
-    return planning.filter(p => p.date === dateStr);
+    return allEvents.filter(e => e.date === dateStr);
   };
 
   const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-  const selectedDayPlanning = useMemo(() => {
-    if (!selectedDay) return [];
-    return planning.filter(p => p.date === selectedDay);
-  }, [selectedDay, planning]);
+  const groupedSelectedDayEvents = useMemo(() => {
+    if (!selectedDay) return {};
+    const events = allEvents.filter(e => e.date === selectedDay);
+    
+    // Group by Site then Region (PRES)
+    const grouped: Record<string, Record<string, CalendarEvent[]>> = {};
+    events.forEach(e => {
+      const s = e.site;
+      if (!grouped[s]) grouped[s] = {};
+      const reg = e.region || 'AUTRES';
+      if (!grouped[s][reg]) grouped[s][reg] = [];
+      grouped[s][reg].push(e);
+    });
+    return grouped;
+  }, [selectedDay, allEvents]);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-lg overflow-hidden">
       <div className="p-2.5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
         <h3 className="text-[11px] font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-tight">
           <CalendarIcon size={14} className="text-orange-600" />
-          Calendrier
+          Calendrier des Collectes
         </h3>
         <div className="flex items-center gap-1.5">
           <button 
@@ -101,11 +136,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
           {daysInMonth.map((date, idx) => {
             if (!date) return <div key={`empty-${idx}`} className="aspect-square" />;
             
-            const dayPlanning = getDayPlanning(date);
+            const dayEvents = getDayEvents(date);
             const isToday = date.toDateString() === new Date().toDateString();
             const isSelected = selectedDay === date.toLocaleDateString('fr-FR');
-            const hasHighPriority = dayPlanning.some(p => p.priority === 'HAUTE');
-            const hasMediumPriority = dayPlanning.some(p => p.priority === 'MOYENNE');
+            
+            const hasRealized = dayEvents.some(e => e.type === 'realized');
+            const hasPlanned = dayEvents.some(e => e.type === 'planned');
+            const hasHighPriority = dayEvents.some(e => e.priority === 'HAUTE');
 
             return (
               <button
@@ -113,29 +150,30 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
                 onClick={() => setSelectedDay(date.toLocaleDateString('fr-FR'))}
                 className={`aspect-square rounded-lg border flex flex-col items-center justify-center relative transition-all group ${
                   isSelected 
-                    ? 'ring-1 ring-orange-500 ring-offset-1' 
+                    ? 'ring-2 ring-orange-500 ring-offset-1 z-10' 
                     : ''
                 } ${
-                  dayPlanning.length > 0
-                    ? hasHighPriority 
-                      ? 'bg-rose-50 border-rose-100 text-rose-700' 
-                      : hasMediumPriority
-                        ? 'bg-orange-50 border-orange-100 text-orange-700'
+                  dayEvents.length > 0
+                    ? hasRealized
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                      : hasHighPriority 
+                        ? 'bg-rose-50 border-rose-100 text-rose-700' 
                         : 'bg-orange-50 border-orange-100 text-orange-700'
                     : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
                 }`}
               >
-                <span className={`text-[9px] font-black ${isToday ? 'underline decoration-1 underline-offset-2' : ''}`}>
+                <span className={`text-[9px] font-black ${isToday ? 'bg-orange-600 text-white w-4 h-4 rounded-full flex items-center justify-center' : ''}`}>
                   {date.getDate()}
                 </span>
-                {dayPlanning.length > 0 && (
-                  <div className={`absolute bottom-0.5 w-0.5 h-0.5 rounded-full ${
-                    hasHighPriority ? 'bg-rose-500' : hasMediumPriority ? 'bg-orange-500' : 'bg-orange-500'
-                  }`} />
-                )}
-                {dayPlanning.length > 1 && (
+                
+                <div className="flex gap-0.5 absolute bottom-1">
+                  {hasRealized && <div className="w-1 h-1 rounded-full bg-emerald-500" />}
+                  {hasPlanned && <div className="w-1 h-1 rounded-full bg-orange-500" />}
+                </div>
+
+                {dayEvents.length > 1 && (
                   <span className="absolute top-0 right-0 text-[5px] font-black px-0.5 bg-white/50 rounded-sm">
-                    +{dayPlanning.length - 1}
+                    {dayEvents.length}
                   </span>
                 )}
               </button>
@@ -146,60 +184,87 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ planning }) => {
         <AnimatePresence mode="wait">
           {selectedDay && (
             <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              className="mt-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-tight">
-                  {selectedDay}
-                </h4>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                    Détails du {selectedDay}
+                  </h4>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    {Object.keys(groupedSelectedDayEvents).length} PRES impliquées
+                  </p>
+                </div>
                 <button 
                   onClick={() => setSelectedDay(null)}
-                  className="text-[7px] font-black uppercase text-slate-400 hover:text-slate-600"
+                  className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
                 >
-                  Fermer
+                  <ChevronRight className="rotate-90 text-slate-400" size={14} />
                 </button>
               </div>
 
-              {selectedDayPlanning.length > 0 ? (
-                <div className="space-y-1.5">
-                  {selectedDayPlanning.map((p, idx) => (
-                    <div key={idx} className="bg-white p-2 rounded-lg shadow-sm border border-slate-100 flex items-center justify-between group">
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-6 h-6 rounded-md flex items-center justify-center font-black text-[7px] ${
-                          p.priority === 'HAUTE' ? 'bg-rose-50 text-rose-600' : 
-                          p.priority === 'MOYENNE' ? 'bg-orange-50 text-orange-600' : 
-                          'bg-orange-50 text-orange-600'
-                        }`}>
-                          {p.site.substring(0, 2)}
-                        </div>
-                        <div>
-                          <div className="text-[8px] font-black text-slate-900 uppercase tracking-tight">{p.site}</div>
-                          <div className="text-[7px] font-bold text-slate-400 flex items-center gap-1">
-                            <MapPin size={7} /> {p.lieu}
+              <div className="space-y-4">
+                {Object.entries(groupedSelectedDayEvents).length > 0 ? (
+                  Object.entries(groupedSelectedDayEvents).map(([site, regions]) => (
+                    <div key={site} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-[1px] flex-grow bg-slate-200" />
+                        <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest shrink-0">CENTRE: {site}</span>
+                        <div className="h-[1px] flex-grow bg-slate-200" />
+                      </div>
+                      
+                      {Object.entries(regions).map(([region, events]) => (
+                        <div key={region} className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+                          <div className="bg-orange-50 px-3 py-1.5 border-b border-orange-100 flex items-center justify-between">
+                            <span className="text-[10px] font-black text-orange-600 uppercase tracking-tight">PRES: {region}</span>
+                            <span className="text-[8px] font-bold text-orange-400">{events.length} collecte(s)</span>
+                          </div>
+                          <div className="p-2 space-y-2">
+                            {events.map((e, idx) => (
+                              <div key={idx} className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${
+                                    e.type === 'realized' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
+                                  }`}>
+                                    {e.type === 'realized' ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-black text-slate-900 uppercase tracking-tight">{e.lieu}</div>
+                                    <div className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                                      {e.type === 'realized' ? (
+                                        <span className="text-emerald-600">Réalisée: {e.value} poches</span>
+                                      ) : (
+                                        <span>Planifiée • {e.reason}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                {e.type === 'planned' && (
+                                  <div className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
+                                    e.priority === 'HAUTE' ? 'bg-rose-100 text-rose-600' : 
+                                    e.priority === 'MOYENNE' ? 'bg-orange-100 text-orange-600' : 
+                                    'bg-orange-100 text-orange-600'
+                                  }`}>
+                                    {e.priority}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-[6px] font-black px-1 py-0.5 rounded-full inline-block ${
-                          p.priority === 'HAUTE' ? 'bg-rose-100 text-rose-600' : 
-                          p.priority === 'MOYENNE' ? 'bg-orange-100 text-orange-600' : 
-                          'bg-orange-100 text-orange-600'
-                        }`}>
-                          {p.priority}
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-2 text-center">
-                  <Clock size={16} className="text-slate-200 mx-auto mb-1" />
-                  <p className="text-[7px] font-bold text-slate-400">Aucune collecte</p>
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="py-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                    <CalendarIcon size={24} className="text-slate-200 mx-auto mb-2" />
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aucune activité enregistrée ou prévue</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

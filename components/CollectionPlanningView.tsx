@@ -201,14 +201,14 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
 
   const regionsList = Array.from(new Set(siteLieuHistory.map(h => h.region))).sort();
 
-  // Group filtered history by region then site
+  // Group filtered history by site then region
   const groupedHistory = useMemo(() => {
     const groups: Record<string, Record<string, typeof siteLieuHistory>> = {};
     
     filteredHistory.forEach(h => {
-      if (!groups[h.region]) groups[h.region] = {};
-      if (!groups[h.region][h.site]) groups[h.region][h.site] = [];
-      groups[h.region][h.site].push(h);
+      if (!groups[h.site]) groups[h.site] = {};
+      if (!groups[h.site][h.region]) groups[h.site][h.region] = [];
+      groups[h.site][h.region].push(h);
     });
 
     return groups;
@@ -232,6 +232,17 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
     }
     return days;
   }, [proposedPlanning]);
+
+  const calendarHistory = useMemo(() => {
+    return realizedMobileCollections.map(r => ({
+      date: r.date,
+      site: r.site,
+      lieu: r.lieu || 'SITE_MOBILE',
+      region: r.region || 'AUTRES',
+      type: 'realized' as const,
+      value: r.mobile
+    }));
+  }, [realizedMobileCollections]);
 
   return (
     <div className="space-y-8" ref={dashboardRef}>
@@ -367,7 +378,7 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
             >
-              <CalendarView planning={proposedPlanning} />
+              <CalendarView planning={proposedPlanning} history={calendarHistory} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -417,24 +428,23 @@ export const CollectionPlanningView: React.FC<CollectionPlanningViewProps> = ({ 
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(groupedHistory).map(([region, sites]) => (
-                    <React.Fragment key={region}>
-                      {/* Region Header */}
-                      <tr className="bg-orange-50/30">
-                        <td colSpan={4} className="border border-slate-300 px-8 py-3">
-                          <span className="text-[11px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
-                            <Filter size={12} /> PRES: {region}
+                  {Object.entries(groupedHistory).map(([site, itemsByRegion]) => (
+                    <React.Fragment key={site}>
+                      {/* Site Header */}
+                      <tr className="bg-slate-900 text-white">
+                        <td colSpan={4} className="border border-slate-700 px-8 py-3">
+                          <span className="text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
+                            <MapPin size={12} className="text-orange-400" /> CENTRE: {site}
                           </span>
                         </td>
                       </tr>
-                      {Object.entries(sites).map(([site, items]) => (
-                        <React.Fragment key={`${region}_${site}`}>
-                          {/* Site Sub-header */}
-                          <tr className="bg-slate-50/30">
+                      {Object.entries(itemsByRegion).map(([region, items]) => (
+                        <React.Fragment key={`${site}_${region}`}>
+                          {/* Region Sub-header */}
+                          <tr className="bg-orange-50/50">
                             <td colSpan={4} className="border border-slate-300 px-10 py-2">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                CENTRE: {site}
+                              <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2">
+                                <Filter size={10} /> PRES: {region}
                               </span>
                             </td>
                           </tr>
