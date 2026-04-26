@@ -38,7 +38,7 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
         >
           {/* Immersive Cinematic Background */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
             
             {/* Scanlines / Grid Effect */}
@@ -54,11 +54,11 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="relative mb-16"
             >
-              <div className="absolute inset-[-20px] bg-orange-600/10 blur-3xl rounded-full animate-pulse" />
-              <div className="absolute inset-[-40px] border border-orange-500/10 rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }} />
+              <div className="absolute inset-[-20px] bg-emerald-600/10 blur-3xl rounded-full animate-pulse" />
+              <div className="absolute inset-[-40px] border border-emerald-500/10 rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }} />
               
               <div className="w-24 h-24 bg-gradient-to-br from-slate-900 to-black rounded-[2.5rem] flex items-center justify-center shadow-2xl border border-white/10 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 to-transparent opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-transparent opacity-50" />
                 <motion.div
                   animate={{ 
                     scale: [1, 1.15, 1],
@@ -71,12 +71,12 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
                   }}
                   className="relative z-10"
                 >
-                  <Activity size={40} className="text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.6)]" />
+                  <Activity size={40} className="text-emerald-500 drop-shadow-[0_0_15px_rgba(16, 185, 129, 0.6)]" />
                 </motion.div>
                 
                 {/* Internal HUD data */}
-                <div className="absolute top-1 left-2 text-[6px] font-mono text-orange-500/40 uppercase">Sens: OK</div>
-                <div className="absolute bottom-1 right-2 text-[6px] font-mono text-orange-500/40 uppercase">Sync: 100%</div>
+                <div className="absolute top-1 left-2 text-[6px] font-mono text-emerald-500/40 uppercase">Sens: OK</div>
+                <div className="absolute bottom-1 right-2 text-[6px] font-mono text-emerald-500/40 uppercase">Sync: 100%</div>
               </div>
             </motion.div>
 
@@ -93,7 +93,7 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
                       delay: 0.2 + (i * 0.05), 
                       ease: [0.16, 1, 0.3, 1]
                     }}
-                    className={`text-5xl md:text-6xl font-black tracking-[-0.08em] ${letter === 'H' || letter === 'E' || letter === 'M' || letter === 'O' ? 'text-white' : 'text-orange-500'}`}
+                    className={`text-5xl md:text-6xl font-black tracking-[-0.08em] ${letter === 'H' || letter === 'E' || letter === 'M' || letter === 'O' ? 'text-white' : 'text-emerald-500'}`}
                   >
                     {letter}
                   </motion.span>
@@ -115,7 +115,7 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
             <div className="w-80 space-y-4">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Système</span>
-                <span className="text-[10px] font-mono font-bold text-orange-500">
+                <span className="text-[10px] font-mono font-bold text-emerald-500">
                   {Math.round(((currentStep + 1) / STEPS.length) * 100)}%
                 </span>
               </div>
@@ -124,7 +124,7 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-600 to-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(16, 185, 129, 0.5)]"
                 />
               </div>
 
@@ -137,7 +137,7 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
                     exit={{ opacity: 0, y: -10 }}
                     className="flex items-center gap-3 text-slate-400"
                   >
-                    <span className="text-orange-500 animate-pulse">{STEPS[currentStep].icon}</span>
+                    <span className="text-emerald-500 animate-pulse">{STEPS[currentStep].icon}</span>
                     <span className="text-[11px] font-bold uppercase tracking-tight text-center">
                       {STEPS[currentStep].label}
                     </span>
@@ -149,7 +149,7 @@ export const AppLoadingOverlay: React.FC<AppLoadingOverlayProps> = ({ isVisible 
 
           {/* Bottom Technical Accents */}
           <div className="absolute bottom-12 left-12 flex items-center gap-4 opacity-20 hidden md:flex">
-             <div className="w-2 h-2 rounded-full bg-orange-600 animate-ping" />
+             <div className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
              <span className="text-[9px] font-mono text-white tracking-widest uppercase">Encryption Active: AES-256</span>
           </div>
           
