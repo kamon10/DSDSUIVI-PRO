@@ -342,9 +342,6 @@ const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
                 <span className="px-4 py-1.5 bg-orange-600 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-lg shadow-orange-900/40">
                   LES SAMEDIS DE LA SOLIDARITÉ-SDS
                 </span>
-                <span className="px-4 py-1.5 bg-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase backdrop-blur-md border border-white/10">
-                  {sdsData.totalRecords} ème ÉDITION
-                </span>
               </div>
 
               <h2 className="text-3xl lg:text-4xl font-black tracking-tighter uppercase mb-6 leading-none">
@@ -353,7 +350,7 @@ const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
 
               <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 border border-white/10 mb-8">
                 <p className="text-lg font-medium text-slate-200 italic mb-4 leading-relaxed">
-                  "Bonjour à tous et à toutes. Proclamation des résultats provisoires des Samedis de la Solidarité {sdsData.totalRecords} ème édition du <span className="text-white font-black not-italic bg-orange-600 px-2 rounded">{sdsData.date}</span> à <span className="text-white font-black not-italic underline decoration-orange-500 underline-offset-4">{sdsData.site.replace('CRTS DE ', '').replace('CDTS DE ', '')}</span> ({sdsData.site})."
+                  "Bonjour à tous et à toutes. Proclamation des résultats provisoires des Samedis de la Solidarité du <span className="text-white font-black not-italic bg-orange-600 px-2 rounded">{sdsData.date}</span> à <span className="text-white font-black not-italic underline decoration-orange-500 underline-offset-4">{sdsData.site.replace('CRTS DE ', '').replace('CDTS DE ', '')}</span> ({sdsData.site})."
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-6 mt-6">
