@@ -1,7 +1,8 @@
 
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import { fr } from 'date-fns/locale/fr';
+import { format, parse } from 'date-fns';
+import { fr as frLocale } from 'date-fns/locale/fr';
 import "react-datepicker/dist/react-datepicker.css";
 import { DashboardData, User, DistributionRecord, AppTab } from '../types.ts';
 import { PRODUCT_COLORS, GROUP_COLORS } from '../constants.tsx';
@@ -16,7 +17,7 @@ import { domToPng } from 'modern-screenshot';
 import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
 
-registerLocale('fr', fr);
+registerLocale('fr', frLocale);
 
 interface RecapViewProps {
   data: DashboardData;
@@ -100,22 +101,32 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
     return new Date(parseInt(selectedYear), selectedMonth, 1);
   }, [selectedMonth, selectedYear]);
 
-  // --- SDS CAPSULE LOGIC (RECORD MOBILE >= 900) ---
-  const latestSdsRecord = useMemo(() => {
-    let latest: { site: string; date: string; value: number } | null = null;
-    data.dailyHistory.forEach(day => {
+  // --- SDS CAPSULE LOGIC (LATEST RECORD MOBILE >= 900) ---
+  const sdsData = useMemo(() => {
+    let latest: { site: string; date: string; value: number; totalRecords: number } | null = null;
+    let count = 0;
+    
+    // Sort history by date to find latest and count editions
+    const sortedHistory = [...data.dailyHistory].sort((a, b) => {
+      const dateA = parse(a.date, 'dd/MM/yyyy', new Date());
+      const dateB = parse(b.date, 'dd/MM/yyyy', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    sortedHistory.forEach(day => {
       day.sites.forEach(site => {
-        if (site.mobile >= 900) {
-          if (!latest || day.date >= latest.date) {
-            latest = {
-              site: site.name,
-              date: day.date,
-              value: site.mobile
-            };
-          }
+        if (site.mobile >= 1000) {
+          count++;
+          latest = {
+            site: site.name,
+            date: day.date,
+            value: site.mobile,
+            totalRecords: count
+          };
         }
       });
     });
+
     return latest;
   }, [data.dailyHistory]);
   const selectedYearObj = useMemo(() => selectedYear ? new Date(parseInt(selectedYear), 0, 1) : null, [selectedYear]);
@@ -942,7 +953,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
             </div>
             <div className="flex items-center gap-3">
                {/* SDS CAPSULE (NOUVEL EMPLACEMENT) */}
-               {viewMode === 'collecte' && latestSdsRecord && (
+               {viewMode === 'collecte' && sdsData && (
                  <motion.div
                    initial={{ opacity: 0, scale: 0.9 }}
                    animate={{ opacity: 1, scale: 1 }}
@@ -957,7 +968,7 @@ export default function RecapView({ data, sites, initialMode = 'collecte', user,
                        <span className="text-[6px] font-black bg-orange-200 text-orange-700 px-1.5 py-0.5 rounded-full uppercase leading-none">SPECIALE</span>
                      </div>
                      <div className="text-[11px] font-black text-slate-900 tracking-tighter leading-none">
-                       {latestSdsRecord.site} <span className="text-orange-600">★ {latestSdsRecord.value}</span>
+                       {sdsData.site} <span className="text-orange-600">★ {sdsData.value}</span>
                      </div>
                    </div>
                  </motion.div>
