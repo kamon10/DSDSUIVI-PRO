@@ -448,9 +448,9 @@ const App: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-[#F1F5F9] bg-grid-slate-100">
       {/* SIDEBAR DESKTOP */}
-      <aside className="hidden lg:flex flex-col w-80 bg-orange-600 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/10">
+      <aside className="hidden lg:flex flex-col w-80 bg-emerald-600 h-screen sticky top-0 z-[110] overflow-y-auto border-r border-white/10">
         <div className="p-10 flex items-center gap-5 border-b border-white/10">
-          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-white/20 animate-float text-orange-600">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-white/20 animate-float text-emerald-600">
             <Activity size={28} />
           </div>
           <div>
@@ -462,7 +462,7 @@ const App: React.FC = () => {
           {groupedNavItems.map((group) => (
             <div key={group.id} className="space-y-4">
               <div className="flex items-center justify-between px-4">
-                <span className="text-[10px] font-display font-black uppercase tracking-[0.25em] text-orange-100/60">{group.label}</span>
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.25em] text-emerald-100/60">{group.label}</span>
                 <div className="w-10 h-[1px] bg-white/10" />
               </div>
               <div className="space-y-1.5">
@@ -472,14 +472,14 @@ const App: React.FC = () => {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id as AppTab)}
-                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white text-orange-600 shadow-2xl shadow-white/20' : 'text-orange-50 hover:bg-white/10 hover:text-white'}`}
+                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden ${isActive ? 'bg-white text-emerald-600 shadow-2xl shadow-white/20' : 'text-emerald-50 hover:bg-white/10 hover:text-white'}`}
                     >
-                      <span className={`${isActive ? 'text-orange-600' : 'text-orange-200 group-hover:text-white transition-colors'}`}>{item.icon}</span>
+                      <span className={`${isActive ? 'text-emerald-600' : 'text-emerald-200 group-hover:text-white transition-colors'}`}>{item.icon}</span>
                       <span className="text-[11px] font-display font-bold uppercase tracking-widest">{item.label}</span>
                       {isActive && (
                         <motion.div 
                           layoutId="sidebar-active" 
-                          className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-600 shadow-[0_0_10px_rgba(255,255,255,0.8)]" 
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-[0_0_10px_rgba(255,255,255,0.8)]" 
                         />
                       )}
                     </button>
@@ -497,11 +497,11 @@ const App: React.FC = () => {
                 <Clock size={16} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[8px] font-display font-black uppercase tracking-widest text-orange-200">Dernière Synchronisation</span>
+                <span className="text-[8px] font-display font-black uppercase tracking-widest text-emerald-200">Dernière Synchronisation</span>
                 <span className="text-[10px] font-mono font-bold text-white">{getFullSyncTime()}</span>
               </div>
             </div>
-            <p className="text-[9px] font-medium text-orange-100/60 leading-relaxed">
+            <p className="text-[9px] font-medium text-emerald-100/60 leading-relaxed">
               Système de monitoring en temps réel connecté aux flux nationaux.
             </p>
           </div>
@@ -510,7 +510,7 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-[100] px-4 py-4 lg:px-10 lg:py-6">
-          <div className="max-w-full mx-auto bg-orange-600 rounded-[3rem] px-8 py-5 flex items-center justify-between shadow-3xl min-h-[5.5rem] border border-white/10">
+          <div className="max-w-full mx-auto bg-emerald-600 rounded-[3rem] px-8 py-5 flex items-center justify-between shadow-3xl min-h-[5.5rem] border border-white/10">
             <div className="flex items-center gap-5 cursor-pointer lg:hidden" onClick={() => setActiveTab('pulse')}>
                <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center shadow-sm">
                   <img 
@@ -527,7 +527,7 @@ const App: React.FC = () => {
                   <span className="font-display font-black text-xl tracking-tighter uppercase text-white leading-none">HEMO-STATS</span>
                   <div className="flex items-center gap-2 mt-1.5">
                      <div className={`w-2 h-2 rounded-full bg-white animate-pulse`}></div>
-                     <span className="text-[8px] font-display font-black uppercase tracking-widest text-orange-100">Live Status</span>
+                     <span className="text-[8px] font-display font-black uppercase tracking-widest text-emerald-100">Live Status</span>
                   </div>
                </div>
             </div>
@@ -537,11 +537,11 @@ const App: React.FC = () => {
                 {groupedNavItems.find(g => g.navItems.some(i => i.id === activeTab))?.navItems.find(i => i.id === activeTab)?.label || 'Cockpit'}
               </h2>
               <div className="flex items-center gap-3 mt-1.5">
-                <p className="text-[11px] font-display font-bold text-orange-100 uppercase tracking-widest">
+                <p className="text-[11px] font-display font-bold text-emerald-100 uppercase tracking-widest">
                   {getRelativeSyncTime()}
                 </p>
                 <div className="w-1 h-1 rounded-full bg-white/20" />
-                <p className="text-[11px] font-mono font-medium text-white font-bold text-glow-orange">
+                <p className="text-[11px] font-mono font-medium text-white font-bold text-glow-emerald">
                   {getFullSyncTime()}
                 </p>
               </div>
@@ -579,11 +579,11 @@ const App: React.FC = () => {
                     <span className="text-[11px] font-display font-black uppercase tracking-tight text-white leading-none">
                       {currentUser.prenoms} {currentUser.nom}
                     </span>
-                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-orange-100 mt-1.5">
+                    <span className="text-[9px] font-display font-bold uppercase tracking-widest text-emerald-100 mt-1.5">
                       {currentUser.fonction}
                     </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-orange-600 shadow-xl relative group">
+                  <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-emerald-600 shadow-xl relative group">
                     <UserIcon size={20} />
                     <button 
                       onClick={handleLogout}
@@ -596,7 +596,7 @@ const App: React.FC = () => {
               ) : (
                 <button 
                   onClick={() => setShowLogin(true)} 
-                  className="px-8 py-3 bg-white text-orange-600 rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl hover:bg-orange-50 transition-all active:scale-95"
+                  className="px-8 py-3 bg-white text-emerald-600 rounded-2xl text-[11px] font-display font-black uppercase tracking-widest shadow-2xl hover:bg-emerald-50 transition-all active:scale-95"
                 >
                   Connexion
                 </button>
@@ -653,8 +653,8 @@ const App: React.FC = () => {
             <Suspense fallback={
               <div className="flex flex-col items-center justify-center py-48 gap-4 px-8">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full animate-pulse" />
-                  <Loader2 size={40} className="text-orange-600 animate-spin relative z-10" />
+                  <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
+                  <Loader2 size={40} className="text-emerald-600 animate-spin relative z-10" />
                 </div>
                 <div className="text-center">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation du module</p>
@@ -753,18 +753,17 @@ const App: React.FC = () => {
         syncTime={getFullSyncTime()}
       />
       <InstallPrompt />
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-orange-600 rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-emerald-600 rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
              const isOpen = openGroup === group.id;
-
              return (
                <div key={group.id} className="flex-1">
                  <button 
                    onClick={() => setOpenGroup(isOpen ? null : group.id)}
-                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-white' : 'text-orange-100/60'}`}
+                   className={`w-full flex flex-col items-center gap-1.5 py-3 rounded-[2rem] transition-all duration-500 active:scale-90 relative ${isActive ? 'text-white' : 'text-emerald-100/60'}`}
                  >
-                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-white text-orange-600 shadow-xl' : 'bg-transparent'}`}>
+                   <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-white text-emerald-600 shadow-xl' : 'bg-transparent'}`}>
                     {group.icon}
                    </div>
                    <span className={`text-[8px] font-display font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-60'}`}>{group.label}</span>
@@ -799,7 +798,7 @@ const App: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.navItems.length} Options</p>
                                    <div className="w-1 h-1 rounded-full bg-slate-200" />
-                                   <p className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">MàJ: {getFullSyncTime()}</p>
+                                   <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">MàJ: {getFullSyncTime()}</p>
                                  </div>
                               </div>
                             </div>
@@ -822,7 +821,7 @@ const App: React.FC = () => {
                                  <span className="text-xs font-black uppercase tracking-widest">{item.label}</span>
                                </div>
                                {activeTab === item.id ? (
-                                 <div className="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.5)]" />
+                                 <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
                                ) : (
                                  <ArrowRight size={16} className="text-slate-300" />
                                )}
@@ -846,7 +845,7 @@ const App: React.FC = () => {
                 <h3 className="text-xl font-black uppercase">Paramètres</h3>
                 <div className="flex flex-col items-end">
                   <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Dernière Synchronisation</span>
-                  <span className="text-[10px] font-bold text-orange-600">{getFullSyncTime()}</span>
+                  <span className="text-[10px] font-bold text-emerald-600">{getFullSyncTime()}</span>
                 </div>
              </div>
              
