@@ -24,6 +24,10 @@
     text-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
   }
 
+  .text-glow-emerald {
+    text-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  }
+
   .bg-grid-slate-100 {
     background-image: radial-gradient(circle, #f1f5f9 1px, transparent 1px);
     background-size: 24px 24px;
@@ -47,7 +51,7 @@
 
 @layer base {
   body {
-    @apply bg-[#F1F5F9] text-slate-900 font-sans antialiased selection:bg-orange-100 selection:text-orange-900;
+    @apply bg-[#F1F5F9] text-slate-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900;
   }
   
   h1, h2, h3, h4, h5, h6 {
