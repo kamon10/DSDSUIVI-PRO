@@ -172,13 +172,13 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
     <div className="space-y-10 animate-in fade-in duration-1000">
       
       {/* SWITCH DE MODE RESUME */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-2 sm:px-4">
-        <div className="bg-white p-1 rounded-[2rem] sm:rounded-3xl shadow-xl border border-slate-100 flex gap-1 sm:gap-2 w-full sm:w-auto">
-           <button onClick={() => setViewMode('donations')} className={`flex-1 sm:flex-none px-4 sm:px-10 py-3 sm:py-3.5 rounded-[1.5rem] sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 sm:gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={14} className="sm:w-[16px] sm:h-[16px]"/> Prélèvements
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4">
+        <div className="bg-white p-1.5 rounded-3xl shadow-xl border border-slate-100 flex gap-2">
+           <button onClick={() => setViewMode('donations')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'donations' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Activity size={16}/> Prélèvements
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`flex-1 sm:flex-none px-4 sm:px-10 py-3 sm:py-3.5 rounded-[1.5rem] sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 sm:gap-3 ${viewMode === 'distribution' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={14} className="sm:w-[16px] sm:h-[16px]"/> Distribution
+           <button onClick={() => setViewMode('distribution')} className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${viewMode === 'distribution' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Truck size={16}/> Distribution
            </button>
         </div>
         <div className="flex gap-3">
@@ -220,36 +220,36 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
           onClick={() => setActiveTab(viewMode === 'donations' ? 'pulse' : 'hemo-stats')}
           className="relative group overflow-hidden cursor-pointer"
         >
-          <div className={`absolute -inset-1 bg-gradient-to-r ${viewMode === 'donations' ? (stats.isReached ? 'from-emerald-600 to-amber-400' : 'from-emerald-600 to-emerald-500') : 'from-emerald-600 to-emerald-400'} rounded-[2.5rem] sm:rounded-[4rem] blur opacity-25 group-hover:opacity-40 transition duration-1000`}></div>
-          <div className="relative bg-white rounded-[2.5rem] sm:rounded-[4rem] p-6 lg:p-14 shadow-2xl border border-white flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-10">
-            <div className="flex items-center gap-4 sm:gap-8 w-full sm:w-auto">
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-[1.5rem] sm:rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl ${viewMode === 'donations' ? (stats.isReached ? 'bg-emerald-500' : 'bg-emerald-600') : 'bg-emerald-600'}`}>
-                {viewMode === 'donations' ? (stats.isReached ? <CheckCircle2 size={32} /> : <Target size={32} />) : <Package size={32} />}
+          <div className={`absolute -inset-1 bg-gradient-to-r ${viewMode === 'donations' ? (stats.isReached ? 'from-emerald-600 to-amber-400' : 'from-emerald-600 to-emerald-500') : 'from-emerald-600 to-emerald-400'} rounded-[4rem] blur opacity-25 group-hover:opacity-40 transition duration-1000`}></div>
+          <div className="relative bg-white rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white flex flex-col lg:flex-row items-center justify-between gap-10">
+            <div className="flex items-center gap-8">
+              <div className={`w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl ${viewMode === 'donations' ? (stats.isReached ? 'bg-emerald-500' : 'bg-emerald-600') : 'bg-emerald-600'}`}>
+                {viewMode === 'donations' ? (stats.isReached ? <CheckCircle2 size={48} /> : <Target size={48} />) : <Package size={48} />}
               </div>
-              <div className="flex-1">
-                <h2 className={`text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1 sm:mb-2 ${viewMode === 'donations' ? (stats.isReached ? 'text-emerald-500' : 'text-emerald-600') : 'text-emerald-500'}`}>
-                  {viewMode === 'donations' ? (stats.isReached ? "Objectif Atteint !" : "Reste à collecter") : "Volume Distribué"}
+              <div>
+                <h2 className={`text-sm font-black uppercase tracking-[0.4em] mb-2 ${viewMode === 'donations' ? (stats.isReached ? 'text-emerald-500' : 'text-emerald-600') : 'text-emerald-500'}`}>
+                  {viewMode === 'donations' ? (stats.isReached ? "Objectif Atteint !" : "Reste à collecter ce mois") : "Volume Distribué ce mois"}
                 </h2>
-                <div className="flex items-baseline gap-2 sm:gap-4">
-                  <span className="text-3xl sm:text-5xl lg:text-9xl font-black tracking-tighter text-slate-950 leading-none">
+                <div className="flex items-baseline gap-4">
+                  <span className="text-5xl lg:text-9xl font-black tracking-tighter text-slate-900 leading-none">
                     {viewMode === 'donations' ? stats.pochesRestantes.toLocaleString() : stats.distTotal.toLocaleString()}
                   </span>
-                  <span className="text-xs sm:text-lg lg:text-3xl font-black text-slate-300 uppercase tracking-tighter">Poches</span>
+                  <span className="text-lg lg:text-3xl font-black text-slate-300 uppercase tracking-tighter">Poches</span>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-center lg:items-end text-center lg:text-right border-t border-slate-100 lg:border-none pt-6 lg:pt-0 w-full lg:w-auto">
-              <div className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl border mb-3 sm:mb-4 ${viewMode === 'donations' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                 <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                   {viewMode === 'donations' ? <Activity size={12}/> : <TrendingUp size={12}/>} {viewMode === 'donations' ? 'Flux National' : 'Flux Actif'}
+            <div className="flex flex-col items-center lg:items-end text-center lg:text-right">
+              <div className={`px-6 py-3 rounded-2xl border mb-4 ${viewMode === 'donations' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                 <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                   {viewMode === 'donations' ? <Activity size={14}/> : <TrendingUp size={14}/>} {viewMode === 'donations' ? 'Flux National' : 'Flux Actif'}
                  </p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
+              <p className="text-sm font-bold text-slate-500 leading-relaxed max-w-[280px]">
                 {viewMode === 'donations' 
-                  ? `Il manque ${stats.pochesRestantes.toLocaleString()} prélèvements pour valider le mois.`
-                  : `Efficacité nette de distribution à ${stats.distEfficiency.toFixed(1)}%.`
+                  ? `Il manque ${stats.pochesRestantes.toLocaleString()} prélèvements pour valider le contrat mensuel.`
+                  : `Efficacité nette de distribution enregistrée à ${stats.distEfficiency.toFixed(1)}% ce mois.`
                 }
-                <span className="text-emerald-600 font-black block mt-1 uppercase text-[10px] tracking-widest">Détails en temps réel →</span>
+                <span className="text-slate-900 font-black block mt-1">Détails en temps réel →</span>
               </p>
             </div>
           </div>
@@ -258,30 +258,30 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
         {viewMode === 'donations' && (
           <div 
             onClick={() => setActiveTab('capacity-planning')}
-            className="bg-gradient-to-br from-emerald-950 to-emerald-900 rounded-[2.5rem] sm:rounded-[4rem] p-6 lg:p-14 shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-10 cursor-pointer hover:scale-[1.01] active:scale-95 transition-all"
+            className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
           >
-            <div className="flex items-center gap-4 sm:gap-8 w-full sm:w-auto">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-[1.5rem] sm:rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
-                <Zap size={32} />
+            <div className="flex items-center gap-8">
+              <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
+                <Zap size={48} />
               </div>
-              <div className="flex-1">
-                <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1 sm:mb-2 text-emerald-400">Capacité & Prévisions</h2>
-                <div className="flex items-baseline gap-2 sm:gap-4">
-                  <span className="text-3xl sm:text-6xl lg:text-8xl font-black tracking-tighter text-white leading-none">
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-emerald-400">Capacité & Prévisions</h2>
+                <div className="flex items-baseline gap-4">
+                  <span className="text-6xl lg:text-8xl font-black tracking-tighter text-white leading-none">
                     Planning
                   </span>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-center lg:items-end text-center lg:text-right border-t border-white/5 lg:border-none pt-6 lg:pt-0 w-full lg:w-auto">
-              <div className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white mb-3 sm:mb-4">
-                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                  <Target size={12} className="text-emerald-400" /> Optimisation Collecte
+            <div className="flex flex-col items-center lg:items-end text-center lg:text-right">
+              <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white mb-4">
+                <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Target size={14} className="text-emerald-400" /> Optimisation Collecte
                 </p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-white/50 leading-relaxed max-w-[280px]">
-                Analysez la capacité de chaque site pour prévoir les prélèvements.
-                <span className="text-emerald-400 font-black block mt-1 uppercase text-[10px] tracking-widest">Ouvrir le planning →</span>
+              <p className="text-sm font-bold text-white/60 leading-relaxed max-w-[280px]">
+                Analysez la capacité de chaque site pour prévoir les prélèvements nationaux et d'Abidjan.
+                <span className="text-white font-black block mt-1">Ouvrir le planning →</span>
               </p>
             </div>
           </div>
@@ -291,60 +291,60 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ data, setActiveTab, br
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div 
               onClick={() => setActiveTab('stock-planning')}
-              className="bg-gradient-to-br from-emerald-950 to-emerald-900 rounded-[2.5rem] sm:rounded-[4rem] p-6 lg:p-14 shadow-2xl border border-white/10 flex flex-col items-center justify-between gap-6 lg:gap-10 cursor-pointer hover:scale-[1.01] active:scale-95 transition-all"
+              className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white/10 flex flex-col items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
             >
-              <div className="flex items-center gap-4 sm:gap-8 w-full sm:w-auto">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-[1.5rem] sm:rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
-                  <ShieldCheck size={32} />
+              <div className="flex items-center gap-8 w-full">
+                <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
+                  <ShieldCheck size={48} />
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1 sm:mb-2 text-emerald-400">Planning Stock</h2>
-                  <div className="flex items-baseline gap-2 sm:gap-4">
-                    <span className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-emerald-400">Planning Stock</h2>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
                       Autonomie
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-center lg:items-end text-center lg:text-right border-t border-white/5 lg:border-none pt-6 lg:pt-0 w-full lg:w-auto">
-                <div className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white mb-3 sm:mb-4">
-                  <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <Package size={12} className="text-emerald-400" /> Analyse par Site
+              <div className="flex flex-col items-center lg:items-end text-center lg:text-right w-full">
+                <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <Package size={14} className="text-emerald-400" /> Analyse par Site
                   </p>
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-white/50 leading-relaxed max-w-[280px]">
-                  Visualisez l'autonomie de chaque site et planifiez.
-                  <span className="text-emerald-400 font-black block mt-1 uppercase text-[10px] tracking-widest">Ouvrir le planning →</span>
+                <p className="text-sm font-bold text-white/60 leading-relaxed max-w-[280px]">
+                  Visualisez l'autonomie de chaque site et planifiez les réapprovisionnements.
+                  <span className="text-white font-black block mt-1">Ouvrir le planning →</span>
                 </p>
               </div>
             </div>
 
             <div 
               onClick={() => setActiveTab('stock-synthesis')}
-              className="bg-gradient-to-br from-slate-950 to-slate-900 rounded-[2.5rem] sm:rounded-[4rem] p-6 lg:p-14 shadow-2xl border border-white/10 flex flex-col items-center justify-between gap-6 lg:gap-10 cursor-pointer hover:scale-[1.01] active:scale-95 transition-all"
+              className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[4rem] p-10 lg:p-14 shadow-2xl border border-white/10 flex flex-col items-center justify-between gap-10 cursor-pointer hover:scale-[1.02] transition-all"
             >
-              <div className="flex items-center gap-4 sm:gap-8 w-full sm:w-auto">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-[1.5rem] sm:rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
-                  <TrendingUp size={32} />
+              <div className="flex items-center gap-8 w-full">
+                <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center text-white shadow-2xl">
+                  <TrendingUp size={48} />
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1 sm:mb-2 text-emerald-400">Synthèse Groupes</h2>
-                  <div className="flex items-baseline gap-2 sm:gap-4">
-                    <span className="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-[0.4em] mb-2 text-emerald-400">Synthèse Groupes</h2>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-5xl lg:text-7xl font-black tracking-tighter text-white leading-none">
                       STOCK 10 J
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-center lg:items-end text-center lg:text-right border-t border-white/5 lg:border-none pt-6 lg:pt-0 w-full lg:w-auto">
-                <div className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white mb-3 sm:mb-4">
-                  <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <TrendingUp size={12} className="text-emerald-400" /> Stock vs Prévisions
+              <div className="flex flex-col items-center lg:items-end text-center lg:text-right w-full">
+                <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp size={14} className="text-emerald-400" /> Stock vs Prévisions
                   </p>
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-white/50 leading-relaxed max-w-[280px]">
-                  Consultez l'autonomie par groupe sanguin.
-                  <span className="text-emerald-400 font-black block mt-1 uppercase text-[10px] tracking-widest">Ouvrir la synthèse →</span>
+                <p className="text-sm font-bold text-white/60 leading-relaxed max-w-[280px]">
+                  Consultez l'autonomie par groupe sanguin au niveau National et Abidjan.
+                  <span className="text-white font-black block mt-1">Ouvrir la synthèse →</span>
                 </p>
               </div>
             </div>
