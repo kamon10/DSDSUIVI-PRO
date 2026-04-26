@@ -12,7 +12,7 @@ import {
   FileSpreadsheet, ChevronLeft, ChevronRight, Zap
 } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
-import { jsPDF } from 'jsPDF';
+import { jsPDF } from 'jspdf';
 import { utils, writeFile } from 'xlsx';
 import { motion } from 'motion/react';
 
