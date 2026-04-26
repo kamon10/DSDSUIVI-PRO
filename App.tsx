@@ -46,6 +46,7 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { AppTab, DashboardData, User, SiteRecord } from './types.ts';
 import { Activity, LayoutDashboard, RefreshCw, Settings, BarChart3, HeartPulse, LineChart, Layout, Database, Clock, Lock, LogOut, ShieldCheck, User as UserIcon, Book, BookOpen, Truck, Map as MapIcon, PlusSquare, UserCheck, FileText, AlertCircle, History, ClipboardList, Wifi, WifiOff, Package, Search, Command, TrendingUp, Zap, X, ChevronDown, ArrowRight, PieChart, Calendar, Plus, Target, Loader2, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { AppLoadingOverlay } from './components/AppLoadingOverlay.tsx';
 import { CommandPalette } from './components/CommandPalette.tsx';
 
 const App: React.FC = () => {
@@ -634,16 +635,27 @@ const App: React.FC = () => {
               </motion.div>
             )}
             <StockAlert data={fullData} user={currentUser} className="mb-8" />
-          {loading && !fullData.dailyHistory.length ? (
-            <div className="flex flex-col items-center justify-center py-48 gap-6">
-               <Activity size={60} className="text-orange-600 animate-pulse" />
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialisation du Cockpit...</p>
-            </div>
-          ) : (
-            <Suspense fallback={
+            
+            <AppLoadingOverlay isVisible={loading && !fullData.dailyHistory.length} />
+
+            {!fullData.dailyHistory.length && !loading ? (
               <div className="flex flex-col items-center justify-center py-48 gap-6">
-                <Loader2 size={48} className="text-orange-600 animate-spin" />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chargement du module...</p>
+                 <AlertCircle size={60} className="text-slate-300" />
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                   Aucune donnée disponible.<br/>Veuillez vérifier votre connexion ou la source.
+                 </p>
+              </div>
+            ) : (
+            <Suspense fallback={
+              <div className="flex flex-col items-center justify-center py-48 gap-4 px-8">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full animate-pulse" />
+                  <Loader2 size={40} className="text-orange-600 animate-spin relative z-10" />
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation du module</p>
+                  <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-1">Allocation des ressources système...</p>
+                </div>
               </div>
             }>
               <AnimatePresence mode="wait">
