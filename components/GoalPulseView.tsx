@@ -2,10 +2,11 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardData, SiteRecord, GtsRecord } from '../types';
-import { Target, Trophy, Calendar, Download, Share2, ChevronRight, ChevronLeft, Heart, Activity, Clock } from 'lucide-react';
+import { Target, Trophy, Calendar, Download, Share2, ChevronRight, ChevronLeft, Heart, Activity, Clock, Zap } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
-import { format, differenceInDays, endOfMonth, endOfYear } from 'date-fns';
+import { format, differenceInDays, endOfMonth, endOfYear, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SITES_DATA, getSiteByInput } from '../constants';
 
 interface GoalPulseViewProps {
   data: DashboardData;
@@ -20,6 +21,41 @@ const MONTHS_FR = [
 const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
   const [exporting, setExporting] = useState(false);
   const pulseRef = useRef<HTMLDivElement>(null);
+
+  // --- SDS CAPSULE LOGIC (LATEST RECORD MOBILE >= 900) ---
+  const sdsData = useMemo(() => {
+    let latest: { site: string; date: string; value: number; totalRecords: number; manager: string; objective: number } | null = null;
+    let count = 0;
+    
+    // Sort history by date to find latest and count editions
+    const sortedHistory = [...data.dailyHistory].sort((a, b) => {
+      const dateA = parse(a.date, 'dd/MM/yyyy', new Date());
+      const dateB = parse(b.date, 'dd/MM/yyyy', new Date());
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    sortedHistory.forEach(day => {
+      day.sites.forEach(site => {
+        if (site.mobile >= 1000) {
+          count++;
+          const siteInfo = getSiteByInput(site.name);
+          const annualObj = siteInfo?.annualObjective || 15000;
+          const dailyObj = Math.round(annualObj / 313); // Assuming 313 working days from constants
+          
+          latest = {
+            site: site.name,
+            date: day.date,
+            value: site.mobile,
+            totalRecords: count,
+            manager: siteInfo?.manager || "Le Responsable de Site",
+            objective: dailyObj || 1000 // Fallback to 1000 for percentage calculation if needed
+          };
+        }
+      });
+    });
+
+    return latest;
+  }, [data.dailyHistory]);
 
   const gtsStats = useMemo(() => {
     if (!data.gts) return { monthly: { realized: 0, objective: 0, percentage: 0 }, annual: { realized: 0, objective: 0, percentage: 0 } };
@@ -284,79 +320,81 @@ const GoalPulseView: React.FC<GoalPulseViewProps> = ({ data, branding }) => {
       </div>
 
       {/* CAPSULE SPÉCIALE SDS */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-[3rem] p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden group border border-white/10"
-      >
-        {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-indigo-500/20 transition-all duration-1000" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl -ml-32 -mb-32 group-hover:bg-rose-500/20 transition-all duration-1000" />
+      {sdsData && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-[3rem] p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden group border border-white/10"
+        >
+          {/* Background decorative elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-indigo-500/20 transition-all duration-1000" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl -ml-32 -mb-32 group-hover:bg-rose-500/20 transition-all duration-1000" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
-          <div className="shrink-0">
-            <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-orange-900/50 rotate-3 group-hover:rotate-6 transition-all duration-500">
-              <Trophy size={48} className="text-white drop-shadow-lg" />
-            </div>
-          </div>
-
-          <div className="flex-1 text-center md:text-left">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-              <span className="px-4 py-1.5 bg-orange-600 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-lg shadow-orange-900/40">
-                LES SAMEDIS DE LA SOLIDARITÉ-SDS
-              </span>
-              <span className="px-4 py-1.5 bg-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase backdrop-blur-md border border-white/10">
-                28 ème ÉDITION
-              </span>
-            </div>
-
-            <h2 className="text-3xl lg:text-4xl font-black tracking-tighter uppercase mb-6 leading-none">
-              PROCLAMATION DES RÉSULTATS PROVISOIRES
-            </h2>
-
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 border border-white/10 mb-8">
-              <p className="text-lg font-medium text-slate-200 italic mb-4 leading-relaxed">
-                "Bonjour à tous et à toutes. Proclamation des résultats provisoires des Samedis de la Solidarité 28 ème édition du <span className="text-white font-black not-italic bg-orange-600 px-2 rounded">25 AVRIL 2026</span> à <span className="text-white font-black not-italic underline decoration-orange-500 underline-offset-4">YAMOUSSOKRO</span> (CRTS DE YAMOUSSOUKRO)."
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-center gap-6 mt-6">
-                <div className="text-center sm:text-left">
-                  <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-1">TOTAL PRÉLEVÉ</p>
-                  <div className="text-5xl font-black text-white tracking-tighter flex items-center gap-2">
-                    1332 <span className="text-xs font-bold text-indigo-300 uppercase">Poches</span>
-                  </div>
-                </div>
-                <div className="w-[1px] h-12 bg-white/10 hidden sm:block" />
-                <div className="text-center sm:text-left">
-                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">PERFORMANCE</p>
-                  <div className="text-5xl font-black text-emerald-400 tracking-tighter">
-                    133,2%
-                  </div>
-                </div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+            <div className="shrink-0">
+              <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-orange-900/50 rotate-3 group-hover:rotate-6 transition-all duration-500">
+                <Trophy size={48} className="text-white drop-shadow-lg" />
               </div>
             </div>
 
-            <div className="space-y-4 text-sm font-medium text-slate-300 leading-relaxed">
-              <p>
-                Merci à la dynamique équipe du <span className="text-white font-black">CRTS de YAMOUSSOKRO</span> à sa tête <span className="text-orange-400 font-black">Dr. EBIBA Francois</span>. 
-                Bravo à toutes les équipes de soutien.
-              </p>
-              <p>
-                Merci au Directeur Général <span className="text-white font-black">Pr Yassongui Mamadou SEKONGO</span> et ses Directeurs centraux. 
-                À L'équipe de la Direction Générale du CNTSCI. Bravo au CNTSCI nouveau.
-              </p>
-              <div className="pt-4 flex flex-col gap-1 border-t border-white/5">
-                <p className="font-black text-white uppercase tracking-widest text-xs italic">
-                  Ensemble nous y ARRIVERONS
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
+                <span className="px-4 py-1.5 bg-orange-600 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-lg shadow-orange-900/40">
+                  LES SAMEDIS DE LA SOLIDARITÉ-SDS
+                </span>
+                <span className="px-4 py-1.5 bg-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase backdrop-blur-md border border-white/10">
+                  {sdsData.totalRecords} ème ÉDITION
+                </span>
+              </div>
+
+              <h2 className="text-3xl lg:text-4xl font-black tracking-tighter uppercase mb-6 leading-none">
+                PROCLAMATION DES RÉSULTATS PROVISOIRES
+              </h2>
+
+              <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 border border-white/10 mb-8">
+                <p className="text-lg font-medium text-slate-200 italic mb-4 leading-relaxed">
+                  "Bonjour à tous et à toutes. Proclamation des résultats provisoires des Samedis de la Solidarité {sdsData.totalRecords} ème édition du <span className="text-white font-black not-italic bg-orange-600 px-2 rounded">{sdsData.date}</span> à <span className="text-white font-black not-italic underline decoration-orange-500 underline-offset-4">{sdsData.site.replace('CRTS DE ', '').replace('CDTS DE ', '')}</span> ({sdsData.site})."
                 </p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                  Le comité d'organisation des samedis de la solidarité
+                
+                <div className="flex flex-col sm:flex-row items-center gap-6 mt-6">
+                  <div className="text-center sm:text-left">
+                    <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-1">TOTAL PRÉLEVÉ</p>
+                    <div className="text-5xl font-black text-white tracking-tighter flex items-center gap-2">
+                      {sdsData.value} <span className="text-xs font-bold text-indigo-300 uppercase">Poches</span>
+                    </div>
+                  </div>
+                  <div className="w-[1px] h-12 bg-white/10 hidden sm:block" />
+                  <div className="text-center sm:text-left">
+                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">PERFORMANCE</p>
+                    <div className="text-5xl font-black text-emerald-400 tracking-tighter">
+                      {((sdsData.value / 1000) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-sm font-medium text-slate-300 leading-relaxed">
+                <p>
+                  Merci à la dynamique équipe du <span className="text-white font-black">{sdsData.site}</span> à sa tête <span className="text-orange-400 font-black">{sdsData.manager}</span>. 
+                  Bravo à toutes les équipes de soutien.
                 </p>
+                <p>
+                  Merci au Directeur Général <span className="text-white font-black">Pr Yassongui Mamadou SEKONGO</span> et ses Directeurs centraux. 
+                  À L'équipe de la Direction Générale du CNTSCI. Bravo au CNTSCI nouveau.
+                </p>
+                <div className="pt-4 flex flex-col gap-1 border-t border-white/5">
+                  <p className="font-black text-white uppercase tracking-widest text-xs italic">
+                    Ensemble nous y ARRIVERONS
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                    Le comité d'organisation des samedis de la solidarité
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Main Grid - 6 Pulse Cards */}
       <div ref={pulseRef} className="p-4 rounded-[4rem] bg-slate-50/50">
