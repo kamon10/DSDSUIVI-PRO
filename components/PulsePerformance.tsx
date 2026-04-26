@@ -218,27 +218,27 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white/80 backdrop-blur-xl p-2 rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-2"
+          className="bg-white/80 backdrop-blur-xl p-1.5 sm:p-2 rounded-[2rem] sm:rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-1.5 sm:gap-2 w-full sm:w-auto"
         >
-           <button onClick={() => setViewMode('donations')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={18} className={viewMode === 'donations' ? 'text-orange-400' : ''}/> Prélèvements
+           <button onClick={() => setViewMode('donations')} className={`flex-1 sm:flex-none px-6 sm:px-12 py-3.5 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-[10px] sm:text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center justify-center gap-2 sm:gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Activity size={18} className={viewMode === 'donations' ? 'text-orange-400' : ''}/> <span className="whitespace-nowrap">Prélèvements</span>
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={18} className={viewMode === 'distribution' ? 'text-orange-400' : ''}/> Distribution
+           <button onClick={() => setViewMode('distribution')} className={`flex-1 sm:flex-none px-6 sm:px-12 py-3.5 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-[10px] sm:text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center justify-center gap-2 sm:gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Truck size={18} className={viewMode === 'distribution' ? 'text-orange-400' : ''}/> <span className="whitespace-nowrap">Distribution</span>
            </button>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
-          <motion.div whileHover={{ y: -8 }} className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm">
-            <div className="w-16 h-16 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group">
+          <motion.div whileHover={{ y: -8 }} className="card-professional p-6 sm:p-8 flex items-center gap-6 sm:gap-8 bg-white/80 backdrop-blur-sm">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-orange-50 rounded-2xl sm:rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group shrink-0">
               <div className="absolute inset-0 bg-orange-600 opacity-0 group-hover:opacity-10 transition-opacity" />
               <Zap size={28} className="relative z-10" />
             </div>
             <div>
-              <p className="text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Health Score National</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-display font-black text-slate-950 tracking-tighter">{healthScore}%</span>
-                <span className="text-[11px] font-bold text-orange-500 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg"><ArrowUpRight size={14} /> +2.4%</span>
+              <p className="text-[9px] sm:text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Health Score National</p>
+              <div className="flex items-baseline gap-2 sm:gap-3">
+                <span className="text-3xl sm:text-4xl font-display font-black text-slate-950 tracking-tighter">{healthScore}%</span>
+                <span className="text-[10px] sm:text-[11px] font-bold text-orange-500 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg"><ArrowUpRight size={14} /> +2.4%</span>
               </div>
             </div>
           </motion.div>
@@ -246,31 +246,31 @@ export const PulsePerformance: React.FC<PulsePerformanceProps> = ({ data, onLogi
           <motion.div 
             whileHover={{ y: -8 }} 
             onClick={() => setActiveTab?.('forecasting')}
-            className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm cursor-pointer"
+            className="card-professional p-6 sm:p-8 flex items-center gap-6 sm:gap-8 bg-white/80 backdrop-blur-sm cursor-pointer"
           >
-            <div className="w-16 h-16 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-orange-50 rounded-2xl sm:rounded-3xl flex items-center justify-center text-orange-600 shadow-inner relative overflow-hidden group shrink-0">
               <div className="absolute inset-0 bg-orange-600 opacity-0 group-hover:opacity-10 transition-opacity" />
               <TrendingUp size={28} className="relative z-10" />
             </div>
             <div>
-              <p className="text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Tendance Flux</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-display font-black text-slate-950 tracking-tighter">Stable</span>
-                <span className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">Prévision +5%</span>
+              <p className="text-[9px] sm:text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Tendance Flux</p>
+              <div className="flex items-baseline gap-2 sm:gap-3">
+                <span className="text-3xl sm:text-4xl font-display font-black text-slate-950 tracking-tighter">Stable</span>
+                <span className="text-[10px] sm:text-[11px] font-display font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">Prévision +5%</span>
               </div>
             </div>
           </motion.div>
 
-          <motion.div whileHover={{ y: -8 }} className="card-professional p-8 flex items-center gap-8 bg-white/80 backdrop-blur-sm">
-            <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-600 shadow-inner relative overflow-hidden group">
+          <motion.div whileHover={{ y: -8 }} className="card-professional p-6 sm:p-8 flex items-center gap-6 sm:gap-8 bg-white/80 backdrop-blur-sm">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-rose-50 rounded-2xl sm:rounded-3xl flex items-center justify-center text-rose-600 shadow-inner relative overflow-hidden group shrink-0">
               <div className="absolute inset-0 bg-rose-600 opacity-0 group-hover:opacity-10 transition-opacity" />
               <Package size={28} className="relative z-10" />
             </div>
             <div>
-              <p className="text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Disponibilité Stock</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-display font-black text-slate-950 tracking-tighter">Optimal</span>
-                <span className="text-[11px] font-display font-bold text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-1 rounded-lg">12 Jours</span>
+              <p className="text-[9px] sm:text-[10px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-1">Disponibilité Stock</p>
+              <div className="flex items-baseline gap-2 sm:gap-3">
+                <span className="text-3xl sm:text-4xl font-display font-black text-slate-950 tracking-tighter truncate max-w-[120px]">Optimal</span>
+                <span className="text-[10px] sm:text-[11px] font-display font-bold text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-1 rounded-lg">12 Jours</span>
               </div>
             </div>
           </motion.div>
