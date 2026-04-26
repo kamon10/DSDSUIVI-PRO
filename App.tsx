@@ -507,8 +507,8 @@ const App: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-[100] px-3 py-3 sm:px-4 sm:py-4 lg:px-10 lg:py-6">
-          <div className="max-w-full mx-auto bg-emerald-600 rounded-[2rem] sm:rounded-[3rem] px-4 sm:px-8 py-3 sm:py-5 flex items-center justify-between shadow-3xl min-h-[4.5rem] sm:min-h-[5.5rem] border border-white/10 pt-safe lg:pt-0">
+        <header className="sticky top-0 z-[100] px-4 py-4 lg:px-10 lg:py-6">
+          <div className="max-w-full mx-auto bg-emerald-600 rounded-[3rem] px-8 py-5 flex items-center justify-between shadow-3xl min-h-[5.5rem] border border-white/10">
             <div className="flex items-center gap-5 cursor-pointer lg:hidden" onClick={() => setActiveTab('pulse')}>
                <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center shadow-sm">
                   <img 
@@ -615,7 +615,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 w-full px-3 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-10 pb-32 pb-safe">
+        <main className="flex-1 w-full px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-32 pb-safe">
           <ErrorBoundary>
             {error && (
               <motion.div 
@@ -750,7 +750,7 @@ const App: React.FC = () => {
         syncTime={getFullSyncTime()}
       />
       <InstallPrompt />
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-emerald-600 rounded-t-[2rem] sm:rounded-t-[3rem] p-2 sm:p-3 flex justify-between items-center shadow-3xl gap-1 sm:gap-2 pb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-emerald-600 rounded-t-[3rem] p-3 flex justify-between items-center shadow-3xl gap-2 pb-safe">
            {groupedNavItems.map((group) => {
              const isActive = group.navItems.some(item => activeTab === item.id);
              const isOpen = openGroup === group.id;
