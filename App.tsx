@@ -617,7 +617,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-12 py-6 lg:py-10 pb-32 pb-safe">
+        <main className="flex-1 w-full px-4 sm:px-6 lg:px-10 py-6 lg:py-10 pb-32 pb-safe">
           <ErrorBoundary>
             {error && (
               <motion.div 
