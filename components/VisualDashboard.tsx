@@ -114,28 +114,28 @@ export const VisualDashboard: React.FC<{
 
   return (
     <div className="space-y-12 pb-24 animate-in fade-in duration-1000">
-      <div className="flex justify-center mb-8">
-        <div className="bg-white/80 backdrop-blur-xl p-2 rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-2">
-           <button onClick={() => setViewMode('donations')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Activity size={18} className={viewMode === 'donations' ? 'text-orange-400' : ''}/> Prélèvements
+      <div className="flex justify-center mb-6 sm:mb-8">
+        <div className="bg-white/80 backdrop-blur-xl p-1 sm:p-2 rounded-[2rem] sm:rounded-[2.5rem] shadow-3xl border border-white/40 flex gap-1.5 sm:gap-2 w-full sm:w-auto">
+           <button onClick={() => setViewMode('donations')} className={`flex-1 sm:flex-none px-4 sm:px-12 py-3.5 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-[10px] sm:text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center justify-center gap-2 sm:gap-4 ${viewMode === 'donations' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Activity size={18} className={viewMode === 'donations' ? 'text-emerald-400' : ''}/> <span className="whitespace-nowrap">Prélèvements</span>
            </button>
-           <button onClick={() => setViewMode('distribution')} className={`px-12 py-5 rounded-[2rem] text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
-             <Truck size={18} className={viewMode === 'distribution' ? 'text-orange-400' : ''}/> Distribution
+           <button onClick={() => setViewMode('distribution')} className={`flex-1 sm:flex-none px-4 sm:px-12 py-3.5 sm:py-5 rounded-[1.5rem] sm:rounded-[2rem] text-[10px] sm:text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 flex items-center justify-center gap-2 sm:gap-4 ${viewMode === 'distribution' ? 'bg-slate-950 text-white shadow-2xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}>
+             <Truck size={18} className={viewMode === 'distribution' ? 'text-emerald-400' : ''}/> <span className="whitespace-nowrap">Distribution</span>
            </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className={`lg:col-span-2 rounded-[4rem] p-12 lg:p-16 text-white shadow-3xl relative overflow-hidden transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-orange-950'}`}>
-          <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full -mr-48 -mt-48 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-orange-600/20' : 'bg-orange-600/30'}`}></div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div className={`lg:col-span-2 rounded-[2.5rem] sm:rounded-[4rem] p-6 sm:p-12 lg:p-16 text-white shadow-3xl relative overflow-hidden transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-slate-950' : 'bg-emerald-950'}`}>
+          <div className={`absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full -mr-48 -mt-48 transition-colors duration-1000 ${viewMode === 'donations' ? 'bg-emerald-600/20' : 'bg-emerald-600/30'}`}></div>
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-12">
-              <div className="flex items-center gap-6">
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl ${viewMode === 'donations' ? 'bg-orange-600 shadow-orange-500/40' : 'bg-orange-600 shadow-orange-500/40'}`}>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 sm:mb-12">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] sm:rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl ${viewMode === 'donations' ? 'bg-emerald-600 shadow-emerald-500/40' : 'bg-emerald-600 shadow-emerald-500/40'}`}>
                   {viewMode === 'donations' ? <Calendar size={28} /> : <Package size={28} />}
                 </div>
                 <div>
-                  <h2 className="text-3xl font-display font-black uppercase tracking-tighter leading-none">{viewMode === 'donations' ? 'Cockpit du Jour' : 'Sorties du Jour'}</h2>
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-display font-black uppercase tracking-tighter leading-none">{viewMode === 'donations' ? 'Cockpit du Jour' : 'Sorties du Jour'}</h2>
                   <div className="flex items-center gap-3 mt-3">
                     <Filter size={16} className={viewMode === 'donations' ? "text-orange-400" : "text-orange-400"} />
                     <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-transparent outline-none text-[11px] font-display font-black uppercase tracking-[0.2em] cursor-pointer text-white/60 hover:text-white transition-colors">
@@ -144,15 +144,15 @@ export const VisualDashboard: React.FC<{
                   </div>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-center sm:text-right">
                  {viewMode === 'donations' ? (
                     <React.Fragment>
-                      <p className={`text-5xl font-display font-black leading-none tracking-tighter ${getPerfColor(dayAchievement)}`}>{dayAchievement.toFixed(1)}%</p>
+                      <p className={`text-4xl sm:text-5xl font-display font-black leading-none tracking-tighter ${getPerfColor(dayAchievement)}`}>{dayAchievement.toFixed(1)}%</p>
                       <p className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-white/30 mt-3">Objectif atteint</p>
                     </React.Fragment>
                  ) : (
                     <React.Fragment>
-                      <p className="text-5xl font-display font-black text-orange-400 leading-none tracking-tighter">{dailyDistStats?.efficiency.toFixed(1)}%</p>
+                      <p className="text-4xl sm:text-5xl font-display font-black text-emerald-400 leading-none tracking-tighter">{dailyDistStats?.efficiency.toFixed(1)}%</p>
                       <p className="text-[10px] font-display font-black uppercase tracking-[0.3em] text-white/30 mt-3">Utilisation Nette</p>
                     </React.Fragment>
                  )}
@@ -160,16 +160,16 @@ export const VisualDashboard: React.FC<{
             </div>
 
             {viewMode === 'donations' ? (
-              <div className="grid grid-cols-3 gap-6 mb-12">
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Fixe</p><p className="text-3xl font-display font-black text-orange-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.fixed || 0}</p></div>
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Mobile</p><p className="text-3xl font-display font-black text-orange-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.mobile || 0}</p></div>
-                <div className="bg-orange-600/20 backdrop-blur-xl p-6 rounded-[2.5rem] border border-orange-600/20 text-center group transition-all hover:bg-orange-600/30"><p className="text-[10px] font-display font-black text-orange-400 uppercase mb-3 tracking-[0.2em]">Total</p><p className="text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{(currentDailyRecord?.stats.realized || 0).toLocaleString()}</p></div>
+              <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-12">
+                <div className="bg-white/5 backdrop-blur-xl p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[8px] sm:text-[10px] font-display font-black text-white/30 uppercase mb-2 sm:mb-3 tracking-[0.2em]">Fixe</p><p className="text-xl sm:text-3xl font-display font-black text-emerald-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.fixed || 0}</p></div>
+                <div className="bg-white/5 backdrop-blur-xl p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[8px] sm:text-[10px] font-display font-black text-white/30 uppercase mb-2 sm:mb-3 tracking-[0.2em]">Mobile</p><p className="text-xl sm:text-3xl font-display font-black text-emerald-400 group-hover:scale-110 transition-transform">{currentDailyRecord?.stats.mobile || 0}</p></div>
+                <div className="bg-emerald-600/20 backdrop-blur-xl p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-emerald-600/20 text-center group transition-all hover:bg-emerald-600/30"><p className="text-[8px] sm:text-[10px] font-display font-black text-emerald-400 uppercase mb-2 sm:mb-3 tracking-[0.2em]">Total</p><p className="text-xl sm:text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{(currentDailyRecord?.stats.realized || 0).toLocaleString()}</p></div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-6 mb-12">
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Poches Exp.</p><p className="text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{dailyDistStats?.qty || 0}</p></div>
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[10px] font-display font-black text-white/30 uppercase mb-3 tracking-[0.2em]">Rendus</p><p className="text-3xl font-display font-black text-rose-400 group-hover:scale-110 transition-transform">{dailyDistStats?.rendu || 0}</p></div>
-                <div className="bg-orange-600/20 backdrop-blur-xl p-6 rounded-[2.5rem] border border-orange-600/20 text-center group transition-all hover:bg-orange-600/30"><p className="text-[10px] font-display font-black text-orange-400 uppercase mb-3 tracking-[0.2em]">Flux</p><p className="text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{dailyDistStats?.recordsCount || 0}</p></div>
+              <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-12">
+                <div className="bg-white/5 backdrop-blur-xl p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[8px] sm:text-[10px] font-display font-black text-white/30 uppercase mb-2 sm:mb-3 tracking-[0.2em]">Poches Exp.</p><p className="text-xl sm:text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{dailyDistStats?.qty || 0}</p></div>
+                <div className="bg-white/5 backdrop-blur-xl p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-white/10 text-center group transition-all hover:bg-white/10"><p className="text-[8px] sm:text-[10px] font-display font-black text-white/30 uppercase mb-2 sm:mb-3 tracking-[0.2em]">Rendus</p><p className="text-xl sm:text-3xl font-display font-black text-rose-400 group-hover:scale-110 transition-transform">{dailyDistStats?.rendu || 0}</p></div>
+                <div className="bg-emerald-600/20 backdrop-blur-xl p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-emerald-600/20 text-center group transition-all hover:bg-emerald-600/30"><p className="text-[8px] sm:text-[10px] font-display font-black text-emerald-400 uppercase mb-2 sm:mb-3 tracking-[0.2em]">Flux</p><p className="text-xl sm:text-3xl font-display font-black text-white group-hover:scale-110 transition-transform">{dailyDistStats?.recordsCount || 0}</p></div>
               </div>
             )}
             <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden shadow-inner">
@@ -177,65 +177,65 @@ export const VisualDashboard: React.FC<{
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(viewMode === 'donations' ? dayAchievement : (dailyDistStats?.efficiency || 0), 100)}%` }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
-                className={`h-full transition-all duration-1000 shadow-[0_0_20px_rgba(255,255,255,0.1)] ${viewMode === 'donations' ? 'bg-orange-500' : 'bg-orange-500'}`} 
+                className={`h-full transition-all duration-1000 shadow-[0_0_20px_rgba(255,255,255,0.1)] ${viewMode === 'donations' ? 'bg-emerald-500' : 'bg-emerald-500'}`} 
                />
             </div>
           </div>
         </div>
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-           <div className="card-professional p-10 bg-white/90 backdrop-blur-sm flex flex-col justify-between group">
-              <div className="flex items-center gap-5 mb-8">
-                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${viewMode === 'donations' ? 'bg-orange-50 text-orange-600 shadow-orange-100' : 'bg-orange-50 text-orange-600 shadow-orange-100'}`}><PieChart size={28} /></div>
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+           <div className="card-professional p-6 sm:p-10 bg-white/90 backdrop-blur-sm flex flex-col justify-between group">
+              <div className="flex items-center gap-4 sm:gap-5 mb-8">
+                 <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-[1rem] sm:rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${viewMode === 'donations' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100' : 'bg-emerald-50 text-emerald-600 shadow-emerald-100'}`}><PieChart size={24} className="sm:w-[28px] sm:h-[28px]" /></div>
                  <div>
-                   <h3 className="text-xl font-display font-black uppercase tracking-tighter text-slate-950">{viewMode === 'donations' ? 'Répartition Jour' : 'Top Produits Jour'}</h3>
+                   <h3 className="text-lg sm:text-xl font-display font-black uppercase tracking-tighter text-slate-950">{viewMode === 'donations' ? 'Répartition Jour' : 'Top Produits Jour'}</h3>
                    <p className="text-[10px] font-display font-bold text-slate-400 uppercase tracking-widest mt-1">Analyse segmentée</p>
                  </div>
               </div>
               {viewMode === 'donations' ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                    {currentDailyRecord?.sites.filter((s: any) => s.total > 0).slice(0, 4).map((s: any, idx: number) => (
                      <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all">
-                        <span className="text-[11px] font-display font-black text-slate-600 uppercase tracking-tight truncate max-w-[160px]">{s.name}</span>
-                        <span className="text-sm font-display font-black text-orange-600">{s.total} poches</span>
+                        <span className="text-[10px] sm:text-[11px] font-display font-black text-slate-600 uppercase tracking-tight truncate max-w-[120px] sm:max-w-[160px]">{s.name}</span>
+                        <span className="text-xs sm:text-sm font-display font-black text-emerald-600">{s.total} poches</span>
                      </div>
                    ))}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {dailyDistStats?.topProducts.map((p: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all">
-                      <span className="text-[11px] font-display font-black text-slate-600 uppercase tracking-tight truncate max-w-[140px]">{p[0]}</span>
-                      <span className="text-sm font-display font-black text-orange-600">{p[1]} poches</span>
+                      <span className="text-[10px] sm:text-[11px] font-display font-black text-slate-600 uppercase tracking-tight truncate max-w-[100px] sm:max-w-[140px]">{p[0]}</span>
+                      <span className="text-xs sm:text-sm font-display font-black text-emerald-600">{p[1]} poches</span>
                     </div>
                   ))}
                 </div>
               )}
            </div>
-           <div onClick={() => setActiveTab?.('recap')} className="card-professional p-10 bg-white/90 backdrop-blur-sm relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-all border-white/60">
+           <div onClick={() => setActiveTab?.('recap')} className="card-professional p-6 sm:p-10 bg-white/90 backdrop-blur-sm relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-all border-white/60">
               <div className="absolute -right-10 -bottom-10 p-12 opacity-5 group-hover:opacity-10 transition-opacity group-hover:scale-110 duration-700">
-                <Award size={200} />
+                <Award size={150} className="sm:w-[200px] sm:h-[200px]" />
               </div>
-              <p className="text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-6 flex items-center gap-3 relative z-10">
-                <Award size={18} className={viewMode === 'donations' ? "text-orange-500" : "text-orange-500"} /> 
+              <p className="text-[10px] sm:text-[11px] font-display font-black text-slate-400 uppercase tracking-[0.25em] mb-6 flex items-center gap-3 relative z-10">
+                <Award size={16} className={viewMode === 'donations' ? "text-emerald-500" : "text-emerald-500"} /> 
                 National {data.month}
               </p>
               <div className="relative z-10">
-                 <h4 className="text-5xl font-display font-black text-slate-950 uppercase tracking-tighter leading-none mb-3 group-hover:translate-x-1 transition-transform duration-500">{viewMode === 'donations' ? data.monthly.realized.toLocaleString() : dailyDistStats?.qty.toLocaleString()}</h4>
-                 <p className={`text-2xl font-display font-black ${viewMode === 'donations' ? 'text-orange-600' : 'text-orange-600'}`}>Poches <span className="text-[10px] font-display font-bold text-slate-300 uppercase tracking-widest ml-3">Cumul Mensuel</span></p>
-                 <div className="mt-8 flex items-center gap-2 text-[10px] font-display font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-950 transition-colors">Explorer le rapport global <ArrowRight size={12} className="group-hover:translate-x-2 transition-transform" /></div>
+                 <h4 className="text-3xl sm:text-5xl font-display font-black text-slate-950 uppercase tracking-tighter leading-none mb-3 group-hover:translate-x-1 transition-transform duration-500">{viewMode === 'donations' ? data.monthly.realized.toLocaleString() : dailyDistStats?.qty.toLocaleString()}</h4>
+                 <p className={`text-xl sm:text-2xl font-display font-black ${viewMode === 'donations' ? 'text-emerald-600' : 'text-emerald-600'}`}>Poches <span className="text-[10px] font-display font-bold text-slate-300 uppercase tracking-widest ml-3">Cumul Mensuel</span></p>
+                 <div className="mt-8 flex items-center gap-2 text-[9px] sm:text-[10px] font-display font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-950 transition-colors whitespace-nowrap">Explorer le rapport global <ArrowRight size={12} className="group-hover:translate-x-2 transition-transform" /></div>
               </div>
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div onClick={() => setActiveTab?.('recap')} className={`card-professional bg-white/90 backdrop-blur-sm flex flex-col overflow-hidden h-[600px] cursor-pointer transition-all duration-700 ${viewMode === 'donations' ? 'hover:border-orange-200' : 'hover:border-orange-200'}`}>
-          <div className={`p-10 border-b border-slate-100 flex justify-between items-center ${viewMode === 'donations' ? 'bg-orange-50/30' : 'bg-orange-50/30'}`}>
-            <div className="flex items-center gap-6">
-              <div className={`w-14 h-14 text-white rounded-[1.25rem] flex items-center justify-center shadow-2xl transition-all duration-500 ${viewMode === 'donations' ? 'bg-slate-950 shadow-slate-900/20' : 'bg-orange-600 shadow-orange-500/20'}`}><Clock size={28} /></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+        <div onClick={() => setActiveTab?.('recap')} className={`card-professional bg-white/90 backdrop-blur-sm flex flex-col overflow-hidden h-[500px] sm:h-[600px] cursor-pointer transition-all duration-700 ${viewMode === 'donations' ? 'hover:border-emerald-200' : 'hover:border-emerald-200'}`}>
+          <div className={`p-6 sm:p-10 border-b border-slate-100 flex justify-between items-center ${viewMode === 'donations' ? 'bg-emerald-50/30' : 'bg-emerald-50/30'}`}>
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 text-white rounded-[1rem] sm:rounded-[1.25rem] flex items-center justify-center shadow-2xl transition-all duration-500 ${viewMode === 'donations' ? 'bg-slate-950 shadow-slate-900/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}><Clock size={24} className="sm:w-[28px] sm:h-[28px]" /></div>
               <div>
-                <h3 className="font-display font-black text-2xl uppercase tracking-tighter text-slate-950">{viewMode === 'donations' ? 'Attente de Saisie' : 'Registre Distribution'}</h3>
-                <p className="text-[11px] font-display font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">{viewMode === 'donations' ? `${missingSites.length} structures manquantes` : `${dailyDistStats?.recordsCount || 0} expéditions enregistrées`}</p>
+                <h3 className="font-display font-black text-xl sm:text-2xl uppercase tracking-tighter text-slate-950">{viewMode === 'donations' ? 'Attente de Saisie' : 'Registre Distribution'}</h3>
+                <p className="text-[10px] sm:text-[11px] font-display font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">{viewMode === 'donations' ? `${missingSites.length} structures manquantes` : `${dailyDistStats?.recordsCount || 0} expéditions enregistrées`}</p>
               </div>
             </div>
           </div>
